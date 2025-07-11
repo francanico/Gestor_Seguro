@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load widget_tweaks %} <!-- Si lo instalaste -->
+
+{% block title %}Iniciar Sesión - Gestor de Pólizas{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</h4>
+            </div>
+            <div class="card-body">
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        Por favor, corrige los errores abajo.
+                    </div>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label }}</label>
+                        {% render_field form.username class="form-control" placeholder="Nombre de usuario" %}
+                        {% if form.username.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.username.errors %} {{ error }} {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.password.id_for_label }}" class="form-label">{{ form.password.label }}</label>
+                        {% render_field form.password class="form-control" placeholder="Contraseña" %}
+                        {% if form.password.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.password.errors %} {{ error }} {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-sign-in-alt"></i> Acceder</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <small><a href="#">¿Olvidaste tu contraseña?</a></small>
+                <!-- <small class="ms-2"><a href="#">Registrarse</a></small> -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

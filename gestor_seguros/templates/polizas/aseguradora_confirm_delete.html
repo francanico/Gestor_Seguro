@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmar Eliminación Aseguradora - Gestor de Pólizas{% endblock %}
+
+{% block content %}
+<h2><i class="fas fa-trash-alt"></i> Eliminar Aseguradora</h2>
+<hr>
+<p>¿Estás seguro de que quieres eliminar la aseguradora <strong>"{{ object.nombre }}"</strong>?</p>
+<p class="text-warning">
+    <i class="fas fa-exclamation-triangle"></i>
+    <strong>Atención:</strong> Si eliminas esta aseguradora, las pólizas que la tengan asociada
+    pasarán a no tener ninguna aseguradora asignada (el campo quedará vacío).
+    Las pólizas en sí no serán eliminadas.
+</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Sí, Eliminar</button>
+    <a href="{% url 'polizas:lista_aseguradoras' %}" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
+</form>
+{% endblock %}

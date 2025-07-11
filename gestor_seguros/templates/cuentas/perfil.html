@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{{ titulo_pagina }} - Gestor Seguros{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-user-edit"></i> {{ titulo_pagina }}
+            </div>
+            <div class="card-body">
+                <p>Aquí puedes ver y actualizar tu información personal.</p>
+                <hr>
+                <form method="POST">
+                    {% csrf_token %}
+                    <fieldset class="form-group">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre de usuario</label>
+                            <input type="text" readonly class="form-control-plaintext" value="{{ user.username }}">
+                            <small class="text-muted">El nombre de usuario no se puede cambiar.</small>
+                        </div>
+                        
+                        {% for field in u_form %}
+                            <div class="mb-3">
+                                {{ field.label_tag }}
+                                {% render_field field class+="form-control" %}
+                                {% for error in field.errors %}
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </fieldset>
+                    <div class="form-group mt-4">
+                        <button class="btn btn-primary" type="submit"><i class="fas fa-save"></i> Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

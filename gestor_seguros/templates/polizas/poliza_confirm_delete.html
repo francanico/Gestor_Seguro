@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmar Eliminación Póliza - Gestor de Pólizas{% endblock %}
+
+{% block content %}
+<h2><i class="fas fa-trash-alt"></i> Eliminar Póliza</h2>
+<hr>
+<p>¿Estás seguro de que quieres eliminar la póliza <strong>"{{ object.numero_poliza }}"</strong> para el cliente <strong>"{{ object.cliente.nombre_completo }}"</strong>?</p>
+<p class="text-danger">Esta acción no se puede deshacer.</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Sí, Eliminar</button>
+    <a href="{{ object.get_absolute_url }}" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
+</form>
+{% endblock %}

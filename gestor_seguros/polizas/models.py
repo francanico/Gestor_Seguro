@@ -1,0 +1,136 @@
+# polizas/models.py
+from django.db import models
+from django.urls import reverse
+from django.utils import timezone
+from decimal import Decimal
+from dateutil.relativedelta import relativedelta
+from django.conf import settings 
+from clientes.models import Cliente 
+
+class Aseguradora(models.Model):
+
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='aseguradoras')
+    nombre = models.CharField(max_length=150, unique=True, verbose_name="Nombre de la Aseguradora")
+    nit = models.CharField(max_length=30, unique=True, blank=True, null=True, verbose_name="NIT")
+    contacto_nombre = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nombre de Contacto")
+    contacto_email = models.EmailField(blank=True, null=True, verbose_name="Email de Contacto")
+    contacto_telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono de Contacto")
+
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        verbose_name = "Aseguradora"
+        verbose_name_plural = "Aseguradoras"
+        ordering = ['nombre']
+        unique_together = ('usuario', 'nombre')
+
+class Poliza(models.Model):
+
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='polizas')
+
+
+    FRECUENCIA_PAGO_CHOICES = [
+        ('MENSUAL', 'Mensual'),
+        ('TRIMESTRAL', 'Trimestral'),
+        ('CUATRIMESTRAL', 'Cuatrimestral'),
+        ('SEMESTRAL', 'Semestral'),
+        ('ANUAL', 'Anual'),
+        ('UNICO', 'Pago Único'),
+    ]
+
+    ESTADO_POLIZA_CHOICES = [
+        ('VIGENTE', 'Vigente'),
+        ('PENDIENTE_PAGO', 'Pendiente de Pago'),
+        ('VENCIDA', 'Vencida'),
+        ('CANCELADA', 'Cancelada'),
+        ('EN_TRAMITE', 'En Trámite'),
+    ]
+
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name="polizas", verbose_name="Cliente")
+    aseguradora = models.ForeignKey(Aseguradora, on_delete=models.SET_NULL, null=True, blank=True, related_name="polizas", verbose_name="Aseguradora")
+    numero_poliza = models.CharField(max_length=100, unique=True, verbose_name="Número de Póliza")
+    ramo_tipo_seguro = models.CharField(max_length=100, verbose_name="Ramo o Tipo de Seguro (Ej: Vida, Auto, Hogar)")
+    descripcion_bien_asegurado = models.TextField(blank=True, null=True, verbose_name="Descripción del Bien Asegurado (Ej: Placa Vehículo, Dirección Inmueble)")
+
+    fecha_emision = models.DateField(default=timezone.now, verbose_name="Fecha de Emisión")
+    fecha_inicio_vigencia = models.DateField(verbose_name="Fecha Inicio de Vigencia")
+    fecha_fin_vigencia = models.DateField(verbose_name="Fecha Fin de Vigencia")
+
+    prima_total_anual = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Prima Total Anual/Valor Asegurado")
+    frecuencia_pago = models.CharField(max_length=15, choices=FRECUENCIA_PAGO_CHOICES, default='ANUAL', verbose_name="Frecuencia de Pago/Renovación")
+    valor_cuota = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, verbose_name="Valor Cuota (si aplica)")
+
+    comision_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, verbose_name="Porcentaje de Comisión (%)")
+    comision_cobrada = models.BooleanField(default=False, verbose_name="¿Comisión Cobrada?")
+    fecha_cobro_comision = models.DateField(null=True, blank=True, verbose_name="Fecha Cobro Comisión")
+
+    estado_poliza = models.CharField(max_length=20, choices=ESTADO_POLIZA_CHOICES, default='EN_TRAMITE', verbose_name="Estado de la Póliza")
+    notas_poliza = models.TextField(blank=True, null=True, verbose_name="Notas Adicionales de la Póliza")
+
+    # Campo para el archivo de la póliza (opcional)
+    archivo_poliza = models.FileField(upload_to='polizas_archivos/', blank=True, null=True, verbose_name="Archivo de la Póliza (PDF)")
+
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    @property
+    def monto_comision_calculado(self):
+        if self.prima_total_anual and self.comision_porcentaje:
+            return (self.prima_total_anual * self.comision_porcentaje) / Decimal(100)
+        return Decimal(0)
+
+    @property
+    def dias_para_renovar(self):
+        hoy = timezone.now().date()
+        if self.fecha_fin_vigencia:
+            delta = self.fecha_fin_vigencia - hoy
+            return delta.days
+        return None # O un número muy grande si prefieres
+
+    @property
+    def estado_renovacion(self):
+        dias = self.dias_para_renovar
+        if dias is None:
+            return "Indeterminado"
+        if dias < 0:
+            return "Vencida"
+        elif dias <= 30: # Consideramos "Próxima a vencer" 30 días antes
+            return "Próxima a vencer"
+        else:
+            return "Vigente"
+
+    @property
+    def proxima_fecha_renovacion_calculada(self):
+        # Esta es una lógica simple, asume que se renueva al día siguiente del fin de vigencia
+        # y la nueva vigencia sería por el mismo periodo de la frecuencia
+        if not self.fecha_fin_vigencia or not self.frecuencia_pago:
+            return None
+
+        # La fecha base para la próxima renovación es el día después del fin de vigencia actual
+        base_renovacion = self.fecha_fin_vigencia + relativedelta(days=1)
+
+        if self.frecuencia_pago == 'MENSUAL':
+            return base_renovacion + relativedelta(months=1) - relativedelta(days=1)
+        elif self.frecuencia_pago == 'TRIMESTRAL':
+            return base_renovacion + relativedelta(months=3) - relativedelta(days=1)
+        elif self.frecuencia_pago == 'CUATRIMESTRAL':
+            return base_renovacion + relativedelta(months=4) - relativedelta(days=1)
+        elif self.frecuencia_pago == 'SEMESTRAL':
+            return base_renovacion + relativedelta(months=6) - relativedelta(days=1)
+        elif self.frecuencia_pago == 'ANUAL' or self.frecuencia_pago == 'UNICO': # 'UNICO' podría tratarse como anual para renovación
+            return base_renovacion + relativedelta(years=1) - relativedelta(days=1)
+        return None # Si la frecuencia no coincide
+
+
+    def __str__(self):
+        return f"Póliza {self.numero_poliza} - {self.cliente.nombre_completo} ({self.ramo_tipo_seguro})"
+
+    def get_absolute_url(self):
+        return reverse('polizas:detalle_poliza', kwargs={'pk': self.pk})
+
+    class Meta:
+        verbose_name = "Póliza"
+        verbose_name_plural = "Pólizas"
+        ordering = ['-fecha_fin_vigencia', 'cliente']
+        unique_together = ('usuario', 'numero_poliza')

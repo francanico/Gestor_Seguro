@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ titulo_pagina|default:"Inicio" }} - Gestor Seguros{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="p-5 mb-4 bg-light rounded-3">
+        <div class="container-fluid py-5">
+            <h1 class="display-5 fw-bold">{{ titulo_pagina|default:"Gestión de Pólizas Simplificada" }}</h1>
+            <p class="col-md-8 fs-4">
+                Organiza y controla todas tus pólizas de seguros y clientes de manera eficiente.
+                Nunca más olvides una renovación o pierdas el rastro de tus comisiones.
+            </p>
+            {% if not user.is_authenticated %}
+            <a href="{% url 'cuentas:registro' %}" class="btn btn-primary btn-lg me-2" type="button">
+                <i class="fas fa-user-plus"></i> Regístrate Ahora
+            </a>
+            <a href="{% url 'login' %}" class="btn btn-success btn-lg" type="button">
+                <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+            </a>
+            {% else %}
+            <a href="{% url 'dashboard' %}" class="btn btn-info btn-lg" type="button">
+                <i class="fas fa-tachometer-alt"></i> Ir al Dashboard
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row align-items-md-stretch">
+        <div class="col-md-6">
+            <div class="h-100 p-5 bg-light border rounded-3">
+                <h2>Para Agentes y Agencias</h2>
+                <p>
+                    Nuestra plataforma te ofrece las herramientas necesarias para llevar un control detallado
+                    de cada cliente, sus pólizas, fechas de vencimiento, pagos y comisiones.
+                    Optimiza tu trabajo y mejora la relación con tus clientes.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="h-100 p-5 bg-light border rounded-3">
+                <h2>Características Principales</h2>
+                <ul>
+                    <li>Gestión integral de clientes y pólizas.</li>
+                    <li>Recordatorios automáticos de renovación.</li>
+                    <li>Seguimiento de comisiones.</li>
+                    <li>Interfaz intuitiva y fácil de usar.</li>
+                    <li>Seguridad y respaldo de tu información.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

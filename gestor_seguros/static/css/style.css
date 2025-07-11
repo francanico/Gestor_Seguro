@@ -1,0 +1,326 @@
+/* static/css/style.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary-color: #0d6efd; /* Azul Bootstrap por defecto, lo cambiaremos */
+    --accent-color: #005A9C; /* Nuestro azul oscuro sobrio */
+    --accent-color-hover: #004a80;
+    --bs-primary: var(--accent-color); /* Sobreescribir el primario de Bootstrap */
+    --bs-primary-rgb: 13, 110, 253; /* Valor por defecto, se ajustará si es necesario*/
+    --bs-link-color: var(--accent-color);
+    --bs-link-hover-color: var(--accent-color-hover);
+
+    --text-color: #343a40; /* Gris oscuro para texto */
+    --background-color: #f8f9fa; /* Gris muy claro para el fondo general */
+    --surface-color: #ffffff; /* Blanco para cards y superficies */
+    --border-color: #dee2e6; /* Gris claro para bordes */
+    --muted-text-color: #6c757d; /* Color para texto secundario o silenciado */
+
+    --font-family-sans-serif: 'Inter', sans-serif; /* Nueva fuente principal */
+}
+
+/* Aplicar la fuente a todo el cuerpo */
+body {
+    font-family: var(--font-family-sans-serif);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    font-size: 0.95rem; /* Ligeramente más pequeño para un look más denso si se prefiere */
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600; /* Un poco más de peso para los encabezados */
+    color: var(--text-color); /* Asegurar que los encabezados usen el color de texto principal */
+}
+
+a {
+    color: var(--accent-color);
+    text-decoration: none; /* Quitar subrayado por defecto */
+    transition: color 0.2s ease-in-out;
+}
+
+a:hover {
+    color: var(--accent-color-hover);
+    text-decoration: underline; /* Subrayado en hover para claridad */
+}
+
+/* --- Barra de Navegación --- */
+.navbar {
+    background-color: var(--surface-color) !important; /* Fondo blanco o color superficie */
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Sombra sutil */
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    color: var(--accent-color) !important; /* Color de acento para la marca */
+    font-size: 1.4rem;
+}
+.navbar-brand i {
+    margin-right: 0.5rem;
+}
+
+.navbar-nav .nav-link {
+    color: var(--text-color) !important; /* Texto oscuro para enlaces */
+    font-weight: 500;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.navbar-nav .nav-link.active,
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link:focus {
+    color: var(--accent-color) !important; /* Color de acento en hover/active */
+}
+
+.navbar-toggler {
+    border-color: rgba(0,0,0,0.1);
+}
+/* Puedes personalizar el ícono del toggler si quieres */
+
+/* --- Botones --- */
+.btn {
+    border-radius: 0.3rem; /* Bordes ligeramente más redondeados */
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-primary {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+.btn-primary:hover, .btn-primary:focus {
+    background-color: var(--accent-color-hover);
+    border-color: var(--accent-color-hover);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25); /* Sombra en foco */
+}
+
+.btn-secondary {
+    background-color: #6c757d; /* Gris estándar de Bootstrap */
+    border-color: #6c757d;
+    color: #fff;
+}
+.btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+}
+
+.btn-outline-primary {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+.btn-outline-primary:hover {
+    background-color: var(--accent-color);
+    color: #fff;
+}
+
+
+/* --- Cards --- */
+.card {
+    border: 1px solid var(--border-color); /* Borde más sutil */
+    border-radius: 0.5rem; /* Bordes más redondeados */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Sombra más pronunciada pero suave */
+    background-color: var(--surface-color);
+    margin-bottom: 1.5rem; /* Más espacio entre cards */
+}
+
+.card-header {
+    background-color: #f8f9fa; /* Fondo muy claro para headers de card */
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    padding: 0.9rem 1.25rem;
+}
+.card-header i {
+    margin-right: 0.6rem;
+    color: var(--muted-text-color);
+}
+
+.card-body {
+    padding: 1.5rem; /* Más padding interno */
+}
+
+/* --- Formularios --- */
+.form-control, .form-select {
+    border-radius: 0.3rem;
+    border: 1px solid #ced4da; /* Borde estándar de Bootstrap */
+    padding: 0.6rem 0.9rem; /* Un poco más de padding */
+    transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.input-group-text {
+    background-color: #e9ecef;
+    border: 1px solid #ced4da;
+}
+
+/* --- Tablas --- */
+.table {
+    margin-bottom: 1.5rem; /* Más espacio debajo de las tablas */
+    border-color: var(--border-color);
+}
+.table th {
+    font-weight: 600; /* Encabezados de tabla más notorios */
+    background-color: #f8f9fa; /* Fondo claro para encabezados de tabla */
+    border-bottom-width: 2px; /* Línea inferior más gruesa */
+    padding: 0.9rem 0.75rem;
+}
+.table td {
+    vertical-align: middle;
+    padding: 0.8rem 0.75rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f1f3f5; /* Hover sutil */
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0,0,0,0.025); /* Rayado más sutil */
+}
+
+/* Estilos para badges */
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.7em;
+    border-radius: 0.25rem;
+}
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important; /* Texto oscuro para mejor contraste */
+}
+.badge.bg-success {
+    background-color: #198754 !important;
+    color: white !important;
+}
+.badge.bg-info {
+    background-color: #0dcaf0 !important;
+    color: #212529 !important;
+}
+.badge.bg-secondary, .badge.bg-light.text-dark.border {
+    background-color: #e9ecef !important;
+    color: var(--text-color) !important;
+    border: 1px solid #ced4da !important;
+}
+
+
+/* --- Alertas de Mensajes --- */
+.alert {
+    border-left-width: 4px;
+    border-radius: 0.3rem;
+    padding: 1rem 1.25rem;
+}
+.alert-success {
+    border-left-color: #198754;
+}
+.alert-danger {
+    border-left-color: #dc3545;
+}
+.alert-warning {
+    border-left-color: #ffc107;
+}
+.alert-info {
+    border-left-color: #0dcaf0;
+}
+
+
+/* --- Footer --- */
+footer.bg-light { /* Sobreescribir el color de fondo si Bootstrap lo fuerza */
+    background-color: var(--surface-color) !important;
+    border-top: 1px solid var(--border-color);
+    color: var(--muted-text-color);
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+}
+footer a {
+    color: var(--muted-text-color);
+    font-weight: 500;
+}
+footer a:hover {
+    color: var(--accent-color);
+}
+
+/* --- Clases de utilidad --- */
+.main-content-area {
+    flex: 1 0 auto;
+    padding-bottom: 2rem; /* Espacio antes del footer */
+}
+
+/* Para la página de inicio pública */
+.p-5.mb-4.bg-light.rounded-3 { /* El jumbotron/hero */
+    background-color: var(--surface-color) !important; /* Usar surface color en lugar de bg-light */
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.h-100.p-5.text-white.bg-dark.rounded-3 {
+    background-color: #343a40 !important; /* Un gris oscuro en lugar de negro puro */
+}
+
+/* --- Ajustes específicos --- */
+/* Si usas widget_tweaks y necesitas mejorar los errores */
+.invalid-feedback.d-block {
+    font-size: 0.875em;
+    margin-top: .25rem;
+}
+.form-control.is-invalid, .form-select.is-invalid {
+    border-color: #dc3545;
+}
+textarea.is-invalid ~ .invalid-feedback {
+    display: block;
+}
+
+/* Paginación */
+.pagination .page-link {
+    color: var(--accent-color);
+    border-color: var(--border-color);
+}
+.pagination .page-link:hover {
+    background-color: #e9ecef;
+    border-color: var(--border-color);
+}
+.pagination .page-item.active .page-link {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: #fff;
+}
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    background-color: var(--surface-color);
+    border-color: var(--border-color);
+}
+
+/* Dropdown menu */
+.dropdown-menu {
+    border: 1px solid var(--border-color);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+    border-radius: 0.3rem;
+    font-size: 0.95rem;
+}
+.dropdown-item {
+    padding: .5rem 1rem;
+}
+.dropdown-item:hover, .dropdown-item:focus {
+    background-color: #f8f9fa;
+    color: var(--text-color);
+}
+.dropdown-item.active, .dropdown-item:active {
+    background-color: var(--accent-color);
+    color: #fff;
+}

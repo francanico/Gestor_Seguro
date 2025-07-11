@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Dashboard - Gestor de Pólizas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-tachometer-alt"></i> {{ titulo_pagina }}</h1>
+</div>
+
+<!-- Indicadores clave -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-primary text-white mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-3 fw-bold">{{ total_clientes }}</div>
+                        <div>Total Clientes</div>
+                    </div>
+                    <i class="fas fa-users fa-2x text-white-50"></i>
+                </div>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <a class="small text-white stretched-link" href="{% url 'clientes:lista_clientes' %}">Ver Detalles</a>
+                <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-success text-white mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-3 fw-bold">{{ total_polizas_vigentes }}</div>
+                        <div>Pólizas Vigentes</div>
+                    </div>
+                    <i class="fas fa-file-contract fa-2x text-white-50"></i>
+                </div>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <a class="small text-white stretched-link" href="{% url 'polizas:lista_polizas' %}">Ver Detalles</a>
+                <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-warning text-dark mb-4">
+             <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-3 fw-bold">{{ polizas_a_vencer_30.count }}</div>
+                        <div>Vencen en 30 días</div>
+                    </div>
+                    <i class="fas fa-exclamation-triangle fa-2x text-dark-50"></i>
+                </div>
+            </div>
+             <div class="card-footer d-flex align-items-center justify-content-between">
+                <a class="small text-dark stretched-link" href="#vencer30">Ver Detalles</a>
+                <div class="small text-dark"><i class="fas fa-angle-right"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-danger text-white mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-3 fw-bold">{{ polizas_vencidas.count }}</div>
+                        <div>Pólizas Vencidas</div>
+                    </div>
+                    <i class="fas fa-calendar-times fa-2x text-white-50"></i>
+                </div>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <a class="small text-white stretched-link" href="#vencidas">Ver Detalles</a>
+                <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Pólizas Próximas a Vencer (30 días) -->
+        <div class="card mb-4" id="vencer30">
+            <div class="card-header bg-warning text-dark">
+                <i class="fas fa-bell"></i> Pólizas por Vencer en los Próximos 30 Días ({{ polizas_a_vencer_30.count }})
+            </div>
+            <div class="card-body">
+                {% if polizas_a_vencer_30 %}
+                    {% include "polizas/_tabla_polizas_recordatorio.html" with polizas=polizas_a_vencer_30 %} {# Ya se pasa el contexto correcto #}
+                {% else %}
+                    <p class="text-muted">No hay pólizas venciendo en los próximos 30 días.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Pólizas Próximas a Vencer (31-60 días) -->
+        <div class="card mb-4" id="vencer60">
+            <div class="card-header bg-info text-dark">
+                <i class="fas fa-clock"></i> Pólizas por Vencer entre 31 y 60 Días ({{ polizas_a_vencer_60.count }})
+            </div>
+            <div class="card-body">
+                {% if polizas_a_vencer_60 %}
+                    {% include "polizas/_tabla_polizas_recordatorio.html" with polizas=polizas_a_vencer_60 %} {# Ya se pasa el contexto correcto #}
+                {% else %}
+                    <p class="text-muted">No hay pólizas venciendo entre 31 y 60 días.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Pólizas Vencidas -->
+        <div class="card mb-4" id="vencidas">
+            <div class="card-header bg-danger text-white">
+                <i class="fas fa-exclamation-circle"></i> Pólizas Vencidas Pendientes de Gestión ({{ polizas_vencidas.count }})
+            </div>
+            <div class="card-body">
+                {% if polizas_vencidas %}
+                    {% include "polizas/_tabla_polizas_recordatorio.html" with polizas=polizas_vencidas %} {# Ya se pasa el contexto correcto #}
+                {% else %}
+                    <p class="text-muted">No hay pólizas vencidas recientemente.</p>
+                {% endif %}
+            </div>
+        </div>
+
+
+<!-- Comisiones Pendientes de Cobro -->
+<div class="card mb-4" id="comisiones">
+    <div class="card-header bg-success text-white">
+        <i class="fas fa-hand-holding-usd"></i> Comisiones Pendientes de Cobro ({{ comisiones_pendientes.count }})
+    </div>
+    <div class="card-body">
+        {% if comisiones_pendientes %}
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th># Póliza</th>
+                        <th>Cliente</th>
+                        <th>Aseguradora</th>
+                        <th>Fin Vigencia</th>
+                        <th>Prima Anual</th>
+                        <th>% Comisión</th>
+                        <th>Monto Comisión</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for poliza in comisiones_pendientes %}
+                    <tr>
+                        <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
+                        <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
+                        <td>{{ poliza.aseguradora.nombre|default:"N/A" }}</td>
+                        <td>{{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</td>
+                        <td class="text-end">${{ poliza.prima_total_anual|floatformat:2|intcomma }}</td>
+                        <td class="text-center">{{ poliza.comision_porcentaje|floatformat:0 }}%</td>
+                        <td class="text-end fw-bold">${{ poliza.monto_comision_calculado|floatformat:2|intcomma }}</td>
+                        <td>
+                            <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-sm btn-outline-primary" title="Gestionar Póliza"><i class="fas fa-edit"></i> Gestionar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <p class="text-muted">No hay comisiones pendientes de cobro.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

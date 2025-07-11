@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ titulo_pagina }} - Gestor de Pólizas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="fas fa-landmark"></i> {{ titulo_pagina }}</h2>
+    <div>
+        <a href="{% url 'polizas:editar_aseguradora' aseguradora.pk %}" class="btn btn-warning"><i class="fas fa-edit"></i> Editar Aseguradora</a>
+        <a href="{% url 'polizas:lista_aseguradoras' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver a la Lista</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        Información de la Aseguradora
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Nombre:</strong> {{ aseguradora.nombre }}</p>
+                <p><strong>NIT:</strong> {{ aseguradora.nit|default:"N/A" }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Nombre de Contacto:</strong> {{ aseguradora.contacto_nombre|default:"N/A" }}</p>
+                <p><strong>Email de Contacto:</strong> {{ aseguradora.contacto_email|default:"N/A" }}</p>
+                <p><strong>Teléfono de Contacto:</strong> {{ aseguradora.contacto_telefono|default:"N/A" }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3><i class="fas fa-file-contract"></i> Pólizas Asociadas a {{ aseguradora.nombre }} ({{ polizas_asociadas.count }})</h3>
+</div>
+
+{% if polizas_asociadas %}
+<div class="table-responsive">
+    <table class="table table-sm table-hover">
+        <thead class="table-light">
+            <tr>
+                <th># Póliza</th>
+                <th>Cliente</th>
+                <th>Ramo</th>
+                <th>Inicio Vig.</th>
+                <th>Fin Vig.</th>
+                <th>Estado Renov.</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for poliza in polizas_asociadas %}
+            <tr>
+                <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
+                <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
+                <td>{{ poliza.ramo_tipo_seguro }}</td>
+                <td>{{ poliza.fecha_inicio_vigencia|date:"d/m/Y" }}</td>
+                <td class="{% if poliza.estado_renovacion == 'Vencida' %}text-danger fw-bold{% elif poliza.estado_renovacion == 'Próxima a vencer' %}text-warning fw-bold{% endif %}">
+                    {{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}
+                </td>
+                <td>
+                    <span class="badge
+                        {% if poliza.estado_renovacion == 'Vencida' %}bg-danger
+                        {% elif poliza.estado_renovacion == 'Próxima a vencer' %}bg-warning text-dark
+                        {% elif poliza.estado_renovacion == 'Vigente' %}bg-success
+                        {% else %}bg-secondary
+                        {% endif %}">
+                        {{ poliza.estado_renovacion }}
+                    </span>
+                    {% if poliza.dias_para_renovar is not None and poliza.dias_para_renovar >= 0 %}
+                        ({{ poliza.dias_para_renovar }} días)
+                    {% elif poliza.dias_para_renovar is not None and poliza.dias_para_renovar < 0 %}
+                        (Hace {{ poliza.dias_para_renovar|abs }} días)
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ poliza.get_absolute_url }}" class="btn btn-sm btn-outline-info" title="Ver Póliza"><i class="fas fa-eye"></i></a>
+                    <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-sm btn-outline-warning" title="Editar Póliza"><i class="fas fa-edit"></i></a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-secondary">Esta aseguradora no tiene pólizas registradas en el sistema.</div>
+{% endif %}
+
+{% endblock %}
