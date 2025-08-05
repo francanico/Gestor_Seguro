@@ -57,7 +57,6 @@ pyparsing==3.1.2
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
 pytz==2024.2
-pywin32==306
 pyzmq==26.0.3
 reactpy==1.0.2
 requests==2.31.0
@@ -77,4 +76,5 @@ tzdata==2024.1
 url-normalize==1.4.3
 urllib3==2.0.6
 wcwidth==0.2.13
+
 
