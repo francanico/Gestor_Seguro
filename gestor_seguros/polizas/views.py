@@ -34,6 +34,12 @@ class AseguradoraCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView)
         context['titulo_pagina'] = "Registrar Nueva Aseguradora"
         context['boton_submit'] = "Crear Aseguradora"
         return context
+    
+    def form_valid(self, form):
+        form.instance.usuario = self.request.user # Asigna el usuario
+        return super().form_valid(form)
+    
+
 
 class AseguradoraUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Aseguradora
@@ -242,4 +248,5 @@ def dashboard_view(request):
         'total_polizas_vigentes': total_polizas_vigentes,
         'titulo_pagina': "Dashboard de Pólizas",
     }
+
     return render(request, 'polizas/dashboard.html', context)
