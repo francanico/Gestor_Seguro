@@ -12,7 +12,7 @@ class PolizaAdmin(admin.ModelAdmin):
     list_display = (
         'numero_poliza', 'cliente', 'aseguradora', 'ramo_tipo_seguro',
         'fecha_inicio_vigencia', 'fecha_fin_vigencia', 'estado_renovacion',
-        'prima_total_anual', 'comision_porcentaje', 'comision_cobrada', 'estado_poliza'
+        'prima_total_anual', 'comision_monto', 'comision_cobrada', 'estado_poliza'
     )
     search_fields = (
         'numero_poliza', 'cliente__nombre_completo', 'cliente__numero_documento',
@@ -22,7 +22,7 @@ class PolizaAdmin(admin.ModelAdmin):
         'estado_poliza', 'frecuencia_pago', 'comision_cobrada',
         'aseguradora', 'fecha_fin_vigencia', 'fecha_inicio_vigencia'
     )
-    readonly_fields = ('fecha_creacion', 'fecha_actualizacion', 'monto_comision_calculado', 'dias_para_renovar', 'estado_renovacion')
+    readonly_fields = ('fecha_creacion', 'fecha_actualizacion', 'dias_para_renovar', 'estado_renovacion')
     autocomplete_fields = ['cliente', 'aseguradora'] # Para una mejor selección de FKs
 
     fieldsets = (
@@ -34,7 +34,7 @@ class PolizaAdmin(admin.ModelAdmin):
                     'prima_total_anual', 'frecuencia_pago', 'valor_cuota')
         }),
         ("Comisiones", {
-            'fields': ('comision_porcentaje', 'monto_comision_calculado', 'comision_cobrada', 'fecha_cobro_comision')
+            'fields': ('comision_monto', 'comision_cobrada', 'fecha_cobro_comision')
         }),
         ("Recordatorios y Estado", {
             'fields': ('dias_para_renovar', 'estado_renovacion'),
