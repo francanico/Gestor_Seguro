@@ -47,7 +47,7 @@
     </div>
     <div class="col-xl-3 col-md-6">
         <div class="card bg-warning text-dark mb-4">
-             <div class="card-body">
+            <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <div class="fs-3 fw-bold">{{ polizas_a_vencer_30.count }}</div>
@@ -56,7 +56,7 @@
                     <i class="fas fa-exclamation-triangle fa-2x text-dark-50"></i>
                 </div>
             </div>
-             <div class="card-footer d-flex align-items-center justify-content-between">
+            <div class="card-footer d-flex align-items-center justify-content-between">
                 <a class="small text-dark stretched-link" href="#vencer30">Ver Detalles</a>
                 <div class="small text-dark"><i class="fas fa-angle-right"></i></div>
             </div>
@@ -124,6 +124,28 @@
             </div>
         </div>
 
+<!-- NUEVA SECCIÓN DE CUMPLEAÑOS -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-dark">
+        <i class="fas fa-birthday-cake"></i> Cumpleaños de este Mes ({{ cumpleaneros_mes.count }})
+    </div>
+    <div class="card-body">
+        {% if cumpleaneros_mes %}
+            <ul class="list-group list-group-flush">
+                {% for cliente in cumpleaneros_mes %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{{ cliente.get_absolute_url }}">{{ cliente.nombre_completo }}</a>
+                        <span class="badge bg-primary rounded-pill">
+                            {{ cliente.fecha_nacimiento|date:"d \d\e F" }}
+                        </span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">No hay cumpleaños registrados para este mes.</p>
+        {% endif %}
+    </div>
+</div>
 
 <!-- Comisiones Pendientes de Cobro -->
 <div class="card mb-4" id="comisiones">
@@ -141,7 +163,6 @@
                         <th>Aseguradora</th>
                         <th>Fin Vigencia</th>
                         <th>Prima Anual</th>
-                        <th>% Comisión</th>
                         <th>Monto Comisión</th>
                         <th>Acciones</th>
                     </tr>
@@ -154,8 +175,7 @@
                         <td>{{ poliza.aseguradora.nombre|default:"N/A" }}</td>
                         <td>{{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</td>
                         <td class="text-end">${{ poliza.prima_total_anual|floatformat:2|intcomma }}</td>
-                        <td class="text-center">{{ poliza.comision_porcentaje|floatformat:0 }}%</td>
-                        <td class="text-end fw-bold">${{ poliza.monto_comision_calculado|floatformat:2|intcomma }}</td>
+                        <td class="text-end fw-bold">${{ poliza.comision_monto|floatformat:2|intcomma }}</td>
                         <td>
                             <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-sm btn-outline-primary" title="Gestionar Póliza"><i class="fas fa-edit"></i> Gestionar</a>
                         </td>
