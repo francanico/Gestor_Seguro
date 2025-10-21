@@ -76,12 +76,7 @@ class Poliza(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
-    @property
-    def monto_comision_calculado(self):
-        if self.prima_total_anual and self.comision_porcentaje:
-            return (self.prima_total_anual * self.comision_porcentaje) / Decimal(100)
-        return Decimal(0)
-
+ 
     @property
     def dias_para_renovar(self):
         hoy = timezone.now().date()
@@ -174,3 +169,4 @@ class Poliza(models.Model):
         verbose_name_plural = "Pólizas"
         ordering = ['-fecha_fin_vigencia', 'cliente']
         unique_together = ('usuario', 'numero_poliza')
+
