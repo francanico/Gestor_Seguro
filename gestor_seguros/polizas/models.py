@@ -6,6 +6,8 @@ from decimal import Decimal
 from dateutil.relativedelta import relativedelta
 from django.conf import settings 
 from clientes.models import Cliente 
+from dateutil.relativedelta import relativedelta 
+
 
 class Aseguradora(models.Model):
 
@@ -61,7 +63,7 @@ class Poliza(models.Model):
     frecuencia_pago = models.CharField(max_length=15, choices=FRECUENCIA_PAGO_CHOICES, default='ANUAL', verbose_name="Frecuencia de Pago/Renovación")
     valor_cuota = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, verbose_name="Valor Cuota (si aplica)")
 
-    comision_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, verbose_name="Porcentaje de Comisión (%)")
+    comision_monto = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name="Monto de Comisión")
     comision_cobrada = models.BooleanField(default=False, verbose_name="¿Comisión Cobrada?")
     fecha_cobro_comision = models.DateField(null=True, blank=True, verbose_name="Fecha Cobro Comisión")
 
@@ -121,6 +123,44 @@ class Poliza(models.Model):
         elif self.frecuencia_pago == 'ANUAL' or self.frecuencia_pago == 'UNICO': # 'UNICO' podría tratarse como anual para renovación
             return base_renovacion + relativedelta(years=1) - relativedelta(days=1)
         return None # Si la frecuencia no coincide
+
+    # --- NUEVA PROPIEDAD PARA LA PRÓXIMA FECHA DE COBRO ---
+    @property
+    def proxima_fecha_cobro(self):
+        if not self.fecha_inicio_vigencia or not self.frecuencia_pago:
+            return None
+
+        hoy = timezone.now().date()
+        
+        # Si la póliza aún no ha comenzado, el primer cobro es al inicio
+        if hoy < self.fecha_inicio_vigencia:
+            return self.fecha_inicio_vigencia
+
+        # Mapeo de frecuencia a relativedelta
+        periodos = {
+            'MENSUAL': relativedelta(months=1),
+            'TRIMESTRAL': relativedelta(months=3),
+            'CUATRIMESTRAL': relativedelta(months=4),
+            'SEMESTRAL': relativedelta(months=6),
+            'ANUAL': relativedelta(years=1),
+        }
+        
+        periodo = periodos.get(self.frecuencia_pago)
+        if not periodo:
+            # Para 'UNICO' o si no hay periodo, no hay próximo cobro después del inicio
+            return None if hoy >= self.fecha_inicio_vigencia else self.fecha_inicio_vigencia
+
+        fecha_tentativa = self.fecha_inicio_vigencia
+        
+        # Iteramos sumando el periodo hasta que la fecha sea mayor o igual a hoy
+        while fecha_tentativa < hoy:
+            fecha_tentativa += periodo
+            
+        # Si la fecha de cobro calculada supera el fin de la vigencia, no hay próximo cobro
+        if self.fecha_fin_vigencia and fecha_tentativa > self.fecha_fin_vigencia:
+            return None
+        
+        return fecha_tentativa
 
 
     def __str__(self):
