@@ -9,6 +9,7 @@
                 <th>Ramo</th>
                 <th>Fin Vigencia</th>
                 <th>Frec. Pago</th> <!-- NUEVA CABECERA -->
+                <th>Próx. Cobro</th>
                 <th>Días Restantes/Vencidos</th>
                 <th>Prima Anual</th>
                 <th>Acciones</th>
@@ -22,6 +23,13 @@
                 <td>{{ poliza.aseguradora.nombre|default:"N/A" }}</td>
                 <td>{{ poliza.ramo_tipo_seguro }}</td>
                 <td>{{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</td>
+                <td>
+                {% if poliza.proxima_fecha_cobro %}
+                {{ poliza.proxima_fecha_cobro|date:"d/m/y" }}
+                {% else %}
+                <span class="text-muted">N/A</span>
+                {% endif %}
+                </td>
                 <td>
                     <span class="badge bg-light text-dark border">{{ poliza.get_frecuencia_pago_display }}</span> <!-- NUEVA CELDA -->
                 </td>
