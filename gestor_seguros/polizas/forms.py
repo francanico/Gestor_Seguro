@@ -22,7 +22,7 @@ class PolizaForm(forms.ModelForm):
             'cliente', 'aseguradora', 'numero_poliza', 'ramo_tipo_seguro',
             'descripcion_bien_asegurado', 'fecha_emision', 'fecha_inicio_vigencia',
             'fecha_fin_vigencia', 'prima_total_anual', 'frecuencia_pago',
-            'valor_cuota', 'comision_porcentaje', 'comision_cobrada',
+            'valor_cuota', 'comision_monto', 'comision_cobrada',
             'fecha_cobro_comision', 'estado_poliza', 'notas_poliza', 'archivo_poliza'
         ]
         widgets = {
