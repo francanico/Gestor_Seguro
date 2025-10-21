@@ -11,6 +11,8 @@ from datetime import timedelta
 from .models import Poliza, Aseguradora
 from .forms import PolizaForm, AseguradoraForm
 from clientes.models import Cliente # Para el selector de clientes
+from django.db.models import F, ExpressionWrapper, DateField
+from django.db.models.functions import ExtractMonth, ExtractDay
 
 # Constantes para estados de póliza activos
 ESTADOS_POLIZA_ACTIVOS = ['VIGENTE', 'PENDIENTE_PAGO']
@@ -204,6 +206,14 @@ def dashboard_view(request):
     proximos_30_dias = hoy + timedelta(days=30)
     proximos_60_dias = hoy + timedelta(days=60)
     proximos_90_dias = hoy + timedelta(days=90)
+    mes_actual = hoy.month
+    dia_actual = hoy.day
+
+    # Clientes cuyo cumpleaños es en el mes actual
+    cumpleaneros_mes = Cliente.objects.filter(
+        usuario=request.user,
+        fecha_nacimiento__month=mes_actual
+    ).order_by('fecha_nacimiento__day', 'fecha_nacimiento__month')
 
     ESTADOS_POLIZA_ACTIVOS= ['VIGENTE', 'PENDIENTE_PAGO']
 
@@ -244,6 +254,7 @@ def dashboard_view(request):
         'polizas_a_vencer_30': polizas_a_vencer_30,
         'polizas_a_vencer_60': polizas_a_vencer_60,
         'comisiones_pendientes': comisiones_pendientes,
+        'cumpleaneros_mes': cumpleaneros_mes,
         'total_clientes': total_clientes,
         'total_polizas_vigentes': total_polizas_vigentes,
         'titulo_pagina': "Dashboard de Pólizas",
