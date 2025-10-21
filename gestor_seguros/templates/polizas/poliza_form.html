@@ -77,7 +77,7 @@
         </div>
         <div class="col-md-4 mb-3">
             {{ form.valor_cuota.label_tag }} {% if form.valor_cuota.field.required %}<span class="text-danger">*</span>{% endif %}
-             <div class="input-group">
+            <div class="input-group">
                 <span class="input-group-text">$</span>
                 {% render_field form.valor_cuota %}
             </div>
@@ -88,14 +88,14 @@
     <h5 class="mt-4">Comisiones</h5>
     <hr class="mt-1 mb-3">
     <div class="row">
-        <div class="col-md-4 mb-3">
-            {{ form.comision_porcentaje.label_tag }} {% if form.comision_porcentaje.field.required %}<span class="text-danger">*</span>{% endif %}
-             <div class="input-group">
-                {% render_field form.comision_porcentaje %}
-                <span class="input-group-text">%</span>
-            </div>
-            {% for error in form.comision_porcentaje.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    <div class="col-md-4 mb-3">
+        {{ form.comision_monto.label_tag }}
+        <div class="input-group">
+            <span class="input-group-text">$</span> 
+            {% render_field form.comision_monto %} 
         </div>
+        {% for error in form.comision_monto.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+    </div>
         <div class="col-md-4 mb-3">
             {{ form.fecha_cobro_comision.label_tag }} {% if form.fecha_cobro_comision.field.required %}<span class="text-danger">*</span>{% endif %}
             {% render_field form.fecha_cobro_comision %}
@@ -107,14 +107,14 @@
                 <label class="form-check-label" for="{{ form.comision_cobrada.id_for_label }}">
                     {{ form.comision_cobrada.label }}
                 </label>
-                 {% for error in form.comision_cobrada.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                {% for error in form.comision_cobrada.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
             </div>
         </div>
     </div>
 
     <h5 class="mt-4">Otros Detalles</h5>
     <hr class="mt-1 mb-3">
-     <div class="row">
+    <div class="row">
         <div class="col-md-6 mb-3">
             {{ form.estado_poliza.label_tag }} {% if form.estado_poliza.field.required %}<span class="text-danger">*</span>{% endif %}
             {% render_field form.estado_poliza class+="form-select" %}
