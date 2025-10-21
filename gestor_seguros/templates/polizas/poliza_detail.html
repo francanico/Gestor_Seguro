@@ -64,18 +64,20 @@
                 <p><strong>Prima Total Anual:</strong> ${{ poliza.prima_total_anual|floatformat:2|intcomma }}</p>
                 <p><strong>Frecuencia de Pago:</strong> {{ poliza.get_frecuencia_pago_display }}</p>
                 <p><strong>Valor Cuota (si aplica):</strong> ${{ poliza.valor_cuota|floatformat:2|intcomma|default:"N/A" }}</p>
+                {% if poliza.proxima_fecha_cobro %}
+                <p><strong>Próximo Cobro Estimado:</strong> <strong class="text-info">{{ poliza.proxima_fecha_cobro|date:"d/m/Y" }}</strong></p>
+                {% endif %}
             </div>
             <div class="col-md-6">
-                <p><strong>Porcentaje Comisión:</strong> {{ poliza.comision_porcentaje|floatformat:2 }}%</p>
-                <p><strong>Monto Comisión Calculado:</strong> ${{ poliza.monto_comision_calculado|floatformat:2|intcomma }}</p>
+                <p><strong>Monto Comisión:</strong> ${{ poliza.comision_monto|floatformat:2|intcomma }}</p>
                 <p><strong>Comisión Cobrada:</strong>
-                    {% if poliza.comision_cobrada %}
-                        <span class="text-success"><i class="fas fa-check-circle"></i> Sí</span> ({{ poliza.fecha_cobro_comision|date:"d/m/Y"|default:"Fecha no especificada" }})
-                    {% else %}
-                        <span class="text-danger"><i class="fas fa-times-circle"></i> No</span>
-                    {% endif %}
-                </p>
-            </div>
+            {% if poliza.comision_cobrada %}
+                <span class="text-success"><i class="fas fa-check-circle"></i> Sí</span> ({{ poliza.fecha_cobro_comision|date:"d/m/Y"|default:"Fecha no especificada" }})
+            {% else %}
+            <span class="text-danger"><i class="fas fa-times-circle"></i> No</span>
+        {% endif %}
+    </p>
+</div>
         </div>
     </div>
 </div>
