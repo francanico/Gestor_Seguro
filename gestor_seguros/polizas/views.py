@@ -239,15 +239,15 @@ def dashboard_view(request):
 
     # Puedes añadir más rangos si es necesario
 
-    # Pólizas pendientes de cobro de comisión
-    comisiones_pendientes = Poliza.objects.filter(
-        usuario=request.user,
-        comision_cobrada=False,
-        prima_total_anual__gt=0 # Solo las que tienen prima
-    ).exclude(comision_porcentaje=0).select_related('cliente', 'aseguradora').order_by('fecha_fin_vigencia')
+   # Pólizas pendientes de cobro de comisión
+comisiones_pendientes = Poliza.objects.filter(
+    usuario=request.user,
+    comision_cobrada=False,
+    comision_monto__gt=0  # <-- CAMBIO CLAVE: Busca donde el monto sea mayor a 0
+).select_related('cliente', 'aseguradora').order_by('fecha_fin_vigencia')
 
-    total_clientes = Cliente.objects.count()
-    total_polizas_vigentes = Poliza.objects.filter(estado_poliza='VIGENTE').count()
+    total_clientes = Cliente.objects.filter(usuario=request.user).count()
+    total_polizas_vigentes = Poliza.objects.filter(usuario=request.user, estado_poliza='VIGENTE').count()
 
     context = {
         'polizas_vencidas': polizas_vencidas,
@@ -261,3 +261,4 @@ def dashboard_view(request):
     }
 
     return render(request, 'polizas/dashboard.html', context)
+
