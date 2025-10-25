@@ -23,7 +23,7 @@
                 <th>Fin Vigencia</th>
                 <th>Estado Renov.</th>
                 <th>Prima Anual</th>
-                <th>Comisión (%)</th>
+                <th>Monto Comisión</th>
                 <th>Com. Cobrada</th>
                 <th>Acciones</th>
             </tr>
@@ -52,7 +52,7 @@
                     {% endif %}
                 </td>
                 <td class="text-end">{{ poliza.prima_total_anual|floatformat:2|intcomma }}</td>
-                <td class="text-center">{{ poliza.comision_porcentaje|floatformat:2 }}%</td>
+                <td class="text-end">${{ poliza.comision_monto|floatformat:2|intcomma }}</td>
                 <td class="text-center">
                     {% if poliza.comision_cobrada %}
                         <i class="fas fa-check-circle text-success" title="Sí, cobrada el {{ poliza.fecha_cobro_comision|date:'d/m/Y' }}"></i>
@@ -76,4 +76,5 @@
 {% else %}
 <div class="alert alert-info">No hay pólizas registradas. <a href="{% url 'polizas:crear_poliza' %}">Añade una nueva</a>.</div>
 {% endif %}
+
 {% endblock %}
