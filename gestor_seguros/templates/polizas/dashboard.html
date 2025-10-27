@@ -146,7 +146,7 @@
                     </thead>
                     <tbody>
                         {% for poliza in cobros_pendientes_30_dias %}
-                        <tr class="{% if poliza.proxima_fecha_cobro == today %}table-warning{% endif %}">
+                       <tr class="{% if poliza.proxima_fecha_cobro == hoy %}table-warning{% endif %}">
                             <td class="fw-bold">
                                 {{ poliza.proxima_fecha_cobro|date:"d/m/Y" }}
                             </td>
@@ -235,4 +235,5 @@
 </div>
 
 {% endblock %}
+
 
