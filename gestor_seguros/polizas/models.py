@@ -120,13 +120,13 @@ class Poliza(models.Model):
         return None # Si la frecuencia no coincide
 
     # --- NUEVA PROPIEDAD PARA LA PRÓXIMA FECHA DE COBRO ---
-    @property
+   @property
     def proxima_fecha_cobro(self):
-        if not self.fecha_inicio_vigencia or not self.frecuencia_pago:
+        if not self.fecha_inicio_vigencia or not self.frecuencia_pago or self.frecuencia_pago == 'UNICO':
             return None
 
         hoy = timezone.now().date()
-        
+
         # Si la póliza aún no ha comenzado, el primer cobro es al inicio
         if hoy < self.fecha_inicio_vigencia:
             return self.fecha_inicio_vigencia
@@ -142,20 +142,21 @@ class Poliza(models.Model):
         
         periodo = periodos.get(self.frecuencia_pago)
         if not periodo:
-            # Para 'UNICO' o si no hay periodo, no hay próximo cobro después del inicio
-            return None if hoy >= self.fecha_inicio_vigencia else self.fecha_inicio_vigencia
-
-        fecha_tentativa = self.fecha_inicio_vigencia
-        
-        # Iteramos sumando el periodo hasta que la fecha sea mayor o igual a hoy
-        while fecha_tentativa < hoy:
-            fecha_tentativa += periodo
-            
-        # Si la fecha de cobro calculada supera el fin de la vigencia, no hay próximo cobro
-        if self.fecha_fin_vigencia and fecha_tentativa > self.fecha_fin_vigencia:
             return None
+
+        # --- Lógica de cálculo robusta ---
+        fecha_actual = self.fecha_inicio_vigencia
         
-        return fecha_tentativa
+        # Avanzamos la fecha de cobro periodo por periodo hasta que sea mayor o igual a la fecha de hoy
+        while fecha_actual < hoy:
+            fecha_actual += periodo
+
+        # La fecha encontrada es el próximo cobro.
+        # Verificamos que no se pase del final de la vigencia de la póliza.
+        if self.fecha_fin_vigencia and fecha_actual > self.fecha_fin_vigencia:
+            return None # Ya no hay más cobros dentro de la vigencia
+        
+        return fecha_actual
 
 
     def __str__(self):
@@ -169,4 +170,5 @@ class Poliza(models.Model):
         verbose_name_plural = "Pólizas"
         ordering = ['-fecha_fin_vigencia', 'cliente']
         unique_together = ('usuario', 'numero_poliza')
+
 
