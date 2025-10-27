@@ -248,6 +248,24 @@ def dashboard_view(request):
 
     total_clientes = Cliente.objects.filter(usuario=request.user).count()
     total_polizas_vigentes = Poliza.objects.filter(usuario=request.user, estado_poliza='VIGENTE').count()
+
+     # 1. Obtenemos todas las pólizas activas que no sean de pago único.
+    polizas_con_cobros_periodicos = Poliza.objects.filter(
+        usuario=request.user,
+        estado_poliza__in=['VIGENTE', 'PENDIENTE_PAGO'],
+        fecha_fin_vigencia__gte=hoy # Solo pólizas vigentes
+    ).exclude(frecuencia_pago='UNICO').select_related('cliente', 'aseguradora')
+
+    # 2. Filtramos en Python para encontrar las que tienen un cobro en los próximos 30 días.
+    proximos_30_dias_cobro = hoy + timedelta(days=30)
+    cobros_pendientes_30_dias = []
+    for poliza in polizas_con_cobros_periodicos:
+        if poliza.proxima_fecha_cobro and hoy <= poliza.proxima_fecha_cobro <= proximos_30_dias_cobro:
+            cobros_pendientes_30_dias.append(poliza)
+    
+    # 3. Ordenamos la lista por la fecha de próximo cobro.
+    cobros_pendientes_30_dias.sort(key=lambda p: p.proxima_fecha_cobro)
+   
     
     context = {
         'polizas_vencidas': polizas_vencidas,
@@ -258,8 +276,10 @@ def dashboard_view(request):
         'total_clientes': total_clientes,
         'total_polizas_vigentes': total_polizas_vigentes,
         'titulo_pagina': "Dashboard de Pólizas",
+        'cobros_pendientes_30_dias': cobros_pendientes_30_dias,
     }
 
     return render(request, 'polizas/dashboard.html', context)
+
 
 
