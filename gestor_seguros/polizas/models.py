@@ -120,7 +120,7 @@ class Poliza(models.Model):
         return None # Si la frecuencia no coincide
 
     # --- NUEVA PROPIEDAD PARA LA PRÓXIMA FECHA DE COBRO ---
-   @property
+    @property
     def proxima_fecha_cobro(self):
         if not self.fecha_inicio_vigencia or not self.frecuencia_pago or self.frecuencia_pago == 'UNICO':
             return None
@@ -170,5 +170,6 @@ class Poliza(models.Model):
         verbose_name_plural = "Pólizas"
         ordering = ['-fecha_fin_vigencia', 'cliente']
         unique_together = ('usuario', 'numero_poliza')
+
 
 
