@@ -268,6 +268,7 @@ def dashboard_view(request):
    
     
     context = {
+        'hoy': hoy,
         'polizas_vencidas': polizas_vencidas,
         'polizas_a_vencer_30': polizas_a_vencer_30,
         'polizas_a_vencer_60': polizas_a_vencer_60,
@@ -280,6 +281,7 @@ def dashboard_view(request):
     }
 
     return render(request, 'polizas/dashboard.html', context)
+
 
 
 
