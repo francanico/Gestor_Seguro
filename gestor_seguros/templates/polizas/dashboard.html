@@ -124,7 +124,51 @@
             </div>
         </div>
 
-<!-- NUEVA SECCIÓN DE CUMPLEAÑOS -->
+<!--  SECCIÓN PARA PRÓXIMOS COBROS -->
+<!-- ======================================================= -->
+<div class="card mb-4" id="proximos-cobros">
+    <div class="card-header bg-primary text-white">
+        <i class="fas fa-dollar-sign"></i> Próximos Cobros de Cuotas (en 30 días) ({{ cobros_pendientes_30_dias|length }})
+    </div>
+    <div class="card-body">
+        {% if cobros_pendientes_30_dias %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Próx. Cobro</th>
+                            <th># Póliza</th>
+                            <th>Cliente</th>
+                            <th>Frec. Pago</th>
+                            <th>Valor Cuota</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for poliza in cobros_pendientes_30_dias %}
+                        <tr class="{% if poliza.proxima_fecha_cobro == today %}table-warning{% endif %}">
+                            <td class="fw-bold">
+                                {{ poliza.proxima_fecha_cobro|date:"d/m/Y" }}
+                            </td>
+                            <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
+                            <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
+                            <td><span class="badge bg-light text-dark border">{{ poliza.get_frecuencia_pago_display }}</span></td>
+                            <td class="text-end">${{ poliza.valor_cuota|floatformat:2|intcomma|default:"N/A" }}</td>
+                            <td>
+                                <a href="{{ poliza.get_absolute_url }}" class="btn btn-sm btn-outline-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No hay cobros de cuotas programados para los próximos 30 días.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!--  SECCIÓN DE CUMPLEAÑOS -->
 <div class="card mb-4">
     <div class="card-header bg-info text-dark">
         <i class="fas fa-birthday-cake"></i> Cumpleaños de este Mes ({{ cumpleaneros_mes.count }})
@@ -191,3 +235,4 @@
 </div>
 
 {% endblock %}
+
