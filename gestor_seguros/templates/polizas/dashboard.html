@@ -136,7 +136,7 @@
                 <table class="table table-sm table-hover">
                     <thead>
                         <tr>
-                            <th>Próx. Cobro</th>
+                            <th>Próx. Cobro (Días)</th>
                             <th># Póliza</th>
                             <th>Cliente</th>
                             <th>Frec. Pago</th>
@@ -146,14 +146,30 @@
                     </thead>
                     <tbody>
                         {% for poliza in cobros_pendientes_30_dias %}
-                       <tr class="{% if poliza.proxima_fecha_cobro == hoy %}table-warning{% endif %}">
+                        <tr class="{% if poliza.proxima_fecha_cobro == hoy %}table-warning{% endif %}">
                             <td class="fw-bold">
                                 {{ poliza.proxima_fecha_cobro|date:"d/m/Y" }}
                             </td>
                             <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
                             <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
                             <td><span class="badge bg-light text-dark border">{{ poliza.get_frecuencia_pago_display }}</span></td>
-                            <td class="text-end">${{ poliza.valor_cuota|floatformat:2|intcomma|default:"N/A" }}</td>
+                            <td class="fw-bold">
+                                {{ poliza.proxima_fecha_cobro|date:"d/m/Y" }}
+                                {% with dias=poliza.dias_para_proximo_cobro %}
+                                    {% if dias == 0 %}
+                                        <span class="badge bg-warning text-dark ms-1">Hoy</span>
+                                    {% elif dias > 0 %}
+                                        <span class="badge bg-info text-dark ms-1">{{ dias }} día{{ dias|pluralize }}</span>
+                                    {% endif %}
+                                {% endwith %}
+                                </td>
+                            <td class="text-end">
+                            {% if poliza.frecuencia_pago != 'ANUAL' and poliza.valor_cuota %}
+                                ${{ poliza.valor_cuota|floatformat:2|intcomma }}
+                            {% else %}
+                                ${{ poliza.prima_total_anual|floatformat:2|intcomma }}
+                            {% endif %}
+                            </td>
                             <td>
                                 <a href="{{ poliza.get_absolute_url }}" class="btn btn-sm btn-outline-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
                             </td>

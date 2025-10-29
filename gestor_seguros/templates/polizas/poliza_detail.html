@@ -23,6 +23,9 @@
         </span>
     </h2>
     <div>
+        {% if poliza.estado_poliza not in "RENOVADA,CANCELADA" %}
+        <a href="{% url 'polizas:renovar_poliza' poliza.pk %}" class="btn btn-success"><i class="fas fa-sync-alt"></i> Renovar Póliza</a>
+        {% endif %}
         <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-warning"><i class="fas fa-edit"></i> Editar Póliza</a>
         <a href="{% url 'polizas:lista_polizas' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver a la Lista</a>
     </div>

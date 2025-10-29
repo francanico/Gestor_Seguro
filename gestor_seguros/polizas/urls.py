@@ -10,6 +10,7 @@ urlpatterns = [
     path('nueva/', views.PolizaCreateView.as_view(), name='crear_poliza'),
     path('<int:pk>/editar/', views.PolizaUpdateView.as_view(), name='editar_poliza'),
     path('<int:pk>/eliminar/', views.PolizaDeleteView.as_view(), name='eliminar_poliza'),
+    path('<int:pk>/renovar/', views.renovar_poliza, name='renovar_poliza'),
 
     # URLs para Aseguradoras
     path('aseguradoras/', views.AseguradoraListView.as_view(), name='lista_aseguradoras'),

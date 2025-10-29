@@ -47,6 +47,8 @@ class Poliza(models.Model):
         ('VENCIDA', 'Vencida'),
         ('CANCELADA', 'Cancelada'),
         ('EN_TRAMITE', 'En Trámite'),
+        ('PAGADA', 'Pagada'),
+        ('RENOVADA', 'Renovada'),
     ]
 
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name="polizas", verbose_name="Cliente")
@@ -76,7 +78,13 @@ class Poliza(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
- 
+    # --- NUEVO CAMPO PARA PAGOS ADELANTADOS ---
+    ultimo_pago_cubierto_hasta = models.DateField(
+        null=True, blank=True,
+        verbose_name="Último pago cubre hasta",
+        help_text="Indica la fecha final del período cubierto por el último pago realizado.")
+
+
     @property
     def dias_para_renovar(self):
         hoy = timezone.now().date()
@@ -119,7 +127,7 @@ class Poliza(models.Model):
             return base_renovacion + relativedelta(years=1) - relativedelta(days=1)
         return None # Si la frecuencia no coincide
 
-    # --- NUEVA PROPIEDAD PARA LA PRÓXIMA FECHA DE COBRO ---
+    # --- PROPIEDAD PARA LA PRÓXIMA FECHA DE COBRO ---
     @property
     def proxima_fecha_cobro(self):
         if not self.fecha_inicio_vigencia or not self.frecuencia_pago or self.frecuencia_pago == 'UNICO':
@@ -158,6 +166,17 @@ class Poliza(models.Model):
         
         return fecha_actual
 
+    @property
+    def dias_para_proximo_cobro(self):
+        if self.proxima_fecha_cobro:
+            hoy = timezone.now().date()
+                # Si hay una fecha de pago adelantado, comparamos contra esa
+            if self.ultimo_pago_cubierto_hasta and self.proxima_fecha_cobro <= self.ultimo_pago_cubierto_hasta:
+                return None # Ya está cubierto, no hay "días para pagar"
+                
+            delta = self.proxima_fecha_cobro - hoy
+            return delta.days
+        return None
 
     def __str__(self):
         return f"Póliza {self.numero_poliza} - {self.cliente.nombre_completo} ({self.ramo_tipo_seguro})"
@@ -170,6 +189,3 @@ class Poliza(models.Model):
         verbose_name_plural = "Pólizas"
         ordering = ['-fecha_fin_vigencia', 'cliente']
         unique_together = ('usuario', 'numero_poliza')
-
-
-

@@ -23,7 +23,8 @@ class PolizaForm(forms.ModelForm):
             'descripcion_bien_asegurado', 'fecha_emision', 'fecha_inicio_vigencia',
             'fecha_fin_vigencia', 'prima_total_anual', 'frecuencia_pago',
             'valor_cuota', 'comision_monto', 'comision_cobrada',
-            'fecha_cobro_comision', 'estado_poliza', 'notas_poliza', 'archivo_poliza'
+            'fecha_cobro_comision', 'estado_poliza', 'notas_poliza','ultimo_pago_cubierto_hasta',
+            'archivo_poliza'
         ]
         widgets = {
             'fecha_emision': forms.DateInput(attrs={'type': 'date'}),
@@ -31,6 +32,7 @@ class PolizaForm(forms.ModelForm):
             'fecha_fin_vigencia': forms.DateInput(attrs={'type': 'date'}),
             'fecha_cobro_comision': forms.DateInput(attrs={'type': 'date'}),
             'notas_poliza': forms.Textarea(attrs={'rows': 3}),
+            'ultimo_pago_cubierto_hasta': forms.DateInput(attrs={'type': 'date'}),
             'descripcion_bien_asegurado': forms.Textarea(attrs={'rows': 2}),
         }
 
