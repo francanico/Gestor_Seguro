@@ -69,26 +69,26 @@
         </div>
         <div class="card">
             <div class="card-header"><i class="fas fa-dollar-sign"></i> Próximos Cobros de Cuotas (en 30 días)</div>
-            <div class="card-body p-0">{% include "_proximos_cobros_tabla.html" with cobros_pendientes_30_dias=cobros_pendientes_30_dias %}</div>
+            <div class="card-body p-0">{% include "polizas/_proximos_cobros_tabla.html" with cobros_pendientes_30_dias=cobros_pendientes_30_dias %}</div>
         </div>
     </div>
     <div class="col-lg-4">
         <div class="card">
             <div class="card-header"><i class="fas fa-birthday-cake"></i> Cumpleaños del Mes</div>
-            <div class="card-body">{% include "_cumpleanos_lista.html" %}</div>
+            <div class="card-body">{% include "polizas/_cumpleanos_lista.html" %}</div>
         </div>
         <div class="card">
             <div class="card-header"><i class="fas fa-hand-holding-usd"></i> Comisiones Pendientes</div>
-            <div class="card-body">{% include "_comisiones_pendientes_lista.html" %}</div>
+            <div class="card-body">{% include "polizas/_comisiones_pendientes_lista.html" %}</div>
         </div>
     </div>
 </div>
 
 <!-- Almacenar datos para notificaciones JS -->
 <div id="notification-data" 
-     data-cumpleaneros-hoy="{{ cumpleaneros_hoy_json }}"
-     data-polizas-vencen-semana="{{ polizas_vencen_semana_json }}"
-     style="display: none;">
+    data-cumpleaneros-hoy="{{ cumpleaneros_hoy_json }}"
+    data-polizas-vencen-semana="{{ polizas_vencen_semana_json }}"
+    style="display: none;">
 </div>
 {% endblock %}
 
