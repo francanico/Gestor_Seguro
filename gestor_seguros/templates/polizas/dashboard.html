@@ -60,6 +60,7 @@
     </div>
 </div>
 
+
 <!-- Contenido Principal del Dashboard -->
 <div class="row">
     <div class="col-lg-8">
@@ -72,6 +73,35 @@
             <div class="card-body p-0">{% include "polizas/_proximos_cobros_tabla.html" with cobros_pendientes_30_dias=cobros_pendientes_30_dias %}</div>
         </div>
     </div>
+
+    <div class="row">
+    <div class="col-lg-8">
+        <!-- NUEVA SECCIÓN DE COBROS VENCIDOS -->
+        {% if cobros_vencidos %}
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white"><i class="fas fa-exclamation-triangle"></i> ¡Atención! Cobros de Cuotas Vencidos ({{ cobros_vencidos|length }})</div>
+            <div class="card-body p-0">
+                {% include "polizas/_proximos_cobros_tabla.html" with cobros_pendientes_30_dias=cobros_vencidos %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Pólizas por Vencer -->
+        <div class="card" id="vencimientos">
+            <div class="card-header"><i class="fas fa-bell"></i> Pólizas por Vencer en los Próximos 30 Días</div>
+            <div class="card-body p-0">{% include "polizas/_tabla_polizas_recordatorio.html" with polizas=polizas_a_vencer_30 %}</div>
+        </div>
+        
+        <!-- Próximos Cobros -->
+        <div class="card">
+            <div class="card-header"><i class="fas fa-dollar-sign"></i> Próximos Cobros de Cuotas (en 30 días)</div>
+            <div class="card-body p-0">{% include "polizas/_proximos_cobros_tabla.html" with cobros_pendientes_30_dias=cobros_pendientes_30_dias %}</div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+    </div>
+</div>
+
     <div class="col-lg-4">
         <div class="card">
             <div class="card-header"><i class="fas fa-birthday-cake"></i> Cumpleaños del Mes</div>

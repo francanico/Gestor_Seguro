@@ -8,6 +8,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from datetime import timedelta
 from .models import Poliza, Aseguradora,PagoCuota,Siniestro 
@@ -241,48 +242,38 @@ class PolizaDeleteView(LoginRequiredMixin, DeleteView):
 
 @login_required
 def renovar_poliza(request, pk):
-    # Obtenemos la póliza original, asegurándonos de que pertenece al usuario
     poliza_original = get_object_or_404(Poliza, pk=pk, usuario=request.user)
-
-    # Creamos una copia de la póliza en memoria (aún no en la BD)
-    poliza_nueva = copy.copy(poliza_original)
-    poliza_nueva.pk = None  # Quitamos el ID para que se cree un nuevo registro
-    poliza_nueva.id = None
-
-    # --- Calculamos las nuevas fechas ---
-    # La nueva póliza empieza el día después de que termina la original
-    if poliza_original.fecha_fin_vigencia:
-        nueva_fecha_inicio = poliza_original.fecha_fin_vigencia + timedelta(days=1)
-        
-        # Calculamos la duración de la póliza original
-        duracion = poliza_original.fecha_fin_vigencia - poliza_original.fecha_inicio_vigencia
-        
-        # La nueva fecha de fin es la nueva de inicio más la duración
-        nueva_fecha_fin = nueva_fecha_inicio + duracion
-        
-        poliza_nueva.fecha_inicio_vigencia = nueva_fecha_inicio
-        poliza_nueva.fecha_fin_vigencia = nueva_fecha_fin
     
-    # Reiniciamos estados y fechas de la nueva póliza
-    poliza_nueva.estado_poliza = 'EN_TRAMITE'
+    # --- LÓGICA DE RENOVACIÓN CORREGIDA ---
+    # La nueva póliza es una copia de la original
+    poliza_nueva = poliza_original
+    poliza_nueva.pk = None
+    poliza_nueva.id = None
+    
+    # Sumamos exactamente un año a las fechas de vigencia
+    if poliza_original.fecha_inicio_vigencia and poliza_original.fecha_fin_vigencia:
+        poliza_nueva.fecha_inicio_vigencia = poliza_original.fecha_inicio_vigencia + relativedelta(years=1)
+        poliza_nueva.fecha_fin_vigencia = poliza_original.fecha_fin_vigencia + relativedelta(years=1)
+
+    # Reiniciamos los estados para la nueva póliza
+    poliza_nueva.estado_poliza = 'EN_TRAMITE' # Inicia como "En Trámite"
     poliza_nueva.comision_cobrada = False
     poliza_nueva.fecha_cobro_comision = None
-    poliza_nueva.ultimo_pago_cubierto_hasta = None
     poliza_nueva.fecha_emision = timezone.now().date()
-    # Generamos un número de póliza sugerido para la renovación
-    poliza_nueva.numero_poliza = f"{poliza_original.numero_poliza}-REN"
+    poliza_nueva.numero_poliza = f"{poliza_original.numero_poliza}-R" # Sugerir un nuevo número
 
-    # Guardamos la nueva póliza para poder editarla
-    poliza_nueva.save()
+    poliza_nueva.save() # Guardamos la nueva póliza
 
-    # Marcamos la póliza original como "RENOVADA"
+    # Marcamos la póliza original como RENOVADA
     poliza_original.estado_poliza = 'RENOVADA'
     poliza_original.save()
 
-    messages.info(request, f"Póliza {poliza_original.numero_poliza} marcada como renovada. "
-                        f"Estás editando la nueva póliza de renovación.")
+    # Eliminamos los pagos antiguos de la nueva póliza copiada (si los hubiera)
+    poliza_nueva.pagos_cuotas.all().delete()
+
+    messages.info(request, f"Póliza {poliza_original.numero_poliza} marcada como renovada. Revisa los detalles de la nueva póliza de renovación.")
     
-    # Redirigimos al formulario de EDICIÓN de la NUEVA póliza
+    # Redirigimos al formulario de EDICIÓN de la NUEVA póliza para confirmar datos
     return redirect('polizas:editar_poliza', pk=poliza_nueva.pk)
 
 # --- Dashboard y Recordatorios ---
@@ -295,10 +286,34 @@ def dashboard_view(request):
     base_polizas_query = Poliza.objects.filter(usuario=request.user, estado_poliza__in=estados_activos_dashboard).select_related('cliente', 'aseguradora')
     polizas_activas = base_polizas_query.filter(fecha_fin_vigencia__gte=hoy)
 
-    # Cálculos para el Dashboard
-    polizas_vencidas = base_polizas_query.filter(fecha_fin_vigencia__lt=hoy).order_by('fecha_fin_vigencia')
-    polizas_a_vencer_30 = polizas_activas.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=30))).order_by('fecha_fin_vigencia')
+    # --- CÁLCULOS PARA EL DASHBOARD ---
+
+    # Pólizas VENCIDAS (cobertura terminada) que no han sido renovadas
+    polizas_vencidas = polizas_no_resueltas.filter(fecha_fin_vigencia__lt=hoy).order_by('fecha_fin_vigencia')
+
+    # Pólizas A VENCER en los próximos 30 días
+    polizas_a_vencer_30 = polizas_vigentes_cobertura.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=30))).order_by('fecha_fin_vigencia')
     
+    # --- LÓGICA PARA PRÓXIMOS COBROS (MÁS COMPLETA) ---
+    # Buscamos cuotas pendientes en TODAS las pólizas no resueltas
+    cobros_pendientes_30_dias = []
+    cobros_vencidos = [] # Nueva lista para cuotas que ya pasaron
+    
+    # Iteramos sobre pólizas con pagos periódicos
+    for poliza in polizas_vigentes_cobertura.exclude(frecuencia_pago__in=['UNICO', 'ANUAL']):
+        prox_cobro = poliza.proxima_fecha_cobro
+        if prox_cobro:
+            dias = (prox_cobro - hoy).days
+            if dias < 0: # Si la próxima cuota pendiente está en el pasado
+                cobros_vencidos.append(poliza)
+            elif 0 <= dias <= 30: # Si la próxima cuota es en los próximos 30 días
+                cobros_pendientes_30_dias.append(poliza)
+    
+    # Ordenamos las listas
+    cobros_pendientes_30_dias.sort(key=lambda p: p.proxima_fecha_cobro)
+    cobros_vencidos.sort(key=lambda p: p.proxima_fecha_cobro)
+
+
     # Próximos Cobros
     polizas_con_cobros_periodicos = polizas_activas.exclude(frecuencia_pago__in=['UNICO', 'ANUAL'])
     cobros_pendientes_30_dias = sorted(
@@ -306,15 +321,20 @@ def dashboard_view(request):
         key=lambda p: p.proxima_fecha_cobro
     )
 
-    # Comisiones Pendientes
-    comisiones_pendientes = base_polizas_query.filter(comision_cobrada=False, comision_monto__gt=0).order_by('fecha_fin_vigencia')
-
-    # Cumpleaños
+    # --- OTRAS CONSULTAS ---
+    comisiones_pendientes = polizas_no_resueltas.filter(comision_cobrada=False, comision_monto__gt=0).order_by('fecha_fin_vigencia')
     cumpleaneros_mes = Cliente.objects.filter(usuario=request.user, fecha_nacimiento__month=hoy.month).order_by('fecha_nacimiento__day')
-
-    # Indicadores Totales
+    
+    # Indicadores
     total_clientes = Cliente.objects.filter(usuario=request.user).count()
-    total_polizas_vigentes = base_polizas_query.filter(estado_poliza='VIGENTE').count()
+    total_polizas_vigentes = polizas_no_resueltas.filter(estado_poliza='VIGENTE').count()
+
+    # Pólizas que NO están resueltas (Canceladas o ya Renovadas)
+    polizas_no_resueltas = Poliza.objects.filter(usuario=request.user).exclude(estado_poliza__in=['CANCELADA', 'RENOVADA']).select_related('cliente', 'aseguradora')
+
+    # Pólizas "Vigentes" en términos de cobertura (fecha de fin es hoy o futura)
+    polizas_vigentes_cobertura = polizas_no_resueltas.filter(fecha_fin_vigencia__gte=hoy)
+
 
     # --- Datos para Notificaciones JS ---
     cumpleaneros_hoy = cumpleaneros_mes.filter(fecha_nacimiento__day=hoy.day)
@@ -328,6 +348,7 @@ def dashboard_view(request):
         'cobros_pendientes_30_dias': cobros_pendientes_30_dias, 'comisiones_pendientes': comisiones_pendientes,
         'cumpleaneros_mes': cumpleaneros_mes, 'total_clientes': total_clientes, 'total_polizas_vigentes': total_polizas_vigentes,
         'cumpleaneros_hoy_json': cumpleaneros_hoy_json, 'polizas_vencen_semana_json': polizas_vencen_semana_json,
+        'cobros_vencidos': cobros_vencidos,
     }
     
     return render(request, 'polizas/dashboard.html', context)

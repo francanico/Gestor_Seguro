@@ -16,16 +16,20 @@
             <tbody>
                 {% for poliza in cobros_pendientes_30_dias %}
                 <tr class="{% if poliza.dias_para_proximo_cobro == 0 %}table-warning{% endif %}">
+                    <!-- ... -->
                     <td class="fw-bold">
                         {{ poliza.proxima_fecha_cobro|date:"d/m/Y" }}
                         {% with dias=poliza.dias_para_proximo_cobro %}
-                            {% if dias == 0 %}
+                            {% if dias < 0 %}
+                                <span class="badge bg-danger ms-1">Vencido hace {{ dias|slice:"1:" }} día{{ dias|slice:"1:"|pluralize }}</span>
+                            {% elif dias == 0 %}
                                 <span class="badge bg-warning text-dark ms-1">Hoy</span>
-                            {% elif dias > 0 %}
+                            {% else %}
                                 <span class="badge bg-info text-dark ms-1">{{ dias }} día{{ dias|pluralize }}</span>
                             {% endif %}
                         {% endwith %}
                     </td>
+                    <!-- ... -->
                     <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
                     <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
                     <td class="text-end">

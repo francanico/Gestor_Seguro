@@ -3,7 +3,6 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 from decimal import Decimal
-from dateutil.relativedelta import relativedelta
 from django.conf import settings 
 from clientes.models import Cliente 
 from dateutil.relativedelta import relativedelta 
@@ -127,9 +126,9 @@ class Poliza(models.Model):
     @property
     def proxima_fecha_cobro(self):
         if not self.fecha_inicio_vigencia or self.frecuencia_pago in ['UNICO', 'ANUAL']:
-            # Para pago único/anual, solo hay "próximo cobro" si aún no ha empezado
             hoy = timezone.now().date()
-            if hoy < self.fecha_inicio_vigencia and not self.pagos_cuotas.exists():
+            # Si es pago único/anual y no se ha pagado, el cobro es la fecha de inicio
+            if hoy <= self.fecha_fin_vigencia and not self.pagos_cuotas.exists():
                 return self.fecha_inicio_vigencia
             return None
 
@@ -145,16 +144,24 @@ class Poliza(models.Model):
             'SEMESTRAL': relativedelta(months=6),
         }
         periodo = periodos.get(self.frecuencia_pago)
-        if not periodo:
-            return None
+        if not periodo: return None
 
-        proxima_cuota = fecha_base + periodo
+        fechas_cuotas_teoricas = []
+        fecha_temp = self.fecha_inicio_vigencia
+        while fecha_temp <= self.fecha_fin_vigencia:
+            fechas_cuotas_teoricas.append(fecha_temp)
+            fecha_temp += periodo
 
-        # Nos aseguramos que la próxima cuota no se pase de la vigencia
-        if self.fecha_fin_vigencia and proxima_cuota > self.fecha_fin_vigencia:
-            return None
-        
-        return proxima_cuota
+        # 2. Obtener las fechas de las cuotas que ya han sido pagadas
+        fechas_pagadas = set(self.pagos_cuotas.values_list('fecha_cuota_correspondiente', flat=True))
+
+        # 3. Encontrar la primera fecha teórica que no esté en el conjunto de fechas pagadas
+        for fecha_teorica in fechas_cuotas_teoricas:
+            if fecha_teorica not in fechas_pagadas:
+                return fecha_teorica # Esta es la próxima cuota pendiente
+
+        return None # Si todas las cuotas teóricas están pagadas
+    
 
     @property
     def dias_para_proximo_cobro(self):
@@ -228,3 +235,4 @@ class Siniestro(models.Model):
         verbose_name = "Siniestro"
         verbose_name_plural = "Siniestros"
         ordering = ['-fecha_ocurrencia']
+
