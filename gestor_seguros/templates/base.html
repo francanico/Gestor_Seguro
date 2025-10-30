@@ -44,6 +44,9 @@
                         <li class="nav-item">
                             <a class="nav-link {% if 'aseguradora' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'polizas:lista_aseguradoras' %}"><i class="fas fa-building"></i> Aseguradoras</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.app_name == 'reportes' %}active{% endif %}" href="{% url 'reportes:dashboard_reportes' %}"><i class="fas fa-chart-line"></i> Reportes</a>
+                        </li>
                     {% else %}
                         <!-- Puedes añadir enlaces públicos aquí si los tienes -->
                         <!-- <li class="nav-item">
