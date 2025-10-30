@@ -1,295 +1,139 @@
 {% extends "base.html" %}
-{% load static %}
 {% load humanize %}
 
-{% block title %}Dashboard - Gestor de Pólizas{% endblock %}
+{% block title %}Dashboard de Agencia{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="fas fa-tachometer-alt"></i> {{ titulo_pagina }}</h1>
+<div class="page-header">
+    <h2><i class="fas fa-tachometer-alt"></i> Dashboard de Pólizas</h2>
 </div>
 
-<!-- Indicadores clave -->
-<div class="row mb-4">
-    <div class="col-xl-3 col-md-6">
-        <div class="card bg-primary text-white mb-4">
+<!-- Fila de Indicadores Clave (KPIs) -->
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card kpi-card bg-primary text-white h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="fs-3 fw-bold">{{ total_clientes }}</div>
-                        <div>Total Clientes</div>
-                    </div>
-                    <i class="fas fa-users fa-2x text-white-50"></i>
+                <div>
+                    <div class="kpi-value">{{ total_clientes }}</div>
+                    <div class="kpi-label">Total Clientes</div>
                 </div>
+                <i class="fas fa-users kpi-icon"></i>
             </div>
-            <div class="card-footer d-flex align-items-center justify-content-between">
-                <a class="small text-white stretched-link" href="{% url 'clientes:lista_clientes' %}">Ver Detalles</a>
-                <div class="small text-white"><i class="fas fa-angle-right"></i></div>
-            </div>
+            <div class="card-footer"><a href="{% url 'clientes:lista_clientes' %}" class="small stretched-link">Ver Detalles <i class="fas fa-angle-right"></i></a></div>
         </div>
     </div>
-    <div class="col-xl-3 col-md-6">
-        <div class="card bg-success text-white mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card kpi-card bg-success text-white h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="fs-3 fw-bold">{{ total_polizas_vigentes }}</div>
-                        <div>Pólizas Vigentes</div>
-                    </div>
-                    <i class="fas fa-file-contract fa-2x text-white-50"></i>
+                <div>
+                    <div class="kpi-value">{{ total_polizas_vigentes }}</div>
+                    <div class="kpi-label">Pólizas Vigentes</div>
                 </div>
+                <i class="fas fa-file-invoice kpi-icon"></i>
             </div>
-            <div class="card-footer d-flex align-items-center justify-content-between">
-                <a class="small text-white stretched-link" href="{% url 'polizas:lista_polizas' %}">Ver Detalles</a>
-                <div class="small text-white"><i class="fas fa-angle-right"></i></div>
-            </div>
+            <div class="card-footer"><a href="{% url 'polizas:lista_polizas' %}" class="small stretched-link">Ver Detalles <i class="fas fa-angle-right"></i></a></div>
         </div>
     </div>
-    <div class="col-xl-3 col-md-6">
-        <div class="card bg-warning text-dark mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card kpi-card bg-warning text-dark h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="fs-3 fw-bold">{{ polizas_a_vencer_30.count }}</div>
-                        <div>Vencen en 30 días</div>
-                    </div>
-                    <i class="fas fa-exclamation-triangle fa-2x text-dark-50"></i>
+                <div>
+                    <div class="kpi-value">{{ polizas_a_vencer_30.count }}</div>
+                    <div class="kpi-label">Vencen en 30 días</div>
                 </div>
+                <i class="fas fa-exclamation-triangle kpi-icon"></i>
             </div>
-            <div class="card-footer d-flex align-items-center justify-content-between">
-                <a class="small text-dark stretched-link" href="#vencer30">Ver Detalles</a>
-                <div class="small text-dark"><i class="fas fa-angle-right"></i></div>
-            </div>
+            <div class="card-footer"><a href="#vencimientos" class="small stretched-link">Ver Detalles <i class="fas fa-angle-right"></i></a></div>
         </div>
     </div>
-    <div class="col-xl-3 col-md-6">
-        <div class="card bg-danger text-white mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card kpi-card bg-danger text-white h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="fs-3 fw-bold">{{ polizas_vencidas.count }}</div>
-                        <div>Pólizas Vencidas</div>
-                    </div>
-                    <i class="fas fa-calendar-times fa-2x text-white-50"></i>
+                <div>
+                    <div class="kpi-value">{{ polizas_vencidas.count }}</div>
+                    <div class="kpi-label">Pólizas Vencidas</div>
                 </div>
+                <i class="fas fa-calendar-times kpi-icon"></i>
             </div>
-            <div class="card-footer d-flex align-items-center justify-content-between">
-                <a class="small text-white stretched-link" href="#vencidas">Ver Detalles</a>
-                <div class="small text-white"><i class="fas fa-angle-right"></i></div>
-            </div>
+            <div class="card-footer"><a href="#vencimientos" class="small stretched-link">Ver Detalles <i class="fas fa-angle-right"></i></a></div>
         </div>
     </div>
 </div>
 
-
-<!-- Pólizas Próximas a Vencer (30 días) -->
-        <div class="card mb-4" id="vencer30">
-            <div class="card-header bg-warning text-dark">
-                <i class="fas fa-bell"></i> Pólizas por Vencer en los Próximos 30 Días ({{ polizas_a_vencer_30.count }})
-            </div>
-            <div class="card-body">
-                {% if polizas_a_vencer_30 %}
-                    {% include "polizas/_tabla_polizas_recordatorio.html" with polizas=polizas_a_vencer_30 %} {# Ya se pasa el contexto correcto #}
-                {% else %}
-                    <p class="text-muted">No hay pólizas venciendo en los próximos 30 días.</p>
-                {% endif %}
-            </div>
+<!-- Contenido Principal del Dashboard -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card" id="vencimientos">
+            <div class="card-header"><i class="fas fa-bell"></i> Pólizas por Vencer en los Próximos 30 Días</div>
+            <div class="card-body p-0">{% include "polizas/_tabla_polizas_recordatorio.html" with polizas=polizas_a_vencer_30 %}</div>
         </div>
-
-        <!-- Pólizas Próximas a Vencer (31-60 días) -->
-        <div class="card mb-4" id="vencer60">
-            <div class="card-header bg-info text-dark">
-                <i class="fas fa-clock"></i> Pólizas por Vencer entre 31 y 60 Días ({{ polizas_a_vencer_60.count }})
-            </div>
-            <div class="card-body">
-                {% if polizas_a_vencer_60 %}
-                    {% include "polizas/_tabla_polizas_recordatorio.html" with polizas=polizas_a_vencer_60 %} {# Ya se pasa el contexto correcto #}
-                {% else %}
-                    <p class="text-muted">No hay pólizas venciendo entre 31 y 60 días.</p>
-                {% endif %}
-            </div>
+        <div class="card">
+            <div class="card-header"><i class="fas fa-dollar-sign"></i> Próximos Cobros de Cuotas (en 30 días)</div>
+            <div class="card-body p-0">{% include "_proximos_cobros_tabla.html" with cobros_pendientes_30_dias=cobros_pendientes_30_dias %}</div>
         </div>
-
-        <!-- Pólizas Vencidas -->
-        <div class="card mb-4" id="vencidas">
-            <div class="card-header bg-danger text-white">
-                <i class="fas fa-exclamation-circle"></i> Pólizas Vencidas Pendientes de Gestión ({{ polizas_vencidas.count }})
-            </div>
-            <div class="card-body">
-                {% if polizas_vencidas %}
-                    {% include "polizas/_tabla_polizas_recordatorio.html" with polizas=polizas_vencidas %} {# Ya se pasa el contexto correcto #}
-                {% else %}
-                    <p class="text-muted">No hay pólizas vencidas recientemente.</p>
-                {% endif %}
-            </div>
-        </div>
-
-<!-- SECCIÓN PARA PRÓXIMOS COBROS -->
-<!-- ======================================================= -->
-<div class="card mb-4" id="proximos-cobros">
-    <div class="card-header bg-primary text-white">
-        <i class="fas fa-dollar-sign"></i> Próximos Cobros de Cuotas (en 30 días) ({{ cobros_pendientes_30_dias|length }})
     </div>
-    <div class="card-body">
-        {% if cobros_pendientes_30_dias %}
-            <div class="table-responsive">
-                <table class="table table-sm table-hover">
-                    <thead>
-                        <tr>
-                            <th>Próx. Cobro (Día)</th>
-                            <th># Póliza</th>
-                            <th>Cliente</th>
-                            <th>Frec. Pago</th>
-                            <th class="text-end">Valor Cuota</th>
-                            <th class="text-center">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for poliza in cobros_pendientes_30_dias %}
-                        <tr class="{% if poliza.dias_para_proximo_cobro == 0 %}table-warning{% endif %}">
-                            <!-- Columna 1: Fecha y contador de días -->
-                            <td class="fw-bold">
-                                {{ poliza.proxima_fecha_cobro|date:"d/m/Y" }}
-                                {% with dias=poliza.dias_para_proximo_cobro %}
-                                    {% if dias == 0 %}
-                                        <span class="badge bg-warning text-dark ms-1">Hoy</span>
-                                    {% elif dias > 0 %}
-                                        <span class="badge bg-info text-dark ms-1">{{ dias }} día{{ dias|pluralize }}</span>
-                                    {% endif %}
-                                {% endwith %}
-                            </td>
-                            <!-- Columna 2: Número de Póliza -->
-                            <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
-                            <!-- Columna 3: Nombre del Cliente -->
-                            <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
-                            <!-- Columna 4: Frecuencia de Pago -->
-                            <td><span class="badge bg-light text-dark border">{{ poliza.get_frecuencia_pago_display }}</span></td>
-                            <!-- Columna 5: Valor de la Cuota (con lógica mejorada) -->
-                            <td class="text-end">
-                                {% if poliza.frecuencia_pago != 'ANUAL' and poliza.valor_cuota %}
-                                    ${{ poliza.valor_cuota|floatformat:2|intcomma }}
-                                {% else %}
-                                    ${{ poliza.prima_total_anual|floatformat:2|intcomma }}
-                                {% endif %}
-                            </td>
-                            <!-- Columna 6: Acciones (con los nuevos botones) -->
-                            <td class="text-center">
-                                <div class="btn-group" role="group" aria-label="Acciones de póliza">
-                                    <!-- Botón 1: Marcar como Pagada -->
-                                    <form action="{% url 'polizas:registrar_pago_rapido' poliza.pk %}" method="post" class="d-inline">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="fecha_cuota" value="{{ poliza.proxima_fecha_cobro|date:'Y-m-d' }}">
-                                        <button type="submit" class="btn btn-sm btn-success" title="Marcar como Pagada">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                    </form>
-
-                                    <!-- Botón 2: Editar Póliza -->
-                                    <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-sm btn-warning" title="Editar Póliza">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-
-                                    <!-- Botón 3: Ver Detalles -->
-                                    <a href="{{ poliza.get_absolute_url }}" class="btn btn-sm btn-info" title="Ver Detalles">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <p class="text-muted">No hay cobros de cuotas programados para los próximos 30 días.</p>
-        {% endif %}
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><i class="fas fa-birthday-cake"></i> Cumpleaños del Mes</div>
+            <div class="card-body">{% include "_cumpleanos_lista.html" %}</div>
+        </div>
+        <div class="card">
+            <div class="card-header"><i class="fas fa-hand-holding-usd"></i> Comisiones Pendientes</div>
+            <div class="card-body">{% include "_comisiones_pendientes_lista.html" %}</div>
+        </div>
     </div>
 </div>
 
-<!-- SECCIÓN DE CUMPLEAÑOS -->
-<!-- ============================================= -->
-<div class="card mb-4">
-    <div class="card-header bg-info text-dark">
-        <i class="fas fa-birthday-cake"></i> Cumpleaños de este Mes ({{ cumpleaneros_mes.count }})
-    </div>
-    <div class="card-body">
-        {% if cumpleaneros_mes %}
-            <ul class="list-group list-group-flush">
-                {% for cliente in cumpleaneros_mes %}
-                    {# Comprobamos si el día y el mes de nacimiento coinciden con hoy #}
-                    {% if cliente.fecha_nacimiento.day == hoy.day and cliente.fecha_nacimiento.month == hoy.month %}
-                        {# Diseño especial para el cumpleañero del día #}
-                        <li class="list-group-item list-group-item-warning d-flex justify-content-between align-items-center animate-pulse">
-                            <div>
-                                <i class="fas fa-gift text-danger me-2"></i>
-                                <a href="{{ cliente.get_absolute_url }}" class="fw-bold">{{ cliente.nombre_completo }}</a>
-                            </div>
-                            <span class="badge bg-danger rounded-pill">
-                                ¡Cumple Hoy!
-                            </span>
-                        </li>
-                    {% else %}
-                        {# Diseño normal para otros cumpleaños del mes #}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <a href="{{ cliente.get_absolute_url }}">{{ cliente.nombre_completo }}</a>
-                            <span class="badge bg-secondary rounded-pill">
-                                {# Mostramos el día y el nombre del mes #}
-                                {{ cliente.fecha_nacimiento|date:"d \d\e F" }}
-                            </span>
-                        </li>
-                    {% endif %}
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="text-muted">No hay cumpleaños registrados para este mes.</p>
-        {% endif %}
-    </div>
+<!-- Almacenar datos para notificaciones JS -->
+<div id="notification-data" 
+     data-cumpleaneros-hoy="{{ cumpleaneros_hoy_json }}"
+     data-polizas-vencen-semana="{{ polizas_vencen_semana_json }}"
+     style="display: none;">
 </div>
-
-
-<!-- Comisiones Pendientes de Cobro -->
-<div class="card mb-4" id="comisiones">
-    <div class="card-header bg-success text-white">
-        <i class="fas fa-hand-holding-usd"></i> Comisiones Pendientes de Cobro ({{ comisiones_pendientes.count }})
-    </div>
-    <div class="card-body">
-        {% if comisiones_pendientes %}
-        <div class="table-responsive">
-            <table class="table table-sm table-hover">
-                <thead>
-                    <tr>
-                        <th># Póliza</th>
-                        <th>Cliente</th>
-                        <th>Aseguradora</th>
-                        <th>Fin Vigencia</th>
-                        <th>Prima Anual</th>
-                        <th>Monto Comisión</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for poliza in comisiones_pendientes %}
-                    <tr>
-                        <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
-                        <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
-                        <td>{{ poliza.aseguradora.nombre|default:"N/A" }}</td>
-                        <td>{{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</td>
-                        <td class="text-end">${{ poliza.prima_total_anual|floatformat:2|intcomma }}</td>
-                        <td class="text-end fw-bold">${{ poliza.comision_monto|floatformat:2|intcomma }}</td>
-                        <td>
-                            <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-sm btn-outline-primary" title="Gestionar Póliza"><i class="fas fa-edit"></i> Gestionar</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-            <p class="text-muted">No hay comisiones pendientes de cobro.</p>
-        {% endif %}
-    </div>
-</div>
-
 {% endblock %}
 
+{% block extra_js %}
+<!-- Toastify.js -->
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const notificationData = document.getElementById('notification-data');
+    
+    // Notificaciones de Cumpleaños
+    try {
+        const cumpleaneros = JSON.parse(notificationData.dataset.cumpleanerosHoy);
+        if (cumpleaneros.length > 0) {
+            let nombres = cumpleaneros.map(c => c.nombre).join(', ');
+            Toastify({
+                text: `🎂 ¡Hoy es el cumpleaños de ${nombres}! No olvides felicitarlos.`,
+                duration: 10000,
+                close: true,
+                gravity: "bottom",
+                position: "right",
+                backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
+            }).showToast();
+        }
+    } catch (e) { console.error('Error parsing birthday data:', e); }
+
+    // Notificaciones de Pólizas por Vencer
+    try {
+        const polizasVencen = JSON.parse(notificationData.dataset.polizasVencenSemana);
+        if (polizasVencen.length > 0) {
+            let texto = `🔔 Tienes ${polizasVencen.length} póliza(s) que vencen en los próximos 7 días.`;
+            Toastify({
+                text: texto,
+                destination: "{% url 'polizas:lista_polizas' %}",
+                newWindow: true,
+                duration: 15000,
+                close: true,
+                gravity: "bottom",
+                position: "right",
+                backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)",
+            }).showToast();
+        }
+    } catch (e) { console.error('Error parsing policy data:', e); }
+});
+</script>
+{% endblock %}
