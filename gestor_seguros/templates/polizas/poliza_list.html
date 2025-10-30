@@ -47,14 +47,15 @@
                                     <span class="badge bg-info text-dark">Próximo</span>
                                 {% elif estado == "Vigente" %}
                                     <span class="badge bg-success">Vigente</span>
-                                {% else %}
+                                {% else %} 
                                     <span class="badge bg-secondary">{{ poliza.get_estado_poliza_display }}</span>
                                 {% endif %}
-                                
-                                {% if dias is not None and dias >= 0 and estado != "Gestionada" %}
-                                    <small class="text-muted d-block mt-1">({{ dias }} día{{ dias|pluralize }})</small>
-                                {% elif dias is not None and dias < 0 %}
-                                    <small class="text-muted d-block mt-1">(hace {{ dias|abs }} días)</small>
+                                {% if dias is not None and estado != "Gestionada" %}
+                                    {% if dias < 0 %}
+                                        <small class="text-muted d-block mt-1">(hace {{ dias|slice:"1:" }} día{{ dias|slice:"1:"|pluralize }})</small>
+                                    {% else %}
+                                        <small class="text-muted d-block mt-1">({{ dias }} día{{ dias|pluralize }})</small>
+                                    {% endif %}
                                 {% endif %}
                             {% endwith %}
                         </td>

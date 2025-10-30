@@ -1,0 +1,17 @@
+{% load humanize %}
+
+{% if comisiones_pendientes %}
+    <ul class="list-group list-group-flush">
+        {% for poliza in comisiones_pendientes %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a>
+                    <small class="d-block text-muted">{{ poliza.cliente.nombre_completo }}</small>
+                </div>
+                <span class="fw-bold text-success">${{ poliza.comision_monto|intcomma }}</span>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p class="text-muted mb-0">No hay comisiones pendientes de cobro.</p>
+{% endif %}

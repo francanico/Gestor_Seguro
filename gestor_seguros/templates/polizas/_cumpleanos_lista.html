@@ -1,0 +1,20 @@
+<!-- templates/polizas/_cumpleanos_lista.html -->
+{% if cumpleaneros_mes %}
+    <ul class="list-group list-group-flush">
+        {% for cliente in cumpleaneros_mes %}
+            {% if cliente.fecha_nacimiento.day == hoy.day and cliente.fecha_nacimiento.month == hoy.month %}
+                <li class="list-group-item list-group-item-warning d-flex justify-content-between align-items-center birthday-today">
+                    <div><i class="fas fa-gift text-danger me-2"></i> <a href="{{ cliente.get_absolute_url }}" class="fw-bold">{{ cliente.nombre_completo }}</a></div>
+                    <span class="badge bg-danger rounded-pill">¡Cumple Hoy!</span>
+                </li>
+            {% else %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="{{ cliente.get_absolute_url }}">{{ cliente.nombre_completo }}</a>
+                    <span class="badge bg-secondary rounded-pill">{{ cliente.fecha_nacimiento|date:"d \d\e F" }}</span>
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+{% else %}
+    <p class="text-muted">No hay cumpleaños registrados para este mes.</p>
+{% endif %}
