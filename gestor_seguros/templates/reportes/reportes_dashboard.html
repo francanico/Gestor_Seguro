@@ -10,7 +10,9 @@
     <div class="row">
         <div class="col-md-4"><input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" class="form-control"></div>
         <div class="col-md-4"><input type="date" name="fecha_fin" value="{{ fecha_fin }}" class="form-control"></div>
-        <div class="col-md-4"><button type="submit" class="btn btn-primary">Filtrar</button></div>
+        <div class="col-md-4"><button type="submit" class="btn btn-primary">Filtrar</button>
+        <a href="{% url 'reportes:dashboard_reportes' %}" class="btn btn-secondary ms-2">
+        <i class="fas fa-times"></i> Limpiar</a>       </div>
     </div>
 </form>
 
