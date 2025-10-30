@@ -279,78 +279,123 @@ def renovar_poliza(request, pk):
 # --- Dashboard y Recordatorios ---
 @login_required
 def dashboard_view(request):
+    """
+    Vista principal del dashboard que consolida todas las alertas y métricas clave
+    para la gestión de la agencia de seguros.
+    """
     hoy = timezone.now().date()
-    
-    # Querysets Base
-    estados_activos_dashboard = ['VIGENTE', 'PENDIENTE_PAGO', 'VENCIDA', 'EN_TRAMITE']
-    base_polizas_query = Poliza.objects.filter(usuario=request.user, estado_poliza__in=estados_activos_dashboard).select_related('cliente', 'aseguradora')
-    polizas_activas = base_polizas_query.filter(fecha_fin_vigencia__gte=hoy)
 
-    # --- CÁLCULOS PARA EL DASHBOARD ---
+    # ==============================================================================
+    # 1. QUERIES BASE: Definimos los conjuntos de datos principales una sola vez.
+    # ==============================================================================
 
-    # Pólizas VENCIDAS (cobertura terminada) que no han sido renovadas
-    polizas_vencidas = polizas_no_resueltas.filter(fecha_fin_vigencia__lt=hoy).order_by('fecha_fin_vigencia')
+    # Todas las pólizas del usuario que requieren algún tipo de atención o seguimiento.
+    # Excluimos las que están cerradas definitivamente ('CANCELADA', 'RENOVADA').
+    polizas_activas_y_pendientes = Poliza.objects.filter(
+        usuario=request.user
+    ).exclude(
+        estado_poliza__in=['CANCELADA', 'RENOVADA']
+    ).select_related('cliente', 'aseguradora')
 
-    # Pólizas A VENCER en los próximos 30 días
-    polizas_a_vencer_30 = polizas_vigentes_cobertura.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=30))).order_by('fecha_fin_vigencia')
-    
-    # --- LÓGICA PARA PRÓXIMOS COBROS (MÁS COMPLETA) ---
-    # Buscamos cuotas pendientes en TODAS las pólizas no resueltas
+    # ==============================================================================
+    # 2. CÁLCULOS PARA LAS SECCIONES DEL DASHBOARD
+    # ==============================================================================
+
+    # --- SECCIÓN A: Pólizas que necesitan gestión (Renovaciones / Trámites) ---
+
+    # A.1: Pólizas nuevas o renovadas que están esperando ser activadas.
+    polizas_en_tramite = polizas_activas_y_pendientes.filter(
+        estado_poliza='EN_TRAMITE'
+    ).order_by('fecha_inicio_vigencia')
+
+    # A.2: Pólizas cuya cobertura ya terminó y no han sido renovadas.
+    polizas_vencidas = polizas_activas_y_pendientes.filter(
+        fecha_fin_vigencia__lt=hoy,
+        estado_poliza__in=['VIGENTE', 'PENDIENTE_PAGO'] # Solo mostramos las que estaban activas antes de vencer
+    ).order_by('fecha_fin_vigencia')
+
+    # A.3: Pólizas cuya cobertura está próxima a vencer (en los próximos 30 días).
+    polizas_a_vencer_30 = polizas_activas_y_pendientes.filter(
+        fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=30))
+    ).order_by('fecha_fin_vigencia')
+
+    # --- SECCIÓN B: Gestión de Cobros de Cuotas ---
+
     cobros_pendientes_30_dias = []
-    cobros_vencidos = [] # Nueva lista para cuotas que ya pasaron
-    
-    # Iteramos sobre pólizas con pagos periódicos
-    for poliza in polizas_vigentes_cobertura.exclude(frecuencia_pago__in=['UNICO', 'ANUAL']):
+    cobros_vencidos = []
+
+    # Iteramos sobre las pólizas activas para encontrar cuotas pendientes.
+    # Usamos list() para evaluar el queryset una sola vez.
+    for poliza in list(polizas_activas_y_pendientes.exclude(frecuencia_pago__in=['UNICO', 'ANUAL'])):
         prox_cobro = poliza.proxima_fecha_cobro
         if prox_cobro:
             dias = (prox_cobro - hoy).days
-            if dias < 0: # Si la próxima cuota pendiente está en el pasado
+            if dias < 0:
                 cobros_vencidos.append(poliza)
-            elif 0 <= dias <= 30: # Si la próxima cuota es en los próximos 30 días
+            elif 0 <= dias <= 30:
                 cobros_pendientes_30_dias.append(poliza)
-    
-    # Ordenamos las listas
+
+    # Ordenamos las listas resultantes en Python.
     cobros_pendientes_30_dias.sort(key=lambda p: p.proxima_fecha_cobro)
     cobros_vencidos.sort(key=lambda p: p.proxima_fecha_cobro)
 
+    # --- SECCIÓN C: Otras Tareas y Recordatorios ---
 
-    # Próximos Cobros
-    polizas_con_cobros_periodicos = polizas_activas.exclude(frecuencia_pago__in=['UNICO', 'ANUAL'])
-    cobros_pendientes_30_dias = sorted(
-        [p for p in polizas_con_cobros_periodicos if p.dias_para_proximo_cobro is not None and 0 <= p.dias_para_proximo_cobro <= 30],
-        key=lambda p: p.proxima_fecha_cobro
-    )
+    # C.1: Comisiones pendientes de cobro en toda la cartera activa.
+    comisiones_pendientes = polizas_activas_y_pendientes.filter(
+        comision_cobrada=False,
+        comision_monto__gt=0
+    ).order_by('fecha_fin_vigencia')
 
-    # --- OTRAS CONSULTAS ---
-    comisiones_pendientes = polizas_no_resueltas.filter(comision_cobrada=False, comision_monto__gt=0).order_by('fecha_fin_vigencia')
-    cumpleaneros_mes = Cliente.objects.filter(usuario=request.user, fecha_nacimiento__month=hoy.month).order_by('fecha_nacimiento__day')
-    
-    # Indicadores
+    # C.2: Cumpleaños del mes actual.
+    cumpleaneros_mes = Cliente.objects.filter(
+        usuario=request.user,
+        fecha_nacimiento__month=hoy.month
+    ).order_by('fecha_nacimiento__day')
+
+    # ==============================================================================
+    # 3. KPIs (INDICADORES CLAVE) Y DATOS PARA NOTIFICACIONES JS
+    # ==============================================================================
+
+    # Indicadores para las tarjetas superiores
     total_clientes = Cliente.objects.filter(usuario=request.user).count()
-    total_polizas_vigentes = polizas_no_resueltas.filter(estado_poliza='VIGENTE').count()
+    total_polizas_vigentes = polizas_activas_y_pendientes.filter(estado_poliza='VIGENTE').count()
 
-    # Pólizas que NO están resueltas (Canceladas o ya Renovadas)
-    polizas_no_resueltas = Poliza.objects.filter(usuario=request.user).exclude(estado_poliza__in=['CANCELADA', 'RENOVADA']).select_related('cliente', 'aseguradora')
-
-    # Pólizas "Vigentes" en términos de cobertura (fecha de fin es hoy o futura)
-    polizas_vigentes_cobertura = polizas_no_resueltas.filter(fecha_fin_vigencia__gte=hoy)
-
-
-    # --- Datos para Notificaciones JS ---
+    # Datos para las notificaciones "Toast" de JavaScript
     cumpleaneros_hoy = cumpleaneros_mes.filter(fecha_nacimiento__day=hoy.day)
     cumpleaneros_hoy_json = json.dumps([{'nombre': c.nombre_completo} for c in cumpleaneros_hoy])
-    
-    vencen_en_7_dias = polizas_activas.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=7)))
-    polizas_vencen_semana_json = json.dumps([{'numero': p.numero_poliza, 'cliente': p.cliente.nombre_completo} for p in vencen_en_7_dias])
 
+    polizas_vencen_semana = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=7)))
+    polizas_vencen_semana_json = json.dumps([{'numero': p.numero_poliza} for p in polizas_vencen_semana])
+
+    # ==============================================================================
+    # 4. CONSTRUCCIÓN DEL CONTEXTO FINAL PARA LA PLANTILLA
+    # ==============================================================================
     context = {
-        'hoy': hoy, 'polizas_vencidas': polizas_vencidas, 'polizas_a_vencer_30': polizas_a_vencer_30,
-        'cobros_pendientes_30_dias': cobros_pendientes_30_dias, 'comisiones_pendientes': comisiones_pendientes,
-        'cumpleaneros_mes': cumpleaneros_mes, 'total_clientes': total_clientes, 'total_polizas_vigentes': total_polizas_vigentes,
-        'cumpleaneros_hoy_json': cumpleaneros_hoy_json, 'polizas_vencen_semana_json': polizas_vencen_semana_json,
+        # Fecha de hoy para comparaciones en la plantilla
+        'hoy': hoy,
+        
+        # Listas para las secciones de alertas
+        'polizas_en_tramite': polizas_en_tramite,
+        'polizas_vencidas': polizas_vencidas,
+        'polizas_a_vencer_30': polizas_a_vencer_30,
         'cobros_vencidos': cobros_vencidos,
+        'cobros_pendientes_30_dias': cobros_pendientes_30_dias,
+        'comisiones_pendientes': comisiones_pendientes,
+        'cumpleaneros_mes': cumpleaneros_mes,
+        
+        # KPIs para las tarjetas
+        'total_clientes': total_clientes,
+        'total_polizas_vigentes': total_polizas_vigentes,
+        
+        # Datos JSON para JavaScript
+        'cumpleaneros_hoy_json': cumpleaneros_hoy_json,
+        'polizas_vencen_semana_json': polizas_vencen_semana_json,
+
+        # Título de la página
+        'titulo_pagina': "Dashboard de Pólizas",
     }
-    
+
     return render(request, 'polizas/dashboard.html', context)
 
 

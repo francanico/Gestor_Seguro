@@ -62,6 +62,47 @@
 
 
 <!-- Contenido Principal del Dashboard -->
+
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- ================================================== -->
+        <!-- NUEVA SECCIÓN DE PÓLIZAS EN TRÁMITE (RENOVACIONES) -->
+        <!-- ================================================== -->
+        {% if polizas_en_tramite %}
+        <div class="card border-info mb-4">
+            <div class="card-header bg-info text-dark"><i class="fas fa-hourglass-start"></i> Pólizas en Trámite / Renovaciones Pendientes ({{ polizas_en_tramite|length }})</div>
+            <div class="card-body p-0">
+                    <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th># Póliza</th>
+                                <th>Cliente</th>
+                                <th>Inicio Vigencia</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for poliza in polizas_en_tramite %}
+                            <tr>
+                                <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
+                                <td>{{ poliza.cliente.nombre_completo }}</td>
+                                <td>{{ poliza.fecha_inicio_vigencia|date:"d/m/Y" }}</td>
+                                <td class="text-center">
+                                    <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-sm btn-warning" title="Gestionar y Activar">
+                                        <i class="fas fa-edit"></i> Gestionar
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
 <div class="row">
     <div class="col-lg-8">
         <div class="card" id="vencimientos">
@@ -97,11 +138,8 @@
             <div class="card-header"><i class="fas fa-dollar-sign"></i> Próximos Cobros de Cuotas (en 30 días)</div>
             <div class="card-body p-0">{% include "polizas/_proximos_cobros_tabla.html" with cobros_pendientes_30_dias=cobros_pendientes_30_dias %}</div>
         </div>
-    </div>
-    <div class="col-lg-4">
-    </div>
-</div>
 
+    </div>  
     <div class="col-lg-4">
         <div class="card">
             <div class="card-header"><i class="fas fa-birthday-cake"></i> Cumpleaños del Mes</div>
