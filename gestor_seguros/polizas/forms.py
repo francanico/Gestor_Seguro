@@ -1,18 +1,26 @@
 # polizas/forms.py
 from django import forms
-from .models import Poliza, Aseguradora, Cliente
+from .models import Poliza, Aseguradora, Cliente,PagoCuota,Siniestro 
 from django.core.exceptions import ValidationError # <-- IMPORTAR
+
 
 
 class AseguradoraForm(forms.ModelForm):
     class Meta:
         model = Aseguradora
-        fields = ['nombre', 'nit', 'contacto_nombre', 'contacto_email', 'contacto_telefono']
+        fields = ['nombre', 'rif', 'contacto_nombre', 'contacto_email', 'contacto_telefono']
+        widgets = {
+            # Puedes añadir widgets específicos si es necesario
+            # 'contacto_nombre': forms.TextInput(attrs={'placeholder': 'Ej: Juan Pérez'}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control'
+            if field.widget.attrs.get('class'):
+                field.widget.attrs['class'] += ' form-control'
+            else:
+                field.widget.attrs['class'] = 'form-control'
 
 
 class PolizaForm(forms.ModelForm):
@@ -23,8 +31,8 @@ class PolizaForm(forms.ModelForm):
             'descripcion_bien_asegurado', 'fecha_emision', 'fecha_inicio_vigencia',
             'fecha_fin_vigencia', 'prima_total_anual', 'frecuencia_pago',
             'valor_cuota', 'comision_monto', 'comision_cobrada',
-            'fecha_cobro_comision', 'estado_poliza', 'notas_poliza','ultimo_pago_cubierto_hasta',
-            'archivo_poliza'
+            'fecha_cobro_comision', 'estado_poliza', 'notas_poliza',
+            'archivo_poliza',
         ]
         widgets = {
             'fecha_emision': forms.DateInput(attrs={'type': 'date'}),
@@ -32,7 +40,6 @@ class PolizaForm(forms.ModelForm):
             'fecha_fin_vigencia': forms.DateInput(attrs={'type': 'date'}),
             'fecha_cobro_comision': forms.DateInput(attrs={'type': 'date'}),
             'notas_poliza': forms.Textarea(attrs={'rows': 3}),
-            'ultimo_pago_cubierto_hasta': forms.DateInput(attrs={'type': 'date'}),
             'descripcion_bien_asegurado': forms.Textarea(attrs={'rows': 2}),
         }
 
@@ -67,19 +74,37 @@ class PolizaForm(forms.ModelForm):
                 )
         return cleaned_data
 
-class AseguradoraForm(forms.ModelForm):
+#---(PAGO CUOTA FORM)---
+
+class PagoCuotaForm(forms.ModelForm):
     class Meta:
-        model = Aseguradora
-        fields = ['nombre', 'nit', 'contacto_nombre', 'contacto_email', 'contacto_telefono']
+        model = PagoCuota
+        fields = ['fecha_pago', 'monto_pagado', 'fecha_cuota_correspondiente', 'notas']
         widgets = {
-            # Puedes añadir widgets específicos si es necesario
-            # 'contacto_nombre': forms.TextInput(attrs={'placeholder': 'Ej: Juan Pérez'}),
+            'fecha_pago': forms.DateInput(attrs={'type': 'date'}),
+            'fecha_cuota_correspondiente': forms.DateInput(attrs={'type': 'date'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
-            if field.widget.attrs.get('class'):
-                field.widget.attrs['class'] += ' form-control'
-            else:
-                field.widget.attrs['class'] = 'form-control'
+            field.widget.attrs['class'] = 'form-control'
+
+#---(END PAGO CUOTA FORM)---
+
+class SiniestroForm(forms.ModelForm):
+    class Meta:
+        model = Siniestro
+        fields = ['fecha_ocurrencia', 'fecha_reporte', 'estado_siniestro', 'descripcion', 'monto_reclamado', 'monto_indemnizado']
+        widgets = {
+            'fecha_ocurrencia': forms.DateInput(attrs={'type': 'date'}),
+            'fecha_reporte': forms.DateInput(attrs={'type': 'date'}),
+            'descripcion': forms.Textarea(attrs={'rows': 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control'
+#---(END SINIESTRO FORM)---
+

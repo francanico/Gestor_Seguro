@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'clientes',
     'polizas',
     'django.contrib.humanize',
+    'documentos',
+    'reportes',
 ]
 
 MIDDLEWARE = [

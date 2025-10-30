@@ -7,13 +7,14 @@ from dateutil.relativedelta import relativedelta
 from django.conf import settings 
 from clientes.models import Cliente 
 from dateutil.relativedelta import relativedelta 
-
+from django.contrib.contenttypes.fields import GenericRelation
+from documentos.models import Documento
 
 class Aseguradora(models.Model):
 
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='aseguradoras')
     nombre = models.CharField(max_length=150, unique=True, verbose_name="Nombre de la Aseguradora")
-    nit = models.CharField(max_length=30, unique=True, blank=True, null=True, verbose_name="NIT")
+    rif = models.CharField(max_length=20, blank=True, null=True, verbose_name="RIF")
     contacto_nombre = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nombre de Contacto")
     contacto_email = models.EmailField(blank=True, null=True, verbose_name="Email de Contacto")
     contacto_telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono de Contacto")
@@ -26,6 +27,7 @@ class Aseguradora(models.Model):
         verbose_name_plural = "Aseguradoras"
         ordering = ['nombre']
         unique_together = ('usuario', 'nombre')
+        unique_together = ('usuario', 'rif')
 
 class Poliza(models.Model):
 
@@ -33,21 +35,20 @@ class Poliza(models.Model):
 
 
     FRECUENCIA_PAGO_CHOICES = [
+        ('UNICO', 'Pago Único'), # Volvemos a un nombre más claro
         ('MENSUAL', 'Mensual'),
         ('TRIMESTRAL', 'Trimestral'),
         ('CUATRIMESTRAL', 'Cuatrimestral'),
         ('SEMESTRAL', 'Semestral'),
-        ('ANUAL', 'Anual'),
-        ('UNICO', 'Pago Único'),
+        ('ANUAL', 'Anual'), # Anual es lo mismo que Pago Único en términos de cuotas
     ]
 
     ESTADO_POLIZA_CHOICES = [
         ('VIGENTE', 'Vigente'),
-        ('PENDIENTE_PAGO', 'Pendiente de Pago'),
+        ('PENDIENTE_PAGO', 'Pendiente de Pago'), # Este estado ahora se refiere al pago inicial
         ('VENCIDA', 'Vencida'),
         ('CANCELADA', 'Cancelada'),
         ('EN_TRAMITE', 'En Trámite'),
-        ('PAGADA', 'Pagada'),
         ('RENOVADA', 'Renovada'),
     ]
 
@@ -62,7 +63,7 @@ class Poliza(models.Model):
     fecha_fin_vigencia = models.DateField(verbose_name="Fecha Fin de Vigencia")
 
     prima_total_anual = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Prima Total Anual/Valor Asegurado")
-    frecuencia_pago = models.CharField(max_length=15, choices=FRECUENCIA_PAGO_CHOICES, default='ANUAL', verbose_name="Frecuencia de Pago/Renovación")
+    frecuencia_pago = models.CharField(max_length=15, choices=FRECUENCIA_PAGO_CHOICES, default='ANUAL', verbose_name="Frecuencia de Pago de Cuotas")
     valor_cuota = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, verbose_name="Valor Cuota (si aplica)")
 
     comision_monto = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name="Monto de Comisión")
@@ -77,12 +78,7 @@ class Poliza(models.Model):
 
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
-
-    # --- NUEVO CAMPO PARA PAGOS ADELANTADOS ---
-    ultimo_pago_cubierto_hasta = models.DateField(
-        null=True, blank=True,
-        verbose_name="Último pago cubre hasta",
-        help_text="Indica la fecha final del período cubierto por el último pago realizado.")
+    documentos = GenericRelation(Documento)
 
 
     @property
@@ -130,50 +126,40 @@ class Poliza(models.Model):
     # --- PROPIEDAD PARA LA PRÓXIMA FECHA DE COBRO ---
     @property
     def proxima_fecha_cobro(self):
-        if not self.fecha_inicio_vigencia or not self.frecuencia_pago or self.frecuencia_pago == 'UNICO':
+        if not self.fecha_inicio_vigencia or self.frecuencia_pago in ['UNICO', 'ANUAL']:
+            # Para pago único/anual, solo hay "próximo cobro" si aún no ha empezado
+            hoy = timezone.now().date()
+            if hoy < self.fecha_inicio_vigencia and not self.pagos_cuotas.exists():
+                return self.fecha_inicio_vigencia
             return None
 
-        hoy = timezone.now().date()
+        # Buscamos la fecha de la última cuota pagada
+        ultimo_pago = self.pagos_cuotas.order_by('-fecha_cuota_correspondiente').first()
+        
+        fecha_base = ultimo_pago.fecha_cuota_correspondiente if ultimo_pago else self.fecha_inicio_vigencia
 
-        # Si la póliza aún no ha comenzado, el primer cobro es al inicio
-        if hoy < self.fecha_inicio_vigencia:
-            return self.fecha_inicio_vigencia
-
-        # Mapeo de frecuencia a relativedelta
         periodos = {
             'MENSUAL': relativedelta(months=1),
             'TRIMESTRAL': relativedelta(months=3),
             'CUATRIMESTRAL': relativedelta(months=4),
             'SEMESTRAL': relativedelta(months=6),
-            'ANUAL': relativedelta(years=1),
         }
-        
         periodo = periodos.get(self.frecuencia_pago)
         if not periodo:
             return None
 
-        # --- Lógica de cálculo robusta ---
-        fecha_actual = self.fecha_inicio_vigencia
-        
-        # Avanzamos la fecha de cobro periodo por periodo hasta que sea mayor o igual a la fecha de hoy
-        while fecha_actual < hoy:
-            fecha_actual += periodo
+        proxima_cuota = fecha_base + periodo
 
-        # La fecha encontrada es el próximo cobro.
-        # Verificamos que no se pase del final de la vigencia de la póliza.
-        if self.fecha_fin_vigencia and fecha_actual > self.fecha_fin_vigencia:
-            return None # Ya no hay más cobros dentro de la vigencia
+        # Nos aseguramos que la próxima cuota no se pase de la vigencia
+        if self.fecha_fin_vigencia and proxima_cuota > self.fecha_fin_vigencia:
+            return None
         
-        return fecha_actual
+        return proxima_cuota
 
     @property
     def dias_para_proximo_cobro(self):
         if self.proxima_fecha_cobro:
             hoy = timezone.now().date()
-                # Si hay una fecha de pago adelantado, comparamos contra esa
-            if self.ultimo_pago_cubierto_hasta and self.proxima_fecha_cobro <= self.ultimo_pago_cubierto_hasta:
-                return None # Ya está cubierto, no hay "días para pagar"
-                
             delta = self.proxima_fecha_cobro - hoy
             return delta.days
         return None
@@ -189,3 +175,56 @@ class Poliza(models.Model):
         verbose_name_plural = "Pólizas"
         ordering = ['-fecha_fin_vigencia', 'cliente']
         unique_together = ('usuario', 'numero_poliza')
+
+class PagoCuota(models.Model):
+    poliza = models.ForeignKey(Poliza, on_delete=models.CASCADE, related_name='pagos_cuotas')
+    fecha_pago = models.DateField(default=timezone.now, verbose_name="Fecha en que se realizó el pago")
+    monto_pagado = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Monto Pagado")
+    fecha_cuota_correspondiente = models.DateField(verbose_name="Cuota correspondiente a la fecha")
+    notas = models.TextField(blank=True, null=True, verbose_name="Notas del pago")
+
+    def __str__(self):
+        return f"Pago de ${self.monto_pagado} para póliza {self.poliza.numero_poliza} el {self.fecha_pago}"
+
+    class Meta:
+        verbose_name = "Pago de Cuota"
+        verbose_name_plural = "Pagos de Cuotas"
+        ordering = ['-fecha_cuota_correspondiente']
+
+class Siniestro(models.Model):
+    ESTADO_CHOICES = [
+        ('REPORTADO', 'Reportado'),
+        ('EN_ANALISIS', 'En Análisis'),
+        ('PERDIDA_TOTAL', 'Pérdida Total'),
+        ('PAGADO', 'Pagado / Indemnizado'),
+        ('RECHAZADO', 'Rechazado'),
+        ('CERRADO', 'Cerrado'),
+    ]
+
+    poliza = models.ForeignKey(Poliza, on_delete=models.CASCADE, related_name='siniestros')
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='siniestros')
+    
+    fecha_ocurrencia = models.DateField(verbose_name="Fecha de Ocurrencia")
+    fecha_reporte = models.DateField(default=timezone.now, verbose_name="Fecha de Reporte")
+    
+    estado_siniestro = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='REPORTADO', verbose_name="Estado del Siniestro")
+    descripcion = models.TextField(verbose_name="Descripción del Siniestro")
+    
+    monto_reclamado = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name="Monto Reclamado")
+    monto_indemnizado = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name="Monto Indemnizado/Pagado")
+
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    documentos = GenericRelation(Documento)
+
+
+    def __str__(self):
+        return f"Siniestro para Póliza {self.poliza.numero_poliza} ({self.fecha_ocurrencia})"
+        
+    def get_absolute_url(self):
+        return reverse('polizas:detalle_siniestro', kwargs={'pk': self.pk})
+
+    class Meta:
+        verbose_name = "Siniestro"
+        verbose_name_plural = "Siniestros"
+        ordering = ['-fecha_ocurrencia']

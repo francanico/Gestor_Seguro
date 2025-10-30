@@ -16,7 +16,7 @@
             <thead class="table-dark">
                 <tr>
                     <th>Nombre</th>
-                    <th>NIT</th>
+                    <th>RIF</th>
                     <th>Nombre Contacto</th>
                     <th>Email Contacto</th>
                     <th>Teléfono Contacto</th>
@@ -27,7 +27,7 @@
                 {% for aseguradora in aseguradoras %}
                 <tr>
                     <td>{{ aseguradora.nombre }}</td>
-                    <td>{{ aseguradora.nit|default:"N/A" }}</td>
+                    <td>{{ aseguradora.rif|default:"N/A" }}</td>
                     <td>{{ aseguradora.contacto_nombre|default:"N/A" }}</td>
                     <td>{{ aseguradora.contacto_email|default:"N/A" }}</td>
                     <td>{{ aseguradora.contacto_telefono|default:"N/A" }}</td>

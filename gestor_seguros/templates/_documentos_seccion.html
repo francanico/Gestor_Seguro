@@ -1,0 +1,41 @@
+{% load static %}
+<div class="card mt-4">
+    <div class="card-header">
+        <i class="fas fa-folder-open"></i> Documentos Adjuntos
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-7">
+                <h5>Documentos Existentes</h5>
+                {% if object.documentos.all %}
+                    <ul class="list-group">
+                    {% for doc in object.documentos.all %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <a href="{{ doc.archivo.url }}" target="_blank"><i class="fas fa-file-alt"></i> {{ doc.titulo }}</a>
+                            <small class="text-muted">{{ doc.fecha_subida|date:"d/m/Y" }}</small>
+                            <a href="{% url 'documentos:eliminar_documento' doc.pk %}" class="btn btn-danger btn-sm" title="Eliminar"><i class="fas fa-trash"></i></a>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted">No hay documentos adjuntos.</p>
+                {% endif %}
+            </div>
+            <div class="col-md-5">
+                <h5>Subir Nuevo Documento</h5>
+                <form action="{% url 'documentos:subir_documento' content_type.id object.id %}" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_titulo" class="form-label">Título</label>
+                        <input type="text" name="titulo" class="form-control" required id="id_titulo">
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_archivo" class="form-label">Archivo</label>
+                        <input type="file" name="archivo" class="form-control" required id="id_archivo">
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Subir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

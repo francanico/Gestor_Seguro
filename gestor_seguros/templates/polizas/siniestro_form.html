@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<h2><i class="fas fa-car-crash"></i> {{ titulo_pagina }}</h2>
+{% if poliza %}<p class="lead">Para la póliza: <strong>{{ poliza.numero_poliza }}</strong> del cliente <strong>{{ poliza.cliente.nombre_completo }}</strong></p>{% endif %}
+<hr>
+<form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+        <div class="mb-3">
+            {{ field.label_tag }}
+            {% render_field field class+="form-control" %}
+            {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a href="{% if object %}{{ object.poliza.get_absolute_url }}{% else %}{{ poliza.get_absolute_url }}{% endif %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Eliminar Siniestro{% endblock %}
+
+{% block content %}
+<h2>Eliminar Siniestro</h2>
+<p>¿Estás seguro de que quieres eliminar el siniestro ocurrido el <strong>{{ object.fecha_ocurrencia|date:"d/m/Y" }}</strong>?</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Sí, Eliminar</button>
+    <a href="{{ object.get_absolute_url }}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

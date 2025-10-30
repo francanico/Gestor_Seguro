@@ -1,19 +1,22 @@
 # polizas/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
+from django.utils.dateparse import parse_date
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
-from .models import Poliza, Aseguradora
-from .forms import PolizaForm, AseguradoraForm
+from .models import Poliza, Aseguradora,PagoCuota,Siniestro 
+from .forms import PolizaForm, AseguradoraForm,PagoCuotaForm,SiniestroForm
 from clientes.models import Cliente # Para el selector de clientes
 from django.db.models import F, ExpressionWrapper, DateField
 from django.db.models.functions import ExtractMonth, ExtractDay
 import copy
+from .mixins import OwnerRequiredMixin
 
 # Constantes para estados de póliza activos
 ESTADOS_POLIZA_ACTIVOS = ['VIGENTE', 'PENDIENTE_PAGO']
@@ -42,7 +45,6 @@ class AseguradoraCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView)
         form.instance.usuario = self.request.user # Asigna el usuario
         return super().form_valid(form)
     
-
 
 class AseguradoraUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Aseguradora
@@ -121,13 +123,51 @@ class PolizaListView(LoginRequiredMixin, ListView):
         #     del self.request.session['titulo_lista_polizas']
         return context
 
-class PolizaDetailView(LoginRequiredMixin, DetailView):
+class PolizaDetailView(LoginRequiredMixin,OwnerRequiredMixin, DetailView):
     model = Poliza
     template_name = 'polizas/poliza_detail.html'
     context_object_name = 'poliza'
 
-    def get_queryset(self):
-        return super().get_queryset().select_related('cliente', 'aseguradora')
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        poliza = self.get_object()
+
+        # Formulario para registrar un nuevo pago
+        pago_form = PagoCuotaForm(initial={
+            'monto_pagado': poliza.valor_cuota or poliza.prima_total_anual,
+            'fecha_cuota_correspondiente': poliza.proxima_fecha_cobro
+        })
+        context['pago_form'] = pago_form
+        
+        # Lista de pagos existentes
+        context['pagos_realizados'] = poliza.pagos_cuotas.all()
+
+            # Lista de siniestros asociados
+        context['siniestros_asociados'] = self.object.siniestros.all()
+
+        
+        # ContentType para uso en formularios genéricos
+        obj = self.get_object()
+        context['content_type'] = ContentType.objects.get_for_model(obj)
+        
+        return context
+
+    def post(self, request, *args, **kwargs):
+        poliza = self.get_object()
+        form = PagoCuotaForm(request.POST)
+
+        if form.is_valid():
+            nuevo_pago = form.save(commit=False)
+            nuevo_pago.poliza = poliza
+            nuevo_pago.save()
+            messages.success(request, '¡Pago de cuota registrado exitosamente!')
+            return redirect(poliza.get_absolute_url())
+        else:
+            # Si el formulario no es válido, volvemos a renderizar la página con los errores
+            context = self.get_context_data()
+            context['pago_form'] = form # Pasamos el formulario con errores
+            messages.error(request, 'Hubo un error al registrar el pago. Por favor, revisa los datos.')
+            return self.render_to_response(context)
 
 class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Poliza
@@ -329,3 +369,82 @@ def dashboard_view(request):
     
     return render(request, 'polizas/dashboard.html', context)
 
+
+# ---  VISTA DE ACCIÓN RÁPIDA PARA REGISTRAR PAGO ---
+@login_required
+def registrar_pago_rapido(request, pk):
+    # Solo permitimos peticiones POST para esta acción por seguridad
+    if request.method == 'POST':
+        poliza = get_object_or_404(Poliza, pk=pk, usuario=request.user)
+        
+        # Obtenemos la fecha de la cuota desde los datos del formulario que enviaremos
+        fecha_cuota_str = request.POST.get('fecha_cuota')
+        
+        if fecha_cuota_str:
+            fecha_cuota = parse_date(fecha_cuota_str)
+            
+            # Verificamos que no estemos registrando un pago duplicado para esa cuota
+            if not PagoCuota.objects.filter(poliza=poliza, fecha_cuota_correspondiente=fecha_cuota).exists():
+                PagoCuota.objects.create(
+                    poliza=poliza,
+                    fecha_pago=timezone.now().date(),
+                    monto_pagado=poliza.valor_cuota or poliza.prima_total_anual,
+                    fecha_cuota_correspondiente=fecha_cuota,
+                    notas="Pago rápido registrado desde el dashboard."
+                )
+                messages.success(request, f"Pago para la póliza {poliza.numero_poliza} registrado exitosamente.")
+            else:
+                messages.warning(request, f"El pago para esa cuota de la póliza {poliza.numero_poliza} ya había sido registrado.")
+        else:
+            messages.error(request, "No se proporcionó la fecha de la cuota para registrar el pago.")
+            
+    # Redirigimos siempre al dashboard
+    return redirect('dashboard')
+
+
+#---(VISTAS SINIESTROS)---
+class SiniestroCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    model = Siniestro
+    form_class = SiniestroForm
+    template_name = 'polizas/siniestro_form.html'
+    success_message = "Siniestro reportado exitosamente."
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['poliza'] = get_object_or_404(Poliza, pk=self.kwargs['poliza_pk'], usuario=self.request.user)
+        context['titulo_pagina'] = "Reportar Nuevo Siniestro"
+        return context
+
+    def form_valid(self, form):
+        poliza = get_object_or_404(Poliza, pk=self.kwargs['poliza_pk'], usuario=self.request.user)
+        form.instance.poliza = poliza
+        form.instance.usuario = self.request.user
+        return super().form_valid(form)
+
+class SiniestroDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
+    model = Siniestro
+    template_name = 'polizas/siniestro_detail.html'
+    
+    def get_queryset(self):
+        return super().get_queryset().select_related('poliza', 'poliza__cliente')
+
+class SiniestroUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = Siniestro
+    form_class = SiniestroForm
+    template_name = 'polizas/siniestro_form.html'
+    success_message = "Siniestro actualizado exitosamente."
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = "Editar Siniestro"
+        return context
+
+class SiniestroDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
+    model = Siniestro
+    template_name = 'polizas/siniestro_confirm_delete.html'
+    
+    def get_success_url(self):
+        messages.success(self.request, "Siniestro eliminado exitosamente.")
+        # Redirige al detalle de la póliza a la que pertenecía el siniestro
+        return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.poliza.pk})
+#---(END VISTAS SINIESTROS)---

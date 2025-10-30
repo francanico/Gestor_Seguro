@@ -2,22 +2,22 @@
 from django.db import models
 from django.urls import reverse
 from django.conf import settings
-
+from django.contrib.contenttypes.fields import GenericRelation
+from documentos.models import Documento
 class Cliente(models.Model):
 
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='clientes')
 
-
     TIPO_DOCUMENTO_CHOICES = [
-        ('CC', 'Cédula de Ciudadanía'),
-        ('CE', 'Cédula de Extranjería'),
-        ('NIT', 'NIT'),
-        ('PAS', 'Pasaporte'),
-        ('OTRO', 'Otro'),
+        ('V', 'Cédula Venezolana (V)'),
+        ('E', 'Cédula Extranjero (E)'),
+        ('J', 'RIF Jurídico (J)'),
+        ('G', 'RIF Gubernamental (G)'),
+        ('P', 'Pasaporte'),
     ]
 
     nombre_completo = models.CharField(max_length=200, verbose_name="Nombre Completo")
-    tipo_documento = models.CharField(max_length=5, choices=TIPO_DOCUMENTO_CHOICES, default='CC', verbose_name="Tipo de Documento")
+    tipo_documento = models.CharField(max_length=5, choices=TIPO_DOCUMENTO_CHOICES, default='V', verbose_name="Tipo de Documento")
     numero_documento = models.CharField(max_length=50, unique=True, verbose_name="Número de Documento")
     fecha_nacimiento = models.DateField(null=True, blank=True, verbose_name="Fecha de Nacimiento")
     email = models.EmailField(max_length=254, unique=True, null=True, blank=True, verbose_name="Correo Electrónico")
@@ -29,6 +29,7 @@ class Cliente(models.Model):
     notas_adicionales = models.TextField(blank=True, null=True, verbose_name="Notas Adicionales")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
+    documentos = GenericRelation(Documento)
 
     def __str__(self):
         return f"{self.nombre_completo} ({self.numero_documento})"

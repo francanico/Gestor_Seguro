@@ -11,6 +11,7 @@ urlpatterns = [
     path('<int:pk>/editar/', views.PolizaUpdateView.as_view(), name='editar_poliza'),
     path('<int:pk>/eliminar/', views.PolizaDeleteView.as_view(), name='eliminar_poliza'),
     path('<int:pk>/renovar/', views.renovar_poliza, name='renovar_poliza'),
+    path('<int:pk>/registrar_pago_rapido/', views.registrar_pago_rapido, name='registrar_pago_rapido'),
 
     # URLs para Aseguradoras
     path('aseguradoras/', views.AseguradoraListView.as_view(), name='lista_aseguradoras'),
@@ -20,4 +21,11 @@ urlpatterns = [
 
     # Dashboard (si lo moviste aquí, si no, va en el urls.py principal)
     # path('dashboard/', views.dashboard_view, name='dashboard'), # Si se define en polizas/views.py
+
+    # URLs para Siniestros
+    path('siniestro/<int:pk>/', views.SiniestroDetailView.as_view(), name='detalle_siniestro'),
+    path('poliza/<int:poliza_pk>/siniestro/nuevo/', views.SiniestroCreateView.as_view(), name='crear_siniestro'),
+    path('siniestro/<int:pk>/editar/', views.SiniestroUpdateView.as_view(), name='editar_siniestro'),
+    path('siniestro/<int:pk>/eliminar/', views.SiniestroDeleteView.as_view(), name='eliminar_siniestro'),
+
 ]

@@ -124,7 +124,7 @@
             </div>
         </div>
 
-<!--  SECCIÓN PARA PRÓXIMOS COBROS -->
+<!-- SECCIÓN PARA PRÓXIMOS COBROS -->
 <!-- ======================================================= -->
 <div class="card mb-4" id="proximos-cobros">
     <div class="card-header bg-primary text-white">
@@ -136,23 +136,18 @@
                 <table class="table table-sm table-hover">
                     <thead>
                         <tr>
-                            <th>Próx. Cobro (Días)</th>
+                            <th>Próx. Cobro (Día)</th>
                             <th># Póliza</th>
                             <th>Cliente</th>
                             <th>Frec. Pago</th>
-                            <th>Valor Cuota</th>
-                            <th>Acciones</th>
+                            <th class="text-end">Valor Cuota</th>
+                            <th class="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for poliza in cobros_pendientes_30_dias %}
-                        <tr class="{% if poliza.proxima_fecha_cobro == hoy %}table-warning{% endif %}">
-                            <td class="fw-bold">
-                                {{ poliza.proxima_fecha_cobro|date:"d/m/Y" }}
-                            </td>
-                            <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
-                            <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
-                            <td><span class="badge bg-light text-dark border">{{ poliza.get_frecuencia_pago_display }}</span></td>
+                        <tr class="{% if poliza.dias_para_proximo_cobro == 0 %}table-warning{% endif %}">
+                            <!-- Columna 1: Fecha y contador de días -->
                             <td class="fw-bold">
                                 {{ poliza.proxima_fecha_cobro|date:"d/m/Y" }}
                                 {% with dias=poliza.dias_para_proximo_cobro %}
@@ -162,16 +157,43 @@
                                         <span class="badge bg-info text-dark ms-1">{{ dias }} día{{ dias|pluralize }}</span>
                                     {% endif %}
                                 {% endwith %}
-                                </td>
-                            <td class="text-end">
-                            {% if poliza.frecuencia_pago != 'ANUAL' and poliza.valor_cuota %}
-                                ${{ poliza.valor_cuota|floatformat:2|intcomma }}
-                            {% else %}
-                                ${{ poliza.prima_total_anual|floatformat:2|intcomma }}
-                            {% endif %}
                             </td>
-                            <td>
-                                <a href="{{ poliza.get_absolute_url }}" class="btn btn-sm btn-outline-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
+                            <!-- Columna 2: Número de Póliza -->
+                            <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
+                            <!-- Columna 3: Nombre del Cliente -->
+                            <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
+                            <!-- Columna 4: Frecuencia de Pago -->
+                            <td><span class="badge bg-light text-dark border">{{ poliza.get_frecuencia_pago_display }}</span></td>
+                            <!-- Columna 5: Valor de la Cuota (con lógica mejorada) -->
+                            <td class="text-end">
+                                {% if poliza.frecuencia_pago != 'ANUAL' and poliza.valor_cuota %}
+                                    ${{ poliza.valor_cuota|floatformat:2|intcomma }}
+                                {% else %}
+                                    ${{ poliza.prima_total_anual|floatformat:2|intcomma }}
+                                {% endif %}
+                            </td>
+                            <!-- Columna 6: Acciones (con los nuevos botones) -->
+                            <td class="text-center">
+                                <div class="btn-group" role="group" aria-label="Acciones de póliza">
+                                    <!-- Botón 1: Marcar como Pagada -->
+                                    <form action="{% url 'polizas:registrar_pago_rapido' poliza.pk %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="fecha_cuota" value="{{ poliza.proxima_fecha_cobro|date:'Y-m-d' }}">
+                                        <button type="submit" class="btn btn-sm btn-success" title="Marcar como Pagada">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </form>
+
+                                    <!-- Botón 2: Editar Póliza -->
+                                    <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-sm btn-warning" title="Editar Póliza">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+
+                                    <!-- Botón 3: Ver Detalles -->
+                                    <a href="{{ poliza.get_absolute_url }}" class="btn btn-sm btn-info" title="Ver Detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -184,7 +206,8 @@
     </div>
 </div>
 
-<!--  SECCIÓN DE CUMPLEAÑOS -->
+<!-- SECCIÓN DE CUMPLEAÑOS -->
+<!-- ============================================= -->
 <div class="card mb-4">
     <div class="card-header bg-info text-dark">
         <i class="fas fa-birthday-cake"></i> Cumpleaños de este Mes ({{ cumpleaneros_mes.count }})
@@ -193,12 +216,28 @@
         {% if cumpleaneros_mes %}
             <ul class="list-group list-group-flush">
                 {% for cliente in cumpleaneros_mes %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <a href="{{ cliente.get_absolute_url }}">{{ cliente.nombre_completo }}</a>
-                        <span class="badge bg-primary rounded-pill">
-                            {{ cliente.fecha_nacimiento|date:"d \d\e F" }}
-                        </span>
-                    </li>
+                    {# Comprobamos si el día y el mes de nacimiento coinciden con hoy #}
+                    {% if cliente.fecha_nacimiento.day == hoy.day and cliente.fecha_nacimiento.month == hoy.month %}
+                        {# Diseño especial para el cumpleañero del día #}
+                        <li class="list-group-item list-group-item-warning d-flex justify-content-between align-items-center animate-pulse">
+                            <div>
+                                <i class="fas fa-gift text-danger me-2"></i>
+                                <a href="{{ cliente.get_absolute_url }}" class="fw-bold">{{ cliente.nombre_completo }}</a>
+                            </div>
+                            <span class="badge bg-danger rounded-pill">
+                                ¡Cumple Hoy!
+                            </span>
+                        </li>
+                    {% else %}
+                        {# Diseño normal para otros cumpleaños del mes #}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <a href="{{ cliente.get_absolute_url }}">{{ cliente.nombre_completo }}</a>
+                            <span class="badge bg-secondary rounded-pill">
+                                {# Mostramos el día y el nombre del mes #}
+                                {{ cliente.fecha_nacimiento|date:"d \d\e F" }}
+                            </span>
+                        </li>
+                    {% endif %}
                 {% endfor %}
             </ul>
         {% else %}
@@ -206,6 +245,7 @@
         {% endif %}
     </div>
 </div>
+
 
 <!-- Comisiones Pendientes de Cobro -->
 <div class="card mb-4" id="comisiones">

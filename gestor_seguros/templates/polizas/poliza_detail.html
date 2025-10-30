@@ -85,6 +85,85 @@
     </div>
 </div>
 
+<!-- NUEVA SECCIÓN PARA GESTIÓN DE PAGOS DE CUOTAS -->
+<!-- ============================================== -->
+<div class="row">
+    <!-- Columna para registrar nuevo pago -->
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-cash-register"></i> Registrar Nuevo Pago de Cuota
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    {% for field in pago_form %}
+                        <div class="mb-3">
+                            {{ field.label_tag }}
+                            {% render_field field class+="form-control" %}
+                            {% for error in field.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Pago</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Columna para ver historial de pagos -->
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-history"></i> Historial de Pagos
+            </div>
+            <div class="card-body">
+                {% if pagos_realizados %}
+                    <ul class="list-group list-group-flush">
+                        {% for pago in pagos_realizados %}
+                        <li class="list-group-item">
+                            Se pagó <strong>${{ pago.monto_pagado|intcomma }}</strong> el {{ pago.fecha_pago|date:"d/m/Y" }}
+                            <small class="text-muted">(correspondiente a la cuota del {{ pago.fecha_cuota_correspondiente|date:"d/m/Y" }})</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted">Aún no se han registrado pagos para esta póliza.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+        # Historial de Siniestros
+<!-- ============================================== -->
+
+<div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-car-crash"></i> Historial de Siniestros</span>
+        <a href="{% url 'polizas:crear_siniestro' poliza.pk %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus"></i> Reportar Siniestro
+        </a>
+    </div>
+    <div class="card-body">
+        {% if siniestros_asociados %}
+            <ul class="list-group list-group-flush">
+                {% for siniestro in siniestros_asociados %}
+                <li class="list-group-item">
+                    <a href="{{ siniestro.get_absolute_url }}">Siniestro del {{ siniestro.fecha_ocurrencia|date:"d/m/Y" }}</a>
+                    - Estado: <span class="badge bg-secondary">{{ siniestro.get_estado_siniestro_display }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">No hay siniestros reportados para esta póliza.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ============================================== -->
+
 {% if poliza.archivo_poliza %}
 <div class="card mb-4">
     <div class="card-header">
@@ -109,4 +188,7 @@
 
 <hr>
 <small class="text-muted">Registrada: {{ poliza.fecha_creacion|date:"d/m/Y H:i" }} | Última actualización: {{ poliza.fecha_actualizacion|date:"d/m/Y H:i" }}</small>
+
+{% include "_documentos_seccion.html" %}
+
 {% endblock %}

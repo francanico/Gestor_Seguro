@@ -33,10 +33,13 @@ urlpatterns = [
         # next_page='pagina_inicio' # Redirige a la página de inicio pública después del logout
         ), name='logout'), # Por defecto, Django redirige a LOGIN_URL o a una página de "logout exitoso"
 
-    # Si quieres usar más URLs de django.contrib.auth (cambio de contraseña, reseteo, etc.)
-    # path('accounts/', include('django.contrib.auth.urls')),
-    # En este caso, tendrías que crear las plantillas correspondientes en templates/registration/
-    # como password_change_form.html, password_change_done.html, etc.
+    # App de Reportes
+    path('reportes/', include('reportes.urls', namespace='reportes')),
+
+        # App de Documentos
+    path('documentos/', include('documentos.urls', namespace='documentos')),
+
+
 ]
 
 if settings.DEBUG:
