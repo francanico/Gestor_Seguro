@@ -315,9 +315,14 @@ def dashboard_view(request):
     ).order_by('fecha_fin_vigencia')
 
     # A.3: Pólizas cuya cobertura está próxima a vencer (en los próximos 30 días).
+
     polizas_a_vencer_30 = polizas_activas_y_pendientes.filter(
         fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=30))
     ).order_by('fecha_fin_vigencia')
+
+# -- LA LÓGICA PARA 60 DÍAS --
+    polizas_a_vencer_60 = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy + timedelta(days=31), hoy + timedelta(days=60))).order_by('fecha_fin_vigencia')
+
 
     # --- SECCIÓN B: Gestión de Cobros de Cuotas ---
 
@@ -383,6 +388,7 @@ def dashboard_view(request):
         'cobros_pendientes_30_dias': cobros_pendientes_30_dias,
         'comisiones_pendientes': comisiones_pendientes,
         'cumpleaneros_mes': cumpleaneros_mes,
+        'polizas_a_vencer_60': polizas_a_vencer_60,
         
         # KPIs para las tarjetas
         'total_clientes': total_clientes,
