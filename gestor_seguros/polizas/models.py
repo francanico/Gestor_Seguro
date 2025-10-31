@@ -133,28 +133,24 @@ class Poliza(models.Model):
 
     @property
     def estado_renovacion(self):
-        # Primero, manejamos los estados que no dependen de la fecha.
-        if self.estado_poliza in ['PENDIENTE_PAGO']:
-            return "Pendiente Por Pago"
-        
-        if self.estado_poliza in ['EN_TRAMITE']:
+        # Primero, manejamos los estados administrativos que tienen prioridad
+        if self.estado_poliza == 'PENDIENTE_PAGO':
+            return "Pendiente de Pago" # Devolvemos el string exacto
+        if self.estado_poliza == 'EN_TRAMITE':
             return "En Trámite"
-        
-        if self.estado_poliza in ['RENOVADA']:
-            return "RENOVADA"
-        
-        if self.estado_poliza in ['CANCELADA']:
-            return "CANCELADA"
+        if self.estado_poliza == 'RENOVADA':
+            return "Renovada"
+        if self.estado_poliza == 'CANCELADA':
+            return "Cancelada"
 
-        # Si llegamos aquí, la póliza debería estar 'VIGENTE' o 'VENCIDA'.
-        # Ahora sí, usamos los días para la clasificación.
+        # Si no es ninguno de los anteriores, procedemos a calcular por fecha
         dias = self.dias_para_renovar
 
-        if dias is None and self.estado_poliza == 'VENCIDA':
-            return "Vencida"
-        
         if dias is None:
-            # Caso raro, podría ser una póliza vigente sin fecha de fin.
+            # Si el estado es VENCIDA pero dias es None (porque no está VIGENTE),
+            # nos aseguramos de devolver "Vencida"
+            if self.estado_poliza == 'VENCIDA':
+                return "Vencida"
             return "Indeterminado"
 
         if dias < 0:
