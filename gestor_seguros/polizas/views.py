@@ -231,26 +231,18 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         context = self.get_context_data()
         asegurados_formset = context['asegurados_formset']
         
+        # Solo comprobamos si el formset es válido, ya no contamos
         if asegurados_formset.is_valid():
-            # Contamos cuántos formularios se enviaron realmente (no vacíos)
-            asegurados_count = 0
-            for f in asegurados_formset:
-                if f.has_changed():
-                    asegurados_count += 1
-            
-            # --- VALIDACIÓN MANUAL ---
-            if asegurados_count == 0:
-                messages.error(self.request, "Debes añadir al menos un asegurado a la póliza.")
-                return self.form_invalid(form)
-
             with transaction.atomic():
                 form.instance.usuario = self.request.user
                 self.object = form.save()
                 asegurados_formset.instance = self.object
                 asegurados_formset.save()
-            return super().form_valid(form)
         else:
+            # Si el formset tiene algún otro error (ej. formato de fecha), lo manejamos
             return self.form_invalid(form)
+            
+        return super().form_valid(form)
 
     def form_invalid(self, form):
         asegurados_formset = AseguradoFormSet(self.request.POST, prefix='asegurados')
@@ -281,27 +273,16 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
         context = self.get_context_data()
         asegurados_formset = context['asegurados_formset']
         
+        # Solo comprobamos si el formset es válido, ya no contamos
         if asegurados_formset.is_valid():
-            # Contamos formularios válidos y no marcados para borrar
-            asegurados_count = 0
-            for f in asegurados_formset:
-                # `f.cleaned_data` solo existe si el form es válido.
-                # `f.cleaned_data.get('DELETE')` es True si el checkbox de borrar está marcado.
-                if f.cleaned_data and not f.cleaned_data.get('DELETE', False):
-                    asegurados_count += 1
-            
-            # --- VALIDACIÓN MANUAL ---
-            if asegurados_count == 0:
-                messages.error(self.request, "Una póliza no puede quedar sin asegurados. Añade al menos uno.")
-                return self.form_invalid(form)
-
             with transaction.atomic():
                 self.object = form.save()
                 asegurados_formset.instance = self.object
                 asegurados_formset.save()
-            return super().form_valid(form)
         else:
             return self.form_invalid(form)
+            
+        return super().form_valid(form)
     
     def form_invalid(self, form):
         asegurados_formset = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
