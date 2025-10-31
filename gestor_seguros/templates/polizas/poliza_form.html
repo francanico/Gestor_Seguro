@@ -4,6 +4,7 @@
 {% block title %}{{ titulo_pagina|default:"Formulario de Póliza" }}{% endblock %}
 
 {% block content %}
+
 <div class="page-header">
     <h2><i class="fas fa-file-signature"></i> {{ titulo_pagina|default:"Formulario de Póliza" }}</h2>
 </div>
@@ -11,31 +12,84 @@
 <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
 
+    <!-- ============================================= -->
+    <!-- Card 1: Datos Principales de la Póliza      -->
+    <!-- ============================================= -->
     <div class="card mb-4">
         <div class="card-header">Información de la Póliza</div>
         <div class="card-body">
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
             <div class="row g-3">
-                <div class="col-md-6">{{ form.cliente.label_tag }}{% render_field form.cliente class+="form-select" %}</div>
-                <div class="col-md-6">{{ form.aseguradora.label_tag }}{% render_field form.aseguradora class+="form-select" %}</div>
-                <div class="col-md-6">{{ form.numero_poliza.label_tag }}{% render_field form.numero_poliza class+="form-control" %}</div>
-                <div class="col-md-6">{{ form.ramo_tipo_seguro.label_tag }}{% render_field form.ramo_tipo_seguro class+="form-control" %}</div>
-                <div class="col-12">{{ form.descripcion_bien_asegurado.label_tag }}{% render_field form.descripcion_bien_asegurado class+="form-control" %}</div>
-                <div class="col-md-4">{{ form.fecha_emision.label_tag }}{% render_field form.fecha_emision class+="form-control" %}</div>
-                <div class="col-md-4">{{ form.fecha_inicio_vigencia.label_tag }}{% render_field form.fecha_inicio_vigencia class+="form-control" %}</div>
-                <div class="col-md-4">{{ form.fecha_fin_vigencia.label_tag }}{% render_field form.fecha_fin_vigencia class+="form-control" %}</div>
-                <div class="col-md-4">{{ form.prima_total_anual.label_tag }}{% render_field form.prima_total_anual class+="form-control" %}</div>
-                <div class="col-md-4">{{ form.frecuencia_pago.label_tag }}{% render_field form.frecuencia_pago class+="form-select" %}</div>
-                <div class="col-md-4">{{ form.valor_cuota.label_tag }}{% render_field form.valor_cuota class+="form-control" %}</div>
-                <div class="col-md-4">{{ form.comision_monto.label_tag }}{% render_field form.comision_monto class+="form-control" %}</div>
-                <div class="col-md-4">{{ form.fecha_cobro_comision.label_tag }}{% render_field form.fecha_cobro_comision class+="form-control" %}</div>
-                <div class="col-md-4 align-self-center"><div class="form-check">{{ form.comision_cobrada }} {{ form.comision_cobrada.label_tag }}</div></div>
-                <div class="col-md-6">{{ form.estado_poliza.label_tag }}{% render_field form.estado_poliza class+="form-select" %}</div>
-                <div class="col-md-6">{{ form.archivo_poliza.label_tag }}{% render_field form.archivo_poliza class+="form-control" %}</div>
-                <div class="col-12">{{ form.notas_poliza.label_tag }}{% render_field form.notas_poliza class+="form-control" %}</div>
+                <div class="col-md-6">
+                    <label for="{{ form.cliente.id_for_label }}" class="form-label">{{ form.cliente.label }}</label>
+                    {% render_field form.cliente class+="form-select" %}
+                    {% for error in form.cliente.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.aseguradora.id_for_label }}" class="form-label">{{ form.aseguradora.label }}</label>
+                    {% render_field form.aseguradora class+="form-select" %}
+                    {% for error in form.aseguradora.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.numero_poliza.id_for_label }}" class="form-label">{{ form.numero_poliza.label }}</label>
+                    {% render_field form.numero_poliza class+="form-control" %}
+                    {% for error in form.numero_poliza.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.ramo_tipo_seguro.id_for_label }}" class="form-label">{{ form.ramo_tipo_seguro.label }}</label>
+                    {% render_field form.ramo_tipo_seguro class+="form-control" %}
+                    {% for error in form.ramo_tipo_seguro.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-12">
+                    <label for="{{ form.descripcion_bien_asegurado.id_for_label }}" class="form-label">{{ form.descripcion_bien_asegurado.label }}</label>
+                    {% render_field form.descripcion_bien_asegurado class+="form-control" rows="2" %}
+                    {% for error in form.descripcion_bien_asegurado.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- ============================================= -->
+    <!-- Card 2: Vigencia, Pagos y Comisiones        -->
+    <!-- ============================================= -->
+    <div class="card mb-4">
+        <div class="card-header">Vigencia, Pagos y Comisiones</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4"><label for="{{ form.fecha_emision.id_for_label }}" class="form-label">{{ form.fecha_emision.label }}</label>{% render_field form.fecha_emision class+="form-control" %}</div>
+                <div class="col-md-4"><label for="{{ form.fecha_inicio_vigencia.id_for_label }}" class="form-label">{{ form.fecha_inicio_vigencia.label }}</label>{% render_field form.fecha_inicio_vigencia class+="form-control" %}</div>
+                <div class="col-md-4"><label for="{{ form.fecha_fin_vigencia.id_for_label }}" class="form-label">{{ form.fecha_fin_vigencia.label }}</label>{% render_field form.fecha_fin_vigencia class+="form-control" %}</div>
+                
+                <div class="col-md-4"><label for="{{ form.prima_total_anual.id_for_label }}" class="form-label">{{ form.prima_total_anual.label }}</label>{% render_field form.prima_total_anual class+="form-control" %}</div>
+                <div class="col-md-4"><label for="{{ form.frecuencia_pago.id_for_label }}" class="form-label">{{ form.frecuencia_pago.label }}</label>{% render_field form.frecuencia_pago class+="form-select" %}</div>
+                <div class="col-md-4"><label for="{{ form.valor_cuota.id_for_label }}" class="form-label">{{ form.valor_cuota.label }}</label>{% render_field form.valor_cuota class+="form-control" %}</div>
+
+                <div class="col-md-4"><label for="{{ form.comision_monto.id_for_label }}" class="form-label">{{ form.comision_monto.label }}</label>{% render_field form.comision_monto class+="form-control" %}</div>
+                <div class="col-md-4"><label for="{{ form.fecha_cobro_comision.id_for_label }}" class="form-label">{{ form.fecha_cobro_comision.label }}</label>{% render_field form.fecha_cobro_comision class+="form-control" %}</div>
+                <div class="col-md-4 d-flex align-items-end"><div class="form-check mb-2">{% render_field form.comision_cobrada class+="form-check-input" %} <label for="{{ form.comision_cobrada.id_for_label }}" class="form-check-label">{{ form.comision_cobrada.label }}</label></div></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ============================================= -->
+    <!-- Card 3: Otros Detalles y Archivos           -->
+    <!-- ============================================= -->
+    <div class="card mb-4">
+        <div class="card-header">Otros Detalles</div>
+        <div class="card-body">
+             <div class="row g-3">
+                <div class="col-md-6"><label for="{{ form.estado_poliza.id_for_label }}" class="form-label">{{ form.estado_poliza.label }}</label>{% render_field form.estado_poliza class+="form-select" %}</div>
+                <div class="col-md-6"><label for="{{ form.archivo_poliza.id_for_label }}" class="form-label">{{ form.archivo_poliza.label }}</label>{% render_field form.archivo_poliza class+="form-control" %}</div>
+                <div class="col-12"><label for="{{ form.notas_poliza.id_for_label }}" class="form-label">{{ form.notas_poliza.label }}</label>{% render_field form.notas_poliza class+="form-control" rows="3" %}</div>
+             </div>
+        </div>
+    </div>
+    
+    <!-- ============================================= -->
+    <!-- Card 4: Asegurados en la Póliza (Formset)   -->
+    <!-- ============================================= -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             Asegurados en la Póliza
@@ -43,52 +97,69 @@
         </div>
         <div class="card-body">
             {{ asegurados_formset.management_form }}
+            
+            {% if asegurados_formset.non_form_errors %}
+                <div class="alert alert-danger">
+                    <strong>Error en los Asegurados:</strong>
+                    {% for error in asegurados_formset.non_form_errors %}{{ error }}{% endfor %}
+                </div>
+            {% endif %}
+
             <div id="asegurado-forms-container">
                 {% for form in asegurados_formset %}
                     <div class="asegurado-form mb-4 p-3 border rounded position-relative">
-                        {% for hidden_field in form.hidden_fields %}{{ hidden_field }}{% endfor %}
-                        {% if form.instance.pk %}
-                            <div class="form-check position-absolute top-0 end-0 mt-2 me-2">{{ form.DELETE }} <label for="{{ form.DELETE.id_for_label }}" class="form-check-label text-danger">Eliminar</label></div>
+                        {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                        
+                        {% if form.instance.pk or form.DELETE.value %}
+                        <div class="form-check position-absolute top-0 end-0 mt-2 me-2">
+                            {% render_field form.DELETE class+="form-check-input" %}
+                            <label for="{{ form.DELETE.id_for_label }}" class="form-check-label text-danger">Eliminar</label>
+                        </div>
                         {% endif %}
+                        
                         <div class="row g-3">
-                            <div class="col-md-6">{{ form.nombre_completo.label_tag }}{% render_field form.nombre_completo class+="form-control" placeholder="Nombre y Apellido" %}</div>
-                            <div class="col-md-6">{{ form.parentesco.label_tag }}{% render_field form.parentesco class+="form-select" %}</div>
-                            <div class="col-md-6">{{ form.cedula.label_tag }}{% render_field form.cedula class+="form-control" placeholder="V-12345678" %}</div>
-                            <div class="col-md-6">{{ form.fecha_nacimiento.label_tag }}{% render_field form.fecha_nacimiento class+="form-control" %}</div>
-                            <div class="col-md-6">{{ form.sexo.label_tag }}{% render_field form.sexo class+="form-select" %}</div>
-                            <div class="col-md-6">{{ form.email.label_tag }}{% render_field form.email class+="form-control" placeholder="correo@ejemplo.com" %}</div>
-                            <div class="col-md-6">{{ form.telefono.label_tag }}{% render_field form.telefono class+="form-control" placeholder="0414-1234567" %}</div>
-                            <div class="col-md-6">{{ form.notas.label_tag }}{% render_field form.notas class+="form-control" %}</div>
+                            <div class="col-md-6"><label>{{ form.nombre_completo.label }}</label>{% render_field form.nombre_completo class+="form-control" placeholder="Nombre y Apellido" %}{% for error in form.nombre_completo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                            <div class="col-md-6"><label>{{ form.parentesco.label }}</label>{% render_field form.parentesco class+="form-select" %}{% for error in form.parentesco.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                            <div class="col-md-6"><label>{{ form.cedula.label }}</label>{% render_field form.cedula class+="form-control" placeholder="V-12345678" %}{% for error in form.cedula.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                            <div class="col-md-6"><label>{{ form.fecha_nacimiento.label }}</label>{% render_field form.fecha_nacimiento class+="form-control" %}{% for error in form.fecha_nacimiento.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                            <div class="col-md-6"><label>{{ form.sexo.label }}</label>{% render_field form.sexo class+="form-select" %}{% for error in form.sexo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                            <div class="col-md-6"><label>{{ form.email.label }}</label>{% render_field form.email class+="form-control" placeholder="correo@ejemplo.com" %}{% for error in form.email.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                            <div class="col-md-6"><label>{{ form.telefono.label }}</label>{% render_field form.telefono class+="form-control" placeholder="0414-1234567" %}{% for error in form.telefono.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                            <div class="col-md-6"><label>{{ form.notas.label }}</label>{% render_field form.notas class+="form-control" rows="1" %}{% for error in form.notas.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
                         </div>
                     </div>
                 {% endfor %}
             </div>
 
-            <div id="empty-asegurado-form" style="display: none;">
+            <!-- Plantilla de Formulario Vacío para JavaScript -->
+            <div id="empty-form-template" style="display: none;">
                 <div class="asegurado-form mb-4 p-3 border rounded position-relative">
                     <button type="button" class="btn-close position-absolute top-0 end-0 mt-2 me-2 remove-asegurado-form" aria-label="Close"></button>
-                    {% for hidden_field in asegurados_formset.empty_form.hidden_fields %}{{ hidden_field }}{% endfor %}
+                    {% for hidden in asegurados_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
                     <div class="row g-3">
-                        <div class="col-md-6">{{ asegurados_formset.empty_form.nombre_completo.label_tag }}{% render_field asegurados_formset.empty_form.nombre_completo class+="form-control" placeholder="Nombre y Apellido" %}</div>
-                        <div class="col-md-6">{{ asegurados_formset.empty_form.parentesco.label_tag }}{% render_field asegurados_formset.empty_form.parentesco class+="form-select" %}</div>
-                        <div class="col-md-6">{{ asegurados_formset.empty_form.cedula.label_tag }}{% render_field asegurados_formset.empty_form.cedula class+="form-control" placeholder="V-12345678" %}</div>
-                        <div class="col-md-6">{{ asegurados_formset.empty_form.fecha_nacimiento.label_tag }}{% render_field asegurados_formset.empty_form.fecha_nacimiento class+="form-control" %}</div>
-                        <div class="col-md-6">{{ asegurados_formset.empty_form.sexo.label_tag }}{% render_field asegurados_formset.empty_form.sexo class+="form-select" %}</div>
-                        <div class="col-md-6">{{ asegurados_formset.empty_form.email.label_tag }}{% render_field asegurados_formset.empty_form.email class+="form-control" placeholder="correo@ejemplo.com" %}</div>
-                        <div class="col-md-6">{{ asegurados_formset.empty_form.telefono.label_tag }}{% render_field asegurados_formset.empty_form.telefono class+="form-control" placeholder="0414-1234567" %}</div>
-                        <div class="col-md-6">{{ asegurados_formset.empty_form.notas.label_tag }}{% render_field asegurados_formset.empty_form.notas class+="form-control" %}</div>
+                        <div class="col-md-6"><label>{{ asegurados_formset.empty_form.nombre_completo.label }}</label>{% render_field asegurados_formset.empty_form.nombre_completo class+="form-control" placeholder="Nombre y Apellido" %}</div>
+                        <div class="col-md-6"><label>{{ asegurados_formset.empty_form.parentesco.label }}</label>{% render_field asegurados_formset.empty_form.parentesco class+="form-select" %}</div>
+                        <div class="col-md-6"><label>{{ asegurados_formset.empty_form.cedula.label }}</label>{% render_field asegurados_formset.empty_form.cedula class+="form-control" placeholder="V-12345678" %}</div>
+                        <div class="col-md-6"><label>{{ asegurados_formset.empty_form.fecha_nacimiento.label }}</label>{% render_field asegurados_formset.empty_form.fecha_nacimiento class+="form-control" %}</div>
+                        <div class="col-md-6"><label>{{ asegurados_formset.empty_form.sexo.label }}</label>{% render_field asegurados_formset.empty_form.sexo class+="form-select" %}</div>
+                        <div class="col-md-6"><label>{{ asegurados_formset.empty_form.email.label }}</label>{% render_field asegurados_formset.empty_form.email class+="form-control" placeholder="correo@ejemplo.com" %}</div>
+                        <div class="col-md-6"><label>{{ asegurados_formset.empty_form.telefono.label }}</label>{% render_field asegurados_formset.empty_form.telefono class+="form-control" placeholder="0414-1234567" %}</div>
+                        <div class="col-md-6"><label>{{ asegurados_formset.empty_form.notas.label }}</label>{% render_field asegurados_formset.empty_form.notas class+="form-control" rows="1" %}</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Botones de Acción Finales -->
     <div class="mt-4">
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Cambios</button>
-        <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'polizas:lista_polizas' %}{% endif %}" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
+        <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'polizas:lista_polizas' %}{% endif %}" class="btn btn-secondary">
+            <i class="fas fa-times"></i> Cancelar
+        </a>
     </div>
-</form>
 
+</form>
 {% endblock %}
 
 {% block extra_js %}
@@ -96,21 +167,19 @@
 document.addEventListener('DOMContentLoaded', function() {
     const addButton = document.getElementById('add-asegurado-form');
     const container = document.getElementById('asegurado-forms-container');
-    const totalForms = document.getElementById('id_asegurados-TOTAL_FORMS');
-    const emptyFormTemplate = document.getElementById('empty-asegurado-form').innerHTML;
+    const totalFormsInput = document.getElementById('id_asegurados-TOTAL_FORMS');
+    const emptyFormTemplate = document.getElementById('empty-form-template').innerHTML;
 
     addButton.addEventListener('click', function() {
-        let formNum = parseInt(totalForms.value);
-        let newForm = emptyFormTemplate.replace(/__prefix__/g, formNum);
-        container.insertAdjacentHTML('beforeend', newForm);
-        totalForms.value = formNum + 1;
+        let formNum = parseInt(totalFormsInput.value);
+        let newFormHtml = emptyFormTemplate.replace(/__prefix__/g, formNum);
+        container.insertAdjacentHTML('beforeend', newFormHtml);
+        totalFormsInput.value = formNum + 1;
     });
 
     container.addEventListener('click', function(e) {
         if (e.target && e.target.classList.contains('remove-asegurado-form')) {
             e.target.closest('.asegurado-form').remove();
-            // Note: Decrementing totalForms is complex with deletions.
-            // Django's formset management handles gaps in numbering upon submission.
         }
     });
 });

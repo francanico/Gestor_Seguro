@@ -307,10 +307,32 @@ class PolizaUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                 self.object = form.save()
                 asegurados_formset.instance = self.object
                 asegurados_formset.save()
+            return super().form_valid(form)
         else:
+            # Si el formset NO es válido, llamamos a form_invalid explícitamente
             return self.form_invalid(form)
-            
-        return super().form_valid(form)
+
+    # --- MÉTODO AÑADIDO/MODIFICADO PARA MOSTRAR ERRORES ---
+    def form_invalid(self, form):
+        # Obtenemos el formset de la misma manera que en get_context_data
+        asegurados_formset = AseguradoFormSet(self.request.POST, instance=self.object)
+        
+        # Añadimos un mensaje de error general
+        messages.error(self.request, 'Por favor, corrige los errores en el formulario.')
+
+        # Imprimimos los errores en la consola del servidor (muy útil para depurar en Railway)
+        print("Errores en el formulario principal (Póliza):")
+        print(form.errors)
+        print("\nErrores en el formset de Asegurados:")
+        print(asegurados_formset.errors)
+        
+        # Volvemos a renderizar la página, pero ahora pasamos el formset con los errores
+        return self.render_to_response(
+            self.get_context_data(form=form, asegurados_formset=asegurados_formset)
+        )
+
+    def get_success_url(self):
+        return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
 
 class PolizaDeleteView(LoginRequiredMixin, DeleteView):
     model = Poliza
