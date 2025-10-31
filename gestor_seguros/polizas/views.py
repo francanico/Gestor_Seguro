@@ -231,22 +231,29 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         context = self.get_context_data()
         asegurados_formset = context['asegurados_formset']
         
-        # Solo comprobamos si el formset es válido, ya no contamos
         if asegurados_formset.is_valid():
             with transaction.atomic():
                 form.instance.usuario = self.request.user
                 self.object = form.save()
                 asegurados_formset.instance = self.object
                 asegurados_formset.save()
+            # La línea de abajo se encarga del mensaje de éxito
+            return super().form_valid(form)
         else:
-            # Si el formset tiene algún otro error (ej. formato de fecha), lo manejamos
+            # Si el formset falla por otra razón (ej. formato de fecha), manejamos el error
             return self.form_invalid(form)
-            
-        return super().form_valid(form)
 
     def form_invalid(self, form):
         asegurados_formset = AseguradoFormSet(self.request.POST, prefix='asegurados')
         messages.error(self.request, 'Por favor, corrige los errores en el formulario.')
+        
+        # Depuración: Imprime los errores en los logs del servidor
+        print("--- Errores del Formulario Principal ---")
+        print(form.errors)
+        print("--- Errores del Formset de Asegurados ---")
+        print(asegurados_formset.errors)
+        print(asegurados_formset.non_form_errors())
+
         return self.render_to_response(
             self.get_context_data(form=form, asegurados_formset=asegurados_formset)
         )
@@ -255,6 +262,7 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
 
 class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMixin, UpdateView):
+
     model = Poliza
     form_class = PolizaForm
     template_name = 'polizas/poliza_form.html'
@@ -273,20 +281,26 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
         context = self.get_context_data()
         asegurados_formset = context['asegurados_formset']
         
-        # Solo comprobamos si el formset es válido, ya no contamos
         if asegurados_formset.is_valid():
             with transaction.atomic():
                 self.object = form.save()
                 asegurados_formset.instance = self.object
                 asegurados_formset.save()
+            return super().form_valid(form)
         else:
             return self.form_invalid(form)
-            
-        return super().form_valid(form)
     
     def form_invalid(self, form):
         asegurados_formset = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
         messages.error(self.request, 'Por favor, corrige los errores en el formulario.')
+
+        # Depuración
+        print("--- Errores del Formulario Principal ---")
+        print(form.errors)
+        print("--- Errores del Formset de Asegurados ---")
+        print(asegurados_formset.errors)
+        print(asegurados_formset.non_form_errors())
+
         return self.render_to_response(
             self.get_context_data(form=form, asegurados_formset=asegurados_formset)
         )
@@ -480,7 +494,6 @@ def dashboard_view(request):
 
     return render(request, 'polizas/dashboard.html', context)
 
-
 # ---  VISTA DE ACCIÓN RÁPIDA PARA REGISTRAR PAGO ---
 @login_required
 def registrar_pago_rapido(request, pk):
@@ -511,7 +524,6 @@ def registrar_pago_rapido(request, pk):
             
     # Redirigimos siempre al dashboard
     return redirect('dashboard')
-
 
 #---(VISTAS SINIESTROS)---
 class SiniestroCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):

@@ -44,14 +44,15 @@ class AseguradoForm(forms.ModelForm):
                 if isinstance(field.widget, forms.Select):
                     field.widget.attrs.update({'class': 'form-select'})
 
-
+# --- CONFIGURACIÓN DEFINITIVA DEL FORMSET ---
 AseguradoFormSet = inlineformset_factory(
     Poliza,
     Asegurado,
     form=AseguradoForm,
-    extra=0,           # Muestra 1 formulario vacío para añadir si se desea.
-    min_num=0,         # <-- CERO: No se requiere un mínimo de formularios.
-    validate_min=False,  # <-- FALSO: No ejecutar la validación del mínimo.
+    # El formset es completamente opcional y no muestra formularios extra por defecto
+    extra=0,
+    min_num=0,
+    validate_min=False,
     can_delete=True,
     fk_name='poliza'
 )
