@@ -87,10 +87,10 @@
         </div>
     </div>
     
-    <!-- ============================================= -->
-    <!-- Card 4: Asegurados en la Póliza (Formset)   -->
-    <!-- ============================================= -->
-    <div class="card">
+<!-- ============================================= -->
+<!-- Card 4: Asegurados en la Póliza (Formset)   -->
+<!-- ============================================= -->
+<div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <span>Asegurados en la Póliza</span>
         <button type="button" class="btn btn-sm btn-success" id="add-asegurado-form">
@@ -108,7 +108,8 @@
         {% endif %}
 
         <div id="asegurado-forms-container">
-            {# Renderizamos los formularios que ya tienen datos (asegurados existentes) #}
+            {# --- LÓGICA CORREGIDA --- #}
+            {# Renderizamos SOLO los formularios que ya existen (tienen una instancia) #}
             {% for form in asegurados_formset %}
                 {% if form.instance.pk %}
                     {% include 'polizas/_asegurado_form_snippet.html' with form=form %}
@@ -116,18 +117,19 @@
             {% endfor %}
         </div>
         
-        {# Mensaje por defecto si no hay asegurados #}
+        {# Mensaje que se muestra si no hay asegurados existentes #}
         <div id="no-asegurados-message" {% if asegurados_formset.initial_form_count > 0 %}style="display: none;"{% endif %}>
             <p class="text-muted">No hay asegurados registrados. Haz clic en "Añadir Asegurado" para agregar el primero.</p>
         </div>
 
+        {# La plantilla para el JavaScript siempre usa el 'empty_form' #}
         <template id="empty-form-template">
             {% include 'polizas/_asegurado_form_snippet.html' with form=asegurados_formset.empty_form %}
         </template>
-        </div>
     </div>
+</div>
 
-    <!-- Botones de Acción Finales -->
+<!-- ... (botones de Guardar/Cancelar) ... -->
     <div class="mt-4">
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Cambios</button>
         <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'polizas:lista_polizas' %}{% endif %}" class="btn btn-secondary">

@@ -53,7 +53,7 @@ AseguradoFormSet = inlineformset_factory(
     Poliza,
     Asegurado,
     form=AseguradoForm,
-    extra=0,            # No mostrar formularios vacíos por defecto.
+    extra=1,            # No mostrar formularios vacíos por defecto.
     min_num=0,          # No requerir un mínimo.
     validate_min=False,   # No validar el mínimo.
     can_delete=True,      # Permitir la eliminación.
