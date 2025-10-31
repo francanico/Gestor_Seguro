@@ -34,13 +34,12 @@ class AseguradoForm(forms.ModelForm):
         }
 
 # --- ACTUALIZAR EL FORMSET FACTORY ---
-# Cambiamos extra de 1 a 0, ya que lo manejaremos con JS
 AseguradoFormSet = inlineformset_factory(
     Poliza,
     Asegurado,
     form=AseguradoForm,
-    extra=0, # <-- CAMBIO IMPORTANTE: empezamos con CERO formularios extra
-    min_num=1, # <-- Opcional: requerir al menos un asegurado (el titular)
+    extra=1, # Mantenemos 1 para que en creación siempre haya un campo
+    min_num=1,
     validate_min=True,
     can_delete=True,
     fk_name='poliza'

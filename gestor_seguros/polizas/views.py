@@ -278,7 +278,24 @@ class PolizaUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         if self.request.POST:
             context['asegurados_formset'] = AseguradoFormSet(self.request.POST, instance=self.object)
         else:
-            context['asegurados_formset'] = AseguradoFormSet(instance=self.object)
+            formset = AseguradoFormSet(instance=self.object)
+            # --- LÓGICA AÑADIDA ---
+            # Si es una póliza existente que no tiene asegurados,
+            # pre-llenamos el primer formulario con los datos del cliente contratante.
+            if not formset.forms and self.object.cliente:
+                # Creamos un formset con 1 formulario extra y datos iniciales
+                formset = AseguradoFormSet(instance=self.object, initial=[
+                    {
+                        'nombre_completo': self.object.cliente.nombre_completo,
+                        'cedula': self.object.cliente.numero_documento,
+                        'fecha_nacimiento': self.object.cliente.fecha_nacimiento,
+                        'parentesco': 'TITULAR'
+                    }
+                ])
+                # Reajustamos extra a 0 si ya hemos añadido el inicial
+                formset.extra = 0
+
+            context['asegurados_formset'] = formset
         return context
     
     def form_valid(self, form):
