@@ -420,10 +420,14 @@ def dashboard_view(request):
     # --- SECCIÓN C: Otras Tareas y Recordatorios ---
 
     # C.1: Comisiones pendientes de cobro en toda la cartera activa.
-    comisiones_pendientes = polizas_activas_y_pendientes.filter(
+    # Buscamos comisiones pendientes en TODAS las pólizas del usuario,
+    # sin importar su estado (incluso si están renovadas), porque una comisión
+    # de una póliza antigua puede seguir pendiente de cobro.
+    comisiones_pendientes = Poliza.objects.filter(
+        usuario=request.user,
         comision_cobrada=False,
         comision_monto__gt=0
-    ).order_by('fecha_fin_vigencia')
+    ).select_related('cliente').order_by('fecha_fin_vigencia')
 
     # C.2: Cumpleaños del mes actual.
     cumpleaneros_mes = Cliente.objects.filter(

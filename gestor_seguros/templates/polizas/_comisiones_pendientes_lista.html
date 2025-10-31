@@ -1,5 +1,4 @@
 {% load humanize %}
-
 {% if comisiones_pendientes %}
     <ul class="list-group list-group-flush">
         {% for poliza in comisiones_pendientes %}
@@ -13,5 +12,5 @@
         {% endfor %}
     </ul>
 {% else %}
-    <p class="text-muted mb-0">No hay comisiones pendientes de cobro.</p>
+    <p class="text-muted">No hay comisiones pendientes de cobro.</p>
 {% endif %}
