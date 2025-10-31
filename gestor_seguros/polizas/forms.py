@@ -36,21 +36,27 @@ class AseguradoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
-            field.required = False
-            field.widget.attrs.update({'class': 'form-control'})
+            field.required = False # Mantenemos todos los campos como opcionales
+            
+            # Aplicamos clases CSS
+            css_class = 'form-control'
             if isinstance(field.widget, forms.Select):
-                field.widget.attrs['class'] = 'form-select'
+                css_class = 'form-select'
+            
+            if field.widget.attrs.get('class'):
+                field.widget.attrs['class'] += f' {css_class}'
+            else:
+                field.widget.attrs['class'] = css_class
 
 # --- CONFIGURACIÓN DEFINITIVA DEL FORMSET ---
 AseguradoFormSet = inlineformset_factory(
     Poliza,
     Asegurado,
     form=AseguradoForm,
-    # El formset es completamente opcional y no muestra formularios extra por defecto
-    extra=0,
-    min_num=0,
-    validate_min=False,
-    can_delete=True,
+    extra=0,            # No mostrar formularios vacíos por defecto.
+    min_num=0,          # No requerir un mínimo.
+    validate_min=False,   # No validar el mínimo.
+    can_delete=True,      # Permitir la eliminación.
     fk_name='poliza'
 )
 
