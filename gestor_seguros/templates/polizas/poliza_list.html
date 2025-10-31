@@ -70,7 +70,7 @@
                                     <span class="badge bg-success">{{ estado }}</span>
                                     {% if dias is not None %}<small class="text-muted d-block mt-1">({{ dias }} días)</small>{% endif %}
 
-                                {% else  estado == "CANCELADA" %} 
+                                {% else %} {% estado == "CANCELADA" %} 
                                     <span class="badge bg-secondary">{{ poliza.get_estado_poliza_display }}</span>
                                 {% endif %}
                             {% endwith %}

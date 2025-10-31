@@ -1,6 +1,8 @@
 {% load humanize %}
+
+{% if polizas %}
 <div class="table-responsive">
-    <table class="table table-sm table-hover">
+    <table class="table table-hover mb-0">
         <thead>
             <tr>
                 <th># Póliza</th>
@@ -8,51 +10,61 @@
                 <th>Aseguradora</th>
                 <th>Ramo</th>
                 <th>Fin Vigencia</th>
-                <th>Frec. Pago</th> <!-- NUEVA CABECERA -->
-                <th>Próx. Cobro</th>
-                <th>Días Restantes/Vencidos</th>
-                <th>Prima Anual</th>
-                <th>Acciones</th>
+                <th>Días Restantes</th>
+                <th class="text-end">Prima Anual</th>
+                <th class="text-center">Acciones</th>
             </tr>
         </thead>
         <tbody>
             {% for poliza in polizas %}
             <tr>
+                <!-- Columna 1: # Póliza -->
                 <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
+                
+                <!-- Columna 2: Cliente -->
                 <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
+                
+                <!-- Columna 3: Aseguradora -->
                 <td>{{ poliza.aseguradora.nombre|default:"N/A" }}</td>
+                
+                <!-- Columna 4: Ramo -->
                 <td>{{ poliza.ramo_tipo_seguro }}</td>
+                
+                <!-- Columna 5: Fin Vigencia -->
                 <td>{{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</td>
-                <td>
-                {% if poliza.proxima_fecha_cobro %}
-                {{ poliza.proxima_fecha_cobro|date:"d/m/y" }}
-                {% else %}
-                <span class="text-muted">N/A</span>
-                {% endif %}
-                </td>
-                <td>
-                    <span class="badge bg-light text-dark border">{{ poliza.get_frecuencia_pago_display }}</span> <!-- NUEVA CELDA -->
-                </td>
-                <td>
+                
+                <!-- Columna 6: Días Restantes -->
+                <td class="fw-bold 
+                    {% if poliza.dias_para_renovar is not None and poliza.dias_para_renovar < 0 %}text-danger
+                    {% elif poliza.dias_para_renovar is not None and poliza.dias_para_renovar <= 30 %}text-warning
+                    {% else %}text-success{% endif %}">
                     {% if poliza.dias_para_renovar is not None %}
                         {% if poliza.dias_para_renovar < 0 %}
-                            <span class="fw-bold text-danger">Venció hace {{ poliza.dias_para_renovar }} día{{ poliza.dias_para_renovar|pluralize }}</span>
-                        {% elif poliza.dias_para_renovar == 0 %}
-                            <span class="fw-bold text-warning">Vence Hoy</span>
+                            Venció hace {{ poliza.dias_para_renovar|slice:"1:" }} d.
                         {% else %}
-                            <span class="fw-bold text-success">{{ poliza.dias_para_renovar }} día{{ poliza.dias_para_renovar|pluralize }}</span>
+                            {{ poliza.dias_para_renovar }} día{{ poliza.dias_para_renovar|pluralize }}
                         {% endif %}
                     {% else %}
                         N/A
                     {% endif %}
                 </td>
+                
+                <!-- Columna 7: Prima Anual -->
                 <td class="text-end">${{ poliza.prima_total_anual|floatformat:2|intcomma }}</td>
-                <td>
-                    <a href="{{ poliza.get_absolute_url }}" class="btn btn-sm btn-outline-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
-                    <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-sm btn-outline-warning" title="Editar"><i class="fas fa-edit"></i></a>
+
+                <!-- Columna 8: Acciones -->
+                <td class="text-center">
+                    <div class="btn-group" role="group">
+                        <a href="{{ poliza.get_absolute_url }}" class="btn btn-sm btn-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
+                        <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-sm btn-warning" title="Editar Póliza"><i class="fas fa-edit"></i></a>
+                        <a href="{% url 'polizas:renovar_poliza' poliza.pk %}" class="btn btn-sm btn-success" title="Renovar Póliza"><i class="fas fa-sync-alt"></i></a>
+                    </div>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+{% else %}
+    <p class="text-muted p-3 mb-0">No hay pólizas en este rango.</p>
+{% endif %}

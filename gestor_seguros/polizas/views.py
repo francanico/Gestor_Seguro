@@ -376,19 +376,19 @@ def dashboard_view(request):
     # A.2: Pólizas cuya cobertura ya terminó y no han sido renovadas.
     polizas_vencidas = polizas_activas_y_pendientes.filter(
         fecha_fin_vigencia__lt=hoy,
-        estado_poliza__in=['VIGENTE', 'PENDIENTE_PAGO'] # Solo mostramos las que estaban activas antes de vencer
+        estado_poliza__in=['VIGENTE', 'PENDIENTE_PAGO'] 
     ).order_by('fecha_fin_vigencia')
 
     # A.3: Pólizas cuya cobertura está próxima a vencer (en los próximos 30 días).
-
     polizas_a_vencer_30 = polizas_activas_y_pendientes.filter(
         fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=30))
     ).order_by('fecha_fin_vigencia')
-
-# -- LA LÓGICA PARA 60 DÍAS --
-    polizas_a_vencer_60 = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy + timedelta(days=31), hoy + timedelta(days=60))).order_by('fecha_fin_vigencia')
-
-
+    
+    # A.4: Pólizas por Vencer entre 31 y 60 Días (LÓGICA CORRECTA)
+    polizas_a_vencer_60 = polizas_activas_y_pendientes.filter(
+        fecha_fin_vigencia__range=(hoy + timedelta(days=31), hoy + timedelta(days=60))
+    ).order_by('fecha_fin_vigencia')
+    # --- FIN SECCIÓN A ---
     # --- SECCIÓN B: Gestión de Cobros de Cuotas ---
 
     cobros_pendientes_30_dias = []
