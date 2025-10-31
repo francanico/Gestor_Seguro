@@ -24,11 +24,13 @@ from .mixins import OwnerRequiredMixin
 
 # --- Factory para el Formset de Asegurados ---
 AseguradoFormSet = inlineformset_factory(
-    Poliza,          # Modelo padre
-    Asegurado,       # Modelo hijo
-    form=AseguradoForm, # Formulario a usar para cada asegurado
-    extra=1,         # Cuántos formularios vacíos mostrar para añadir nuevos
-    can_delete=True, # Permitir borrar asegurados existentes
+    Poliza,
+    Asegurado,
+    form=AseguradoForm,
+    extra=0, 
+    min_num=1,
+    validate_min=True,
+    can_delete=True,
     fk_name='poliza'
 )
 
@@ -550,15 +552,23 @@ class SiniestroDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
 #<--------- ELIMINAR PAGO CUOTA POR ERROR --------->
 @login_required
 def eliminar_pago_cuota(request, pk):
-    # Buscamos el pago específico, asegurándonos de que pertenece al usuario
-    # a través de la póliza asociada.
-    pago = get_object_or_404(PagoCuota, pk=pk, poliza__usuario=request.user)
-    poliza_url = pago.poliza.get_absolute_url() # Guardamos la URL de la póliza antes de borrar
+    try:
+        # Intentamos obtener el objeto que cumpla ambas condiciones
+        pago = PagoCuota.objects.get(pk=pk, poliza__usuario=request.user)
+    except PagoCuota.DoesNotExist:
+        # Si el objeto no existe o no pertenece al usuario, 'get' falla
+        # y entramos en este bloque de excepción.
+        messages.warning(request, "El pago que intentas eliminar no existe o ya fue eliminado.")
+        # Redirigimos al usuario al dashboard para evitar el error 404
+        return redirect('dashboard') 
+
+    # Si el objeto sí se encontró, guardamos la URL de la póliza para la redirección
+    poliza_url = pago.poliza.get_absolute_url()
 
     if request.method == 'POST':
         pago.delete()
         messages.success(request, "El pago ha sido eliminado exitosamente.")
         return redirect(poliza_url)
     
-    # Si es GET, mostramos una página de confirmación
+    # Si es una petición GET, mostramos la página de confirmación normal
     return render(request, 'polizas/pago_cuota_confirm_delete.html', {'pago': pago})

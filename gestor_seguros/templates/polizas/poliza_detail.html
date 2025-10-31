@@ -34,47 +34,46 @@
 </div>
 
 <div class="card mb-4">
-    <div class="card-header">
-        Información General de la Póliza
-    </div>
+    <div class="card-header">Información General de la Póliza</div>
     <div class="card-body">
         <div class="row">
             <div class="col-md-6">
                 <p><strong>Número de Póliza:</strong> {{ poliza.numero_poliza }}</p>
-                <p><strong>Cliente:</strong> <a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></p>
-                <p><strong>Aseguradora:</strong> {{ poliza.aseguradora.nombre|default:"N/A" }}</p>
-                <p><strong>Ramo/Tipo de Seguro:</strong> {{ poliza.ramo_tipo_seguro }}</p>
-                <p><strong>Descripción Bien Asegurado:</strong> {{ poliza.descripcion_bien_asegurado|linebreaksbr|default:"N/A" }}</p>
-                <p><strong>Estado Actual Póliza:</strong> <span class="badge bg-info">{{ poliza.get_estado_poliza_display }}</span></p>
+                <p><strong>Cliente Contratante/Tomador:</strong> <a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></p>
+                <!-- ... (Aseguradora, Ramo, etc.) ... -->
             </div>
             <div class="col-md-6">
-                <p><strong>Fecha Emisión:</strong> {{ poliza.fecha_emision|date:"d/m/Y" }}</p>
-                <p><strong>Inicio Vigencia:</strong> {{ poliza.fecha_inicio_vigencia|date:"d/m/Y" }}</p>
-                <p><strong>Fin Vigencia:</strong> <strong class="{% if poliza.estado_renovacion == 'Vencida' %}text-danger{% elif poliza.estado_renovacion == 'Próxima a vencer' %}text-warning{% endif %}">{{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</strong></p>
-                {% if poliza.proxima_fecha_renovacion_calculada %}
-                <p><strong>Próxima Renovación (Estimada):</strong> {{ poliza.proxima_fecha_renovacion_calculada|date:"d/m/Y" }}</p>
-                {% endif %}
+                <!-- ... (Fechas) ... -->
             </div>
         </div>
+        <!-- LA SECCIÓN DE ASEGURADOS YA NO VA AQUÍ -->
     </div>
 </div>
 
-<!-- ... ( ASEGURADOS ... -->
-<hr>
-<h5>Asegurados Cubiertos</h5>
-<ul class="list-group list-group-flush">
-    {% for asegurado in poliza.asegurados.all %}
-        <li class="list-group-item">
-            <strong>{{ asegurado.nombre_completo }}</strong> - 
-            <span class="text-muted">{{ asegurado.get_parentesco_display }}</span>
-        </li>
-    {% empty %}
-        <li class="list-group-item text-muted">No hay asegurados registrados para esta póliza.</li>
-    {% endfor %}
-</ul>
-
-<!-- ... ( VALORES Y PAGOS ) ... -->
-
+<!-- ============================================== -->
+<!-- Card 2  Asegurados Cubiertos          -->
+<!-- ============================================== -->
+<div class="card mb-4">
+    <div class="card-header">Asegurados Cubiertos en la Póliza</div>
+    <div class="card-body">
+        {% if poliza.asegurados.all %}
+            <ul class="list-group list-group-flush">
+                {% for asegurado in poliza.asegurados.all %}
+                    <li class="list-group-item">
+                        <strong>{{ asegurado.nombre_completo }}</strong>
+                        <small class="text-muted">- {{ asegurado.get_parentesco_display }}</small>
+                        <small class="d-block text-muted">Nacimiento: {{ asegurado.fecha_nacimiento|date:"d/m/Y"|default:"N/A" }}</small>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">No hay asegurados registrados para esta póliza.</p>
+        {% endif %}
+    </div>
+</div>
+<!-- ============================================== -->
+<!-- Card 3: Valores y Pagos -->
+<!-- ============================================== -->
 <div class="card mb-4">
     <div class="card-header">
         Valores y Pagos

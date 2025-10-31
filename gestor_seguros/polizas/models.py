@@ -31,6 +31,12 @@ class Aseguradora(models.Model):
 
 # ---  MODELO PARA CADA PERSONA CUBIERTA EN LA PÓLIZA ---
 class Asegurado(models.Model):
+
+    SEXO_CHOICES = [
+        ('M', 'Masculino'),
+        ('F', 'Femenino'),
+    ]
+
     PARENTESCO_CHOICES = [
         ('TITULAR', 'Titular'),
         ('CONYUGE', 'Cónyuge'),
@@ -40,12 +46,16 @@ class Asegurado(models.Model):
     ]
 
     poliza = models.ForeignKey('Poliza', on_delete=models.CASCADE, related_name='asegurados')
+
     nombre_completo = models.CharField(max_length=200, verbose_name="Nombre Completo del Asegurado")
     cedula = models.CharField(max_length=20, blank=True, null=True, verbose_name="Cédula / RIF")
     fecha_nacimiento = models.DateField(null=True, blank=True, verbose_name="Fecha de Nacimiento")
     parentesco = models.CharField(max_length=20, choices=PARENTESCO_CHOICES, default='TITULAR')
-    
-    # Podrías añadir más campos como 'sexo', 'email', 'telefono' si es necesario
+    sexo = models.CharField(max_length=1, choices=SEXO_CHOICES, blank=True, null=True, verbose_name="Sexo")
+    email = models.EmailField(blank=True, null=True, verbose_name="Email del Asegurado")
+    telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono del Asegurado")
+    notas = models.TextField(blank=True, null=True, verbose_name="Notas sobre el Asegurado")
+    # Aquí podríamos añadir más campos específicos
     # para cada asegurado individual.
 
     def __str__(self):
@@ -112,20 +122,50 @@ class Poliza(models.Model):
     def dias_para_renovar(self):
         hoy = timezone.now().date()
         if self.fecha_fin_vigencia:
+            # Si el estado no implica una vigencia activa, no calculamos días.
+            # 'VIGENTE' es el único estado que garantiza que la póliza está activa y corriendo.
+            if self.estado_poliza != 'VIGENTE':
+                return None
+            
             delta = self.fecha_fin_vigencia - hoy
             return delta.days
-        return None # O un número muy grande si prefieres
+        return None
 
     @property
     def estado_renovacion(self):
+        # Primero, manejamos los estados que no dependen de la fecha.
+        if self.estado_poliza in ['PENDIENTE_PAGO']:
+            return "Pendiente Por Pago"
+        
+        if self.estado_poliza in ['EN_TRAMITE']:
+            return "En Trámite"
+        
+        if self.estado_poliza in ['RENOVADA']:
+            return "RENOVADA"
+        
+        if self.estado_poliza in ['CANCELADA']:
+            return "CANCELADA"
+
+        # Si llegamos aquí, la póliza debería estar 'VIGENTE' o 'VENCIDA'.
+        # Ahora sí, usamos los días para la clasificación.
         dias = self.dias_para_renovar
-        if dias is None:
-            return "Indeterminado"
-        if dias < 0:
+
+        if dias is None and self.estado_poliza == 'VENCIDA':
             return "Vencida"
-        elif dias <= 30: # Consideramos "Próxima a vencer" 30 días antes
-            return "Próxima a vencer"
-        else:
+        
+        if dias is None:
+            # Caso raro, podría ser una póliza vigente sin fecha de fin.
+            return "Indeterminado"
+
+        if dias < 0:
+            # Si los días son negativos, el estado debería ser 'VENCIDA'.
+            # Esto sirve como una doble verificación.
+            return "Vencida"
+        elif dias <= 30:
+            return "Crítico (0-30 días)"
+        elif dias <= 60:
+            return "Próximo (31-60 días)"
+        else: # Más de 90 días
             return "Vigente"
 
     @property
@@ -151,8 +191,10 @@ class Poliza(models.Model):
         return None # Si la frecuencia no coincide
 
     # --- PROPIEDAD PARA LA PRÓXIMA FECHA DE COBRO ---
+    
     @property
     def proxima_fecha_cobro(self):
+        # Casos base donde no hay "próximo cobro periódico"
         if not self.fecha_inicio_vigencia or self.frecuencia_pago in ['UNICO', 'ANUAL']:
             hoy = timezone.now().date()
             # Si es pago único/anual y no se ha pagado, el cobro es la fecha de inicio
@@ -160,11 +202,7 @@ class Poliza(models.Model):
                 return self.fecha_inicio_vigencia
             return None
 
-        # Buscamos la fecha de la última cuota pagada
-        ultimo_pago = self.pagos_cuotas.order_by('-fecha_cuota_correspondiente').first()
-        
-        fecha_base = ultimo_pago.fecha_cuota_correspondiente if ultimo_pago else self.fecha_inicio_vigencia
-
+        # --- Lógica Avanzada para Cuotas Periódicas ---
         periodos = {
             'MENSUAL': relativedelta(months=1),
             'TRIMESTRAL': relativedelta(months=3),
@@ -174,22 +212,32 @@ class Poliza(models.Model):
         periodo = periodos.get(self.frecuencia_pago)
         if not periodo: return None
 
-        fechas_cuotas_teoricas = []
-        fecha_temp = self.fecha_inicio_vigencia
-        while fecha_temp <= self.fecha_fin_vigencia:
-            fechas_cuotas_teoricas.append(fecha_temp)
-            fecha_temp += periodo
+        # 1. Obtenemos la última fecha de cuota que fue pagada.
+        # Si no hay pagos, la base es la fecha de inicio de la póliza.
+        ultimo_pago = self.pagos_cuotas.order_by('-fecha_cuota_correspondiente').first()
+        fecha_base_ultimo_pago = ultimo_pago.fecha_cuota_correspondiente if ultimo_pago else None
 
-        # 2. Obtener las fechas de las cuotas que ya han sido pagadas
-        fechas_pagadas = set(self.pagos_cuotas.values_list('fecha_cuota_correspondiente', flat=True))
+        # La primera cuota teórica es siempre la fecha de inicio de vigencia.
+        primera_cuota_teorica = self.fecha_inicio_vigencia
 
-        # 3. Encontrar la primera fecha teórica que no esté en el conjunto de fechas pagadas
-        for fecha_teorica in fechas_cuotas_teoricas:
-            if fecha_teorica not in fechas_pagadas:
-                return fecha_teorica # Esta es la próxima cuota pendiente
+        # Si no hay pagos, la próxima cuota es la primera.
+        if not fecha_base_ultimo_pago:
+            # Comprobamos que la primera cuota no exceda el fin de vigencia
+            if self.fecha_fin_vigencia and primera_cuota_teorica > self.fecha_fin_vigencia:
+                return None
+            return primera_cuota_teorica
+        
+        # Si ya hay pagos, calculamos la siguiente cuota teórica a partir del último pago.
+        siguiente_cuota_teorica = fecha_base_ultimo_pago + periodo
+        
+        # Verificamos que esta siguiente cuota no se pase del fin de la vigencia.
+        # El <= es importante para incluir la cuota que cae justo en la fecha de fin.
+        if self.fecha_fin_vigencia and siguiente_cuota_teorica <= self.fecha_fin_vigencia:
+            return siguiente_cuota_teorica
+        
+        # Si la siguiente cuota se pasa, significa que ya no hay más cuotas que pagar.
+        return None
 
-        return None # Si todas las cuotas teóricas están pagadas
-    
 
     @property
     def dias_para_proximo_cobro(self):

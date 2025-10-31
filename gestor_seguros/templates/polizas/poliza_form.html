@@ -139,26 +139,31 @@
 <h3 class="mt-5">Asegurados en la Póliza</h3>
 <hr>
 
-{{ asegurados_formset.management_form }}
-{% for form in asegurados_formset %}
-<div class="asegurado-form mb-3 p-3 border rounded">
-    {% if form.instance.pk %}
-        <div class="form-check float-end">
-            {{ form.DELETE }}
-            <label for="{{ form.DELETE.id_for_label }}" class="form-check-label text-danger">Eliminar</label>
-        </div>
-    {% endif %}
+<div id="asegurados-formset">
+    {{ asegurados_formset.management_form }}
     
-    <div class="row">
-        <div class="col-md-6">{{ form.nombre_completo.label_tag }}{% render_field form.nombre_completo class+="form-control" %}</div>
-        <div class="col-md-6">{{ form.parentesco.label_tag }}{% render_field form.parentesco class+="form-select" %}</div>
-    </div>
-    <div class="row mt-2">
-        <div class="col-md-6">{{ form.cedula.label_tag }}{% render_field form.cedula class+="form-control" %}</div>
-        <div class="col-md-6">{{ form.fecha_nacimiento.label_tag }}{% render_field form.fecha_nacimiento class+="form-control" %}</div>
-    </div>
-</div>
-{% endfor %}
+    <div id="asegurado-forms-container">
+        {% for form in asegurados_formset %}
+        <div class="asegurado-form mb-4 p-3 border rounded position-relative">
+            {% if form.instance.pk %}
+                <div class="form-check position-absolute top-0 end-0 mt-2 me-2">
+                    {{ form.DELETE }}
+                    <label for="{{ form.DELETE.id_for_label }}" class="form-check-label text-danger">Eliminar</label>
+                </div>
+            {% endif %}
+            
+            <div class="row g-3">
+                <div class="col-md-6">{{ form.nombre_completo.label_tag }}{% render_field form.nombre_completo class+="form-control" placeholder="Nombre y Apellido" %}</div>
+                <div class="col-md-6">{{ form.parentesco.label_tag }}{% render_field form.parentesco class+="form-select" %}</div>
+                <div class="col-md-6">{{ form.cedula.label_tag }}{% render_field form.cedula class+="form-control" placeholder="V-12345678" %}</div>
+                <div class="col-md-6">{{ form.fecha_nacimiento.label_tag }}{% render_field form.fecha_nacimiento class+="form-control" %}</div>
+                <div class="col-md-6">{{ form.sexo.label_tag }}{% render_field form.sexo class+="form-select" %}</div>
+                <div class="col-md-6">{{ form.email.label_tag }}{% render_field form.email class+="form-control" placeholder="correo@ejemplo.com" %}</div>
+                <div class="col-md-12">{{ form.telefono.label_tag }}{% render_field form.telefono class+="form-control" placeholder="0414-1234567" %}</div>
+                <div class="col-md-12">{{ form.notas.label_tag }}{% render_field form.notas class+="form-control" %}</div>
+            </div>
+        </div>
+        {% endfor %}
 
 <!-- ... (botón de guardar y cancelar) ... -->
 

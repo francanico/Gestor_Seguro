@@ -1,5 +1,6 @@
 # polizas/forms.py
 from django import forms
+from django.forms import inlineformset_factory
 from .models import Poliza, Aseguradora, Cliente,PagoCuota,Siniestro,Asegurado
 from django.core.exceptions import ValidationError # <-- IMPORTAR
 
@@ -26,10 +27,24 @@ class AseguradoraForm(forms.ModelForm):
 class AseguradoForm(forms.ModelForm):
     class Meta:
         model = Asegurado
-        fields = ['nombre_completo', 'cedula', 'fecha_nacimiento', 'parentesco']
+        fields = ['nombre_completo', 'cedula', 'fecha_nacimiento', 'parentesco', 'sexo', 'email', 'telefono', 'notas']
         widgets = {
             'fecha_nacimiento': forms.DateInput(attrs={'type': 'date'}),
+            'notas': forms.Textarea(attrs={'rows': 2}),
         }
+
+# --- ACTUALIZAR EL FORMSET FACTORY ---
+# Cambiamos extra de 1 a 0, ya que lo manejaremos con JS
+AseguradoFormSet = inlineformset_factory(
+    Poliza,
+    Asegurado,
+    form=AseguradoForm,
+    extra=0, # <-- CAMBIO IMPORTANTE: empezamos con CERO formularios extra
+    min_num=1, # <-- Opcional: requerir al menos un asegurado (el titular)
+    validate_min=True,
+    can_delete=True,
+    fk_name='poliza'
+)
 
 class PolizaForm(forms.ModelForm):
     class Meta:

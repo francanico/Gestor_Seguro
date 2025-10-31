@@ -41,21 +41,37 @@
                             {% with estado=poliza.estado_renovacion dias=poliza.dias_para_renovar %}
                                 {% if estado == "Vencida" %}
                                     <span class="badge bg-danger">{{ estado }}</span>
+                                    {% if dias is not None %}<small class="text-muted ms-1">(hace {{ dias|slice:"1:" }} día{{ dias|slice:"1:"|pluralize }})</small>{% endif %}
+                                
                                 {% elif estado == "Crítico (0-30 días)" %}
                                     <span class="badge bg-warning text-dark">Crítico</span>
-                                {% elif estado == "Próximo (31-90 días)" %}
+                                    {% if dias is not None %}<small class="text-muted d-block mt-1">({{ dias }} día{{ dias|pluralize }})</small>{% endif %}
+
+                                {% elif estado == "Próximo (31-60 días)" %}
                                     <span class="badge bg-info text-dark">Próximo</span>
+                                    {% if dias is not None %}<small class="text-muted d-block mt-1">({{ dias }} días)</small>{% endif %}
+                                
+                                <!-- ============================================= -->
+                                <!-- NUEVA CONDICIÓN PARA PENDIENTE DE ACTIVACIÓN  -->
+                                <!-- ============================================= -->
+                                {% elif estado == "Pendiente Por Pago" %}
+                                    <span class="badge bg-primary">{{ estado }}</span>
+                                    <small class="text-muted d-block mt-1">({{ poliza.get_estado_poliza_display }})</small>
+
+                                {% elif estado == "En Trámite" %}
+                                    <span class="badge bg-primary">{{ estado }}</span>
+                                    <small class="text-muted d-block mt-1">({{ poliza.get_estado_poliza_display }})</small>
+
+                                {% elif estado == "RENOVADA" %}
+                                    <span class="badge bg-primary">{{ estado }}</span>
+                                    <small class="text-muted d-block mt-1">({{ poliza.get_estado_poliza_display }})</small>
+
                                 {% elif estado == "Vigente" %}
-                                    <span class="badge bg-success">Vigente</span>
-                                {% else %} 
+                                    <span class="badge bg-success">{{ estado }}</span>
+                                    {% if dias is not None %}<small class="text-muted d-block mt-1">({{ dias }} días)</small>{% endif %}
+
+                                {% else  estado == "CANCELADA" %} 
                                     <span class="badge bg-secondary">{{ poliza.get_estado_poliza_display }}</span>
-                                {% endif %}
-                                {% if dias is not None and estado != "Gestionada" %}
-                                    {% if dias < 0 %}
-                                        <small class="text-muted d-block mt-1">(hace {{ dias|slice:"1:" }} día{{ dias|slice:"1:"|pluralize }})</small>
-                                    {% else %}
-                                        <small class="text-muted d-block mt-1">({{ dias }} día{{ dias|pluralize }})</small>
-                                    {% endif %}
                                 {% endif %}
                             {% endwith %}
                         </td>
