@@ -39,25 +39,11 @@ class AseguradoForm(forms.ModelForm):
         # La validación real se hará en el formset.
         self.fields['nombre_completo'].required = False
 
-class BaseAseguradoFormSet(BaseInlineFormSet):
-    def clean(self):
-        super().clean()
-        # Contamos cuántos formularios se están enviando con datos
-        filled_forms = 0
-        for form in self.forms:
-            # Un formulario se considera lleno si tiene nombre
-            if form.cleaned_data and form.cleaned_data.get('nombre_completo'):
-                filled_forms += 1
-        
-        # Aplicamos la validación de mínimo 1
-        if filled_forms < 1:
-            raise ValidationError("Debe registrar al menos un asegurado (el titular) para la póliza.")
 
 AseguradoFormSet = inlineformset_factory(
     Poliza,
     Asegurado,
     form=AseguradoForm,
-    formset=BaseAseguradoFormSet, # <-- USAMOS NUESTRO FORMSET PERSONALIZADO
     extra=1, # Siempre mostrar un formulario vacío para añadir
     can_delete=True,
     fk_name='poliza'
