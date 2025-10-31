@@ -1,6 +1,6 @@
 # polizas/forms.py
 from django import forms
-from django.forms import inlineformset_factory
+from django.forms import inlineformset_factory,BaseInlineFormSet
 from .models import Poliza, Aseguradora, Cliente,PagoCuota,Siniestro,Asegurado
 from django.core.exceptions import ValidationError # <-- IMPORTAR
 
@@ -33,14 +33,32 @@ class AseguradoForm(forms.ModelForm):
             'notas': forms.Textarea(attrs={'rows': 2}),
         }
 
-# --- ACTUALIZAR EL FORMSET FACTORY ---
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # --- CAMBIO CLAVE: Hacemos el nombre no requerido a nivel de formulario ---
+        # La validación real se hará en el formset.
+        self.fields['nombre_completo'].required = False
+
+class BaseAseguradoFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        # Contamos cuántos formularios se están enviando con datos
+        filled_forms = 0
+        for form in self.forms:
+            # Un formulario se considera lleno si tiene nombre
+            if form.cleaned_data and form.cleaned_data.get('nombre_completo'):
+                filled_forms += 1
+        
+        # Aplicamos la validación de mínimo 1
+        if filled_forms < 1:
+            raise ValidationError("Debe registrar al menos un asegurado (el titular) para la póliza.")
+
 AseguradoFormSet = inlineformset_factory(
     Poliza,
     Asegurado,
     form=AseguradoForm,
-    extra=1, # Mantenemos 1 para que en creación siempre haya un campo
-    min_num=1,
-    validate_min=True,
+    formset=BaseAseguradoFormSet, # <-- USAMOS NUESTRO FORMSET PERSONALIZADO
+    extra=1, # Siempre mostrar un formulario vacío para añadir
     can_delete=True,
     fk_name='poliza'
 )

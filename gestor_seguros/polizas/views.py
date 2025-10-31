@@ -237,7 +237,9 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         if self.request.POST:
             context['asegurados_formset'] = AseguradoFormSet(self.request.POST)
         else:
+            # Simplemente instanciamos el formset. El extra=1 se encarga de mostrar un form vacío.
             context['asegurados_formset'] = AseguradoFormSet()
+        context['titulo_pagina'] = "Crear Nueva Póliza"
         return context
 
     def get_form_kwargs(self):
@@ -278,24 +280,10 @@ class PolizaUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         if self.request.POST:
             context['asegurados_formset'] = AseguradoFormSet(self.request.POST, instance=self.object)
         else:
-            formset = AseguradoFormSet(instance=self.object)
-            # --- LÓGICA AÑADIDA ---
-            # Si es una póliza existente que no tiene asegurados,
-            # pre-llenamos el primer formulario con los datos del cliente contratante.
-            if not formset.forms and self.object.cliente:
-                # Creamos un formset con 1 formulario extra y datos iniciales
-                formset = AseguradoFormSet(instance=self.object, initial=[
-                    {
-                        'nombre_completo': self.object.cliente.nombre_completo,
-                        'cedula': self.object.cliente.numero_documento,
-                        'fecha_nacimiento': self.object.cliente.fecha_nacimiento,
-                        'parentesco': 'TITULAR'
-                    }
-                ])
-                # Reajustamos extra a 0 si ya hemos añadido el inicial
-                formset.extra = 0
-
-            context['asegurados_formset'] = formset
+            # Simplemente instanciamos el formset con la póliza. Si no tiene asegurados,
+            # el extra=1 mostrará un formulario vacío para añadir el primero.
+            context['asegurados_formset'] = AseguradoFormSet(instance=self.object)
+        context['titulo_pagina'] = "Editar Póliza"
         return context
     
     def form_valid(self, form):
