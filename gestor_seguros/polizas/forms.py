@@ -1,6 +1,6 @@
 # polizas/forms.py
 from django import forms
-from .models import Poliza, Aseguradora, Cliente,PagoCuota,Siniestro 
+from .models import Poliza, Aseguradora, Cliente,PagoCuota,Siniestro,Asegurado
 from django.core.exceptions import ValidationError # <-- IMPORTAR
 
 
@@ -22,6 +22,14 @@ class AseguradoraForm(forms.ModelForm):
             else:
                 field.widget.attrs['class'] = 'form-control'
 
+
+class AseguradoForm(forms.ModelForm):
+    class Meta:
+        model = Asegurado
+        fields = ['nombre_completo', 'cedula', 'fecha_nacimiento', 'parentesco']
+        widgets = {
+            'fecha_nacimiento': forms.DateInput(attrs={'type': 'date'}),
+        }
 
 class PolizaForm(forms.ModelForm):
     class Meta:

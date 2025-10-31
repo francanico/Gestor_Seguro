@@ -11,13 +11,26 @@ from django.contrib import messages
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from datetime import timedelta
-from .models import Poliza, Aseguradora,PagoCuota,Siniestro 
-from .forms import PolizaForm, AseguradoraForm,PagoCuotaForm,SiniestroForm
+from django.db import transaction
+from .models import Poliza, Aseguradora,PagoCuota,Siniestro,Asegurado 
+from .forms import PolizaForm, AseguradoraForm,PagoCuotaForm,SiniestroForm,AseguradoForm 
 from clientes.models import Cliente # Para el selector de clientes
 from django.db.models import F, ExpressionWrapper, DateField
 from django.db.models.functions import ExtractMonth, ExtractDay
+from django.forms import inlineformset_factory
 import copy,json
 from .mixins import OwnerRequiredMixin
+
+
+# --- Factory para el Formset de Asegurados ---
+AseguradoFormSet = inlineformset_factory(
+    Poliza,          # Modelo padre
+    Asegurado,       # Modelo hijo
+    form=AseguradoForm, # Formulario a usar para cada asegurado
+    extra=1,         # Cuántos formularios vacíos mostrar para añadir nuevos
+    can_delete=True, # Permitir borrar asegurados existentes
+    fk_name='poliza'
+)
 
 # Constantes para estados de póliza activos
 ESTADOS_POLIZA_ACTIVOS = ['VIGENTE', 'PENDIENTE_PAGO']
@@ -133,6 +146,18 @@ class PolizaDetailView(LoginRequiredMixin,OwnerRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         poliza = self.get_object()
 
+        proxima_cuota = poliza.proxima_fecha_cobro
+        # Solo mostramos el formulario si hay una próxima cuota pendiente
+        if proxima_cuota:
+            pago_form = PagoCuotaForm(initial={
+                'monto_pagado': poliza.valor_cuota or poliza.prima_total_anual,
+                'fecha_cuota_correspondiente': proxima_cuota
+            })
+            context['pago_form'] = pago_form
+        
+        context['pagos_realizados'] = poliza.pagos_cuotas.all()
+
+
         # Formulario para registrar un nuevo pago
         pago_form = PagoCuotaForm(initial={
             'monto_pagado': poliza.valor_cuota or poliza.prima_total_anual,
@@ -155,6 +180,13 @@ class PolizaDetailView(LoginRequiredMixin,OwnerRequiredMixin, DetailView):
 
     def post(self, request, *args, **kwargs):
         poliza = self.get_object()
+        form = PagoCuotaForm(request.POST)
+
+
+        if not poliza.proxima_fecha_cobro:
+            messages.error(request, 'No se pueden registrar más pagos. Todas las cuotas de esta póliza ya han sido cubiertas.')
+            return redirect(poliza.get_absolute_url())
+
         form = PagoCuotaForm(request.POST)
 
         if form.is_valid():
@@ -192,8 +224,10 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['titulo_pagina'] = "Registrar Nueva Póliza"
-        context['boton_submit'] = "Crear Póliza"
+        if self.request.POST:
+            context['asegurados_formset'] = AseguradoFormSet(self.request.POST)
+        else:
+            context['asegurados_formset'] = AseguradoFormSet()
         return context
 
     def get_form_kwargs(self):
@@ -203,7 +237,20 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         return kwargs
 
     def form_valid(self, form):
-        form.instance.usuario = self.request.user
+        context = self.get_context_data()
+        asegurados_formset = context['asegurados_formset']
+        
+        with transaction.atomic():
+            form.instance.usuario = self.request.user
+            self.object = form.save() # Guarda la póliza para obtener un ID
+
+            if asegurados_formset.is_valid():
+                asegurados_formset.instance = self.object
+                asegurados_formset.save()
+            else:
+                # Si el formset no es válido, cancela todo
+                return self.form_invalid(form)
+
         return super().form_valid(form)
 
 class PolizaUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -218,9 +265,25 @@ class PolizaUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['titulo_pagina'] = "Editar Póliza"
-        context['boton_submit'] = "Actualizar Póliza"
+        if self.request.POST:
+            context['asegurados_formset'] = AseguradoFormSet(self.request.POST, instance=self.object)
+        else:
+            context['asegurados_formset'] = AseguradoFormSet(instance=self.object)
         return context
+    
+    def form_valid(self, form):
+        context = self.get_context_data()
+        asegurados_formset = context['asegurados_formset']
+
+        if asegurados_formset.is_valid():
+            with transaction.atomic():
+                self.object = form.save()
+                asegurados_formset.instance = self.object
+                asegurados_formset.save()
+        else:
+            return self.form_invalid(form)
+            
+        return super().form_valid(form)
 
 class PolizaDeleteView(LoginRequiredMixin, DeleteView):
     model = Poliza
@@ -483,3 +546,19 @@ class SiniestroDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
         # Redirige al detalle de la póliza a la que pertenecía el siniestro
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.poliza.pk})
 #---(END VISTAS SINIESTROS)---
+
+#<--------- ELIMINAR PAGO CUOTA POR ERROR --------->
+@login_required
+def eliminar_pago_cuota(request, pk):
+    # Buscamos el pago específico, asegurándonos de que pertenece al usuario
+    # a través de la póliza asociada.
+    pago = get_object_or_404(PagoCuota, pk=pk, poliza__usuario=request.user)
+    poliza_url = pago.poliza.get_absolute_url() # Guardamos la URL de la póliza antes de borrar
+
+    if request.method == 'POST':
+        pago.delete()
+        messages.success(request, "El pago ha sido eliminado exitosamente.")
+        return redirect(poliza_url)
+    
+    # Si es GET, mostramos una página de confirmación
+    return render(request, 'polizas/pago_cuota_confirm_delete.html', {'pago': pago})

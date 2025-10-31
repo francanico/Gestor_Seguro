@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Confirmar Eliminación de Pago{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-danger text-white">
+        <i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación de Pago
+    </div>
+    <div class="card-body">
+        <h4 class="card-title">¿Estás seguro?</h4>
+        <p>Estás a punto de eliminar permanentemente el siguiente registro de pago:</p>
+        <ul class="list-group mb-3">
+            <li class="list-group-item"><strong>Póliza:</strong> {{ pago.poliza.numero_poliza }}</li>
+            <li class="list-group-item"><strong>Monto:</strong> ${{ pago.monto_pagado|intcomma }}</li>
+            <li class="list-group-item"><strong>Fecha de Pago:</strong> {{ pago.fecha_pago|date:"d/m/Y" }}</li>
+            <li class="list-group-item"><strong>Cuota Correspondiente a:</strong> {{ pago.fecha_cuota_correspondiente|date:"d/m/Y" }}</li>
+        </ul>
+        <p class="text-danger">Esta acción no se puede deshacer.</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Sí, Eliminar Pago</button>
+            <a href="{{ pago.poliza.get_absolute_url }}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -28,10 +28,38 @@ class Aseguradora(models.Model):
         unique_together = ('usuario', 'nombre')
         unique_together = ('usuario', 'rif')
 
+
+# ---  MODELO PARA CADA PERSONA CUBIERTA EN LA PÓLIZA ---
+class Asegurado(models.Model):
+    PARENTESCO_CHOICES = [
+        ('TITULAR', 'Titular'),
+        ('CONYUGE', 'Cónyuge'),
+        ('HIJO_A', 'Hijo/a'),
+        ('PADRE_MADRE', 'Padre/Madre'),
+        ('OTRO', 'Otro'),
+    ]
+
+    poliza = models.ForeignKey('Poliza', on_delete=models.CASCADE, related_name='asegurados')
+    nombre_completo = models.CharField(max_length=200, verbose_name="Nombre Completo del Asegurado")
+    cedula = models.CharField(max_length=20, blank=True, null=True, verbose_name="Cédula / RIF")
+    fecha_nacimiento = models.DateField(null=True, blank=True, verbose_name="Fecha de Nacimiento")
+    parentesco = models.CharField(max_length=20, choices=PARENTESCO_CHOICES, default='TITULAR')
+    
+    # Podrías añadir más campos como 'sexo', 'email', 'telefono' si es necesario
+    # para cada asegurado individual.
+
+    def __str__(self):
+        return f"{self.nombre_completo} ({self.get_parentesco_display()}) en Póliza {self.poliza.numero_poliza}"
+
+    class Meta:
+        verbose_name = "Asegurado en Póliza"
+        verbose_name_plural = "Asegurados en Póliza"
+        ordering = ['parentesco', 'nombre_completo']
+
 class Poliza(models.Model):
 
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='polizas')
-
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name="polizas_contratadas", verbose_name="Cliente Contratante/Tomador")
 
     FRECUENCIA_PAGO_CHOICES = [
         ('UNICO', 'Pago Único'), # Volvemos a un nombre más claro

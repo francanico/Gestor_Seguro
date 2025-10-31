@@ -59,6 +59,22 @@
     </div>
 </div>
 
+<!-- ... ( ASEGURADOS ... -->
+<hr>
+<h5>Asegurados Cubiertos</h5>
+<ul class="list-group list-group-flush">
+    {% for asegurado in poliza.asegurados.all %}
+        <li class="list-group-item">
+            <strong>{{ asegurado.nombre_completo }}</strong> - 
+            <span class="text-muted">{{ asegurado.get_parentesco_display }}</span>
+        </li>
+    {% empty %}
+        <li class="list-group-item text-muted">No hay asegurados registrados para esta póliza.</li>
+    {% endfor %}
+</ul>
+
+<!-- ... ( VALORES Y PAGOS ) ... -->
+
 <div class="card mb-4">
     <div class="card-header">
         Valores y Pagos
@@ -89,6 +105,7 @@
 
 <!-- NUEVA SECCIÓN PARA GESTIÓN DE PAGOS DE CUOTAS -->
 <!-- ============================================== -->
+<!-- ... -->
 <div class="row">
     <!-- Columna para registrar nuevo pago -->
     <div class="col-md-5">
@@ -97,22 +114,21 @@
                 <i class="fas fa-cash-register"></i> Registrar Nuevo Pago de Cuota
             </div>
             <div class="card-body">
-                <form method="POST">
-                    {% csrf_token %}
-                    {% for field in pago_form %}
-                        <div class="mb-3">
-                            {{ field.label_tag }}
-                            {% render_field field class+="form-control" %}
-                            {% for error in field.errors %}
-                                <div class="invalid-feedback d-block">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                    {% endfor %}
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Pago</button>
-                </form>
+                {% if pago_form %}
+                    <form method="POST">
+                        {% csrf_token %}
+                        <!-- ... (contenido del formulario) ... -->
+                    </form>
+                {% else %}
+                    <div class="alert alert-success text-center">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <p class="mb-0"><strong>¡Excelente!</strong> Todas las cuotas de esta póliza han sido pagadas.</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
+    
     
     <!-- Columna para ver historial de pagos -->
     <div class="col-md-7">
@@ -127,6 +143,9 @@
                         <li class="list-group-item">
                             Se pagó <strong>${{ pago.monto_pagado|intcomma }}</strong> el {{ pago.fecha_pago|date:"d/m/Y" }}
                             <small class="text-muted">(correspondiente a la cuota del {{ pago.fecha_cuota_correspondiente|date:"d/m/Y" }})</small>
+                            <a href="{% url 'polizas:eliminar_pago_cuota' pago.pk %}" class="btn btn-sm btn-outline-danger" title="Eliminar este pago">
+                            <i class="fas fa-trash"></i>
+                            </a>
                         </li>
                         {% endfor %}
                     </ul>

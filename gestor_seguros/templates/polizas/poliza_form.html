@@ -136,6 +136,32 @@
         {% for error in form.notas_poliza.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
     </div>
 
+<h3 class="mt-5">Asegurados en la Póliza</h3>
+<hr>
+
+{{ asegurados_formset.management_form }}
+{% for form in asegurados_formset %}
+<div class="asegurado-form mb-3 p-3 border rounded">
+    {% if form.instance.pk %}
+        <div class="form-check float-end">
+            {{ form.DELETE }}
+            <label for="{{ form.DELETE.id_for_label }}" class="form-check-label text-danger">Eliminar</label>
+        </div>
+    {% endif %}
+    
+    <div class="row">
+        <div class="col-md-6">{{ form.nombre_completo.label_tag }}{% render_field form.nombre_completo class+="form-control" %}</div>
+        <div class="col-md-6">{{ form.parentesco.label_tag }}{% render_field form.parentesco class+="form-select" %}</div>
+    </div>
+    <div class="row mt-2">
+        <div class="col-md-6">{{ form.cedula.label_tag }}{% render_field form.cedula class+="form-control" %}</div>
+        <div class="col-md-6">{{ form.fecha_nacimiento.label_tag }}{% render_field form.fecha_nacimiento class+="form-control" %}</div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- ... (botón de guardar y cancelar) ... -->
+
 
     <div class="mt-4">
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> {{ boton_submit|default:"Guardar" }}</button>

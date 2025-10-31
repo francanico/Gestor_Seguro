@@ -11,6 +11,7 @@ urlpatterns = [
     path('<int:pk>/editar/', views.PolizaUpdateView.as_view(), name='editar_poliza'),
     path('<int:pk>/eliminar/', views.PolizaDeleteView.as_view(), name='eliminar_poliza'),
     path('<int:pk>/renovar/', views.renovar_poliza, name='renovar_poliza'),
+    path('pago/<int:pk>/eliminar/', views.eliminar_pago_cuota, name='eliminar_pago_cuota'),
     path('<int:pk>/registrar_pago_rapido/', views.registrar_pago_rapido, name='registrar_pago_rapido'),
 
     # URLs para Aseguradoras
