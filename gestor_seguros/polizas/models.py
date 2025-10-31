@@ -47,10 +47,12 @@ class Asegurado(models.Model):
 
     poliza = models.ForeignKey('Poliza', on_delete=models.CASCADE, related_name='asegurados')
 
-    nombre_completo = models.CharField(max_length=200, verbose_name="Nombre Completo del Asegurado")
+    # --- CAMPOS MODIFICADOS PARA SER OPCIONALES ---
+    nombre_completo = models.CharField(max_length=200, blank=True, null=True, verbose_name="Nombre Completo del Asegurado")
     cedula = models.CharField(max_length=20, blank=True, null=True, verbose_name="Cédula / RIF")
     fecha_nacimiento = models.DateField(null=True, blank=True, verbose_name="Fecha de Nacimiento")
-    parentesco = models.CharField(max_length=20, choices=PARENTESCO_CHOICES, default='TITULAR')
+    parentesco = models.CharField(max_length=20, choices=PARENTESCO_CHOICES, blank=True, null=True) # <-- AÑADIR blank=True, null=True
+    
     sexo = models.CharField(max_length=1, choices=SEXO_CHOICES, blank=True, null=True, verbose_name="Sexo")
     email = models.EmailField(blank=True, null=True, verbose_name="Email del Asegurado")
     telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono del Asegurado")

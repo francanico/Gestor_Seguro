@@ -35,9 +35,14 @@ class AseguradoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # --- CAMBIO CLAVE: Hacemos el nombre no requerido a nivel de formulario ---
-        # La validación real se hará en el formset.
-        self.fields['nombre_completo'].required = False
+        # Hacemos que todos los campos sean opcionales
+        for field_name, field in self.fields.items():
+            field.required = False # <-- LÍNEA CLAVE
+            # El código para añadir la clase CSS se mantiene
+            if field_name != 'DELETE':
+                field.widget.attrs.update({'class': 'form-control'})
+                if isinstance(field.widget, forms.Select):
+                    field.widget.attrs.update({'class': 'form-select'})
 
 
 AseguradoFormSet = inlineformset_factory(
@@ -50,6 +55,7 @@ AseguradoFormSet = inlineformset_factory(
     can_delete=True,
     fk_name='poliza'
 )
+
 class PolizaForm(forms.ModelForm):
     class Meta:
         model = Poliza
