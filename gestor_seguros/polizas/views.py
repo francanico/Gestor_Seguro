@@ -216,105 +216,96 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Poliza
     form_class = PolizaForm
     template_name = 'polizas/poliza_form.html'
-    # success_url = reverse_lazy('polizas:lista_polizas') # O redirigir al detalle
-    success_message = "Póliza No. '%(numero_poliza)s' creada exitosamente."
+    success_message = "Póliza creada exitosamente."
 
-    def get_success_url(self):
-        return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
-
-    def get_initial(self):
-        initial = super().get_initial()
-        cliente_id = self.request.GET.get('cliente_id')
-        if cliente_id:
-            try:
-                initial['cliente'] = Cliente.objects.get(pk=cliente_id)
-            except Cliente.DoesNotExist:
-                pass
-        return initial
-    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.POST:
-            context['asegurados_formset'] = AseguradoFormSet(self.request.POST)
+            context['asegurados_formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
         else:
-            # Simplemente instanciamos el formset. El extra=1 se encarga de mostrar un form vacío.
-            context['asegurados_formset'] = AseguradoFormSet()
+            context['asegurados_formset'] = AseguradoFormSet(prefix='asegurados')
         context['titulo_pagina'] = "Crear Nueva Póliza"
         return context
-
-    def get_form_kwargs(self):
-        # Pasa el usuario al __init__ del formulario
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
 
     def form_valid(self, form):
         context = self.get_context_data()
         asegurados_formset = context['asegurados_formset']
         
-        with transaction.atomic():
-            form.instance.usuario = self.request.user
-            self.object = form.save() # Guarda la póliza para obtener un ID
-
-            if asegurados_formset.is_valid():
-                asegurados_formset.instance = self.object
-                asegurados_formset.save()
-            else:
-                # Si el formset no es válido, cancela todo
+        if asegurados_formset.is_valid():
+            # Contamos cuántos formularios se enviaron realmente (no vacíos)
+            asegurados_count = 0
+            for f in asegurados_formset:
+                if f.has_changed():
+                    asegurados_count += 1
+            
+            # --- VALIDACIÓN MANUAL ---
+            if asegurados_count == 0:
+                messages.error(self.request, "Debes añadir al menos un asegurado a la póliza.")
                 return self.form_invalid(form)
 
-        return super().form_valid(form)
+            with transaction.atomic():
+                form.instance.usuario = self.request.user
+                self.object = form.save()
+                asegurados_formset.instance = self.object
+                asegurados_formset.save()
+            return super().form_valid(form)
+        else:
+            return self.form_invalid(form)
 
-class PolizaUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+    def form_invalid(self, form):
+        asegurados_formset = AseguradoFormSet(self.request.POST, prefix='asegurados')
+        messages.error(self.request, 'Por favor, corrige los errores en el formulario.')
+        return self.render_to_response(
+            self.get_context_data(form=form, asegurados_formset=asegurados_formset)
+        )
+    
+    def get_success_url(self):
+        return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
+
+class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Poliza
     form_class = PolizaForm
     template_name = 'polizas/poliza_form.html'
-    # success_url = reverse_lazy('polizas:lista_polizas')
-    success_message = "Póliza No. '%(numero_poliza)s' actualizada exitosamente."
-
-    def get_success_url(self):
-        return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
+    success_message = "Póliza actualizada exitosamente."
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.POST:
-            context['asegurados_formset'] = AseguradoFormSet(self.request.POST, instance=self.object)
+            context['asegurados_formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
         else:
-            # Simplemente instanciamos el formset con la póliza. Si no tiene asegurados,
-            # el extra=1 mostrará un formulario vacío para añadir el primero.
-            context['asegurados_formset'] = AseguradoFormSet(instance=self.object)
+            context['asegurados_formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
         context['titulo_pagina'] = "Editar Póliza"
         return context
     
     def form_valid(self, form):
         context = self.get_context_data()
         asegurados_formset = context['asegurados_formset']
-
+        
         if asegurados_formset.is_valid():
+            # Contamos formularios válidos y no marcados para borrar
+            asegurados_count = 0
+            for f in asegurados_formset:
+                # `f.cleaned_data` solo existe si el form es válido.
+                # `f.cleaned_data.get('DELETE')` es True si el checkbox de borrar está marcado.
+                if f.cleaned_data and not f.cleaned_data.get('DELETE', False):
+                    asegurados_count += 1
+            
+            # --- VALIDACIÓN MANUAL ---
+            if asegurados_count == 0:
+                messages.error(self.request, "Una póliza no puede quedar sin asegurados. Añade al menos uno.")
+                return self.form_invalid(form)
+
             with transaction.atomic():
                 self.object = form.save()
                 asegurados_formset.instance = self.object
                 asegurados_formset.save()
             return super().form_valid(form)
         else:
-            # Si el formset NO es válido, llamamos a form_invalid explícitamente
             return self.form_invalid(form)
-
-    # --- MÉTODO AÑADIDO/MODIFICADO PARA MOSTRAR ERRORES ---
+    
     def form_invalid(self, form):
-        # Obtenemos el formset de la misma manera que en get_context_data
-        asegurados_formset = AseguradoFormSet(self.request.POST, instance=self.object)
-        
-        # Añadimos un mensaje de error general
+        asegurados_formset = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
         messages.error(self.request, 'Por favor, corrige los errores en el formulario.')
-
-        # Imprimimos los errores en la consola del servidor (muy útil para depurar en Railway)
-        print("Errores en el formulario principal (Póliza):")
-        print(form.errors)
-        print("\nErrores en el formset de Asegurados:")
-        print(asegurados_formset.errors)
-        
-        # Volvemos a renderizar la página, pero ahora pasamos el formset con los errores
         return self.render_to_response(
             self.get_context_data(form=form, asegurados_formset=asegurados_formset)
         )

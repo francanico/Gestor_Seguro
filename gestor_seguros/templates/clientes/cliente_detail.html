@@ -41,7 +41,9 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3><i class="fas fa-file-contract"></i> Pólizas Asociadas</h3>
-     <a href="{% url 'polizas:crear_poliza' %}?cliente_id={{ cliente.pk }}" class="btn btn-success"><i class="fas fa-plus"></i> Añadir Póliza para este Cliente</a>
+    <a href="{% url 'polizas:crear_poliza' %}?cliente_id={{ cliente.pk }}" class="btn btn-success">
+    <i class="fas fa-plus"></i> Añadir Póliza para este Cliente
+    </a>
 </div>
 
 {% if polizas_cliente %}

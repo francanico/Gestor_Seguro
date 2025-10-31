@@ -44,7 +44,9 @@ AseguradoFormSet = inlineformset_factory(
     Poliza,
     Asegurado,
     form=AseguradoForm,
-    extra=1, # Siempre mostrar un formulario vacío para añadir
+    extra=1, # Siempre mostrar 1 formulario vacío por defecto
+    min_num=0, # <-- CAMBIO: Hacemos que el mínimo sea 0
+    validate_min=False, # <-- CAMBIO: No validamos el mínimo aquí
     can_delete=True,
     fk_name='poliza'
 )
