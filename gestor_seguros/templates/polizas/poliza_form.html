@@ -4,6 +4,7 @@
 {% block title %}{{ titulo_pagina|default:"Formulario de Póliza" }}{% endblock %}
 
 {% block content %}
+
 <div class="page-header">
     <h2><i class="fas fa-file-signature"></i> {{ titulo_pagina|default:"Formulario de Póliza" }}</h2>
 </div>
@@ -11,15 +12,84 @@
 <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
 
-    <!-- Card 1: Datos de la Póliza -->
+    <!-- ============================================= -->
+    <!-- Card 1: Datos Principales de la Póliza      -->
+    <!-- ============================================= -->
     <div class="card mb-4">
-        <!-- ... (El contenido del card de Información de la Póliza está bien) ... -->
-        <!-- ... (Asegúrate de que esta sección esté completa y correcta) ... -->
+        <div class="card-header">Información de la Póliza</div>
+        <div class="card-body">
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="{{ form.cliente.id_for_label }}" class="form-label">{{ form.cliente.label }}</label>
+                    {% render_field form.cliente class+="form-select" %}
+                    {% for error in form.cliente.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.aseguradora.id_for_label }}" class="form-label">{{ form.aseguradora.label }}</label>
+                    {% render_field form.aseguradora class+="form-select" %}
+                    {% for error in form.aseguradora.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.numero_poliza.id_for_label }}" class="form-label">{{ form.numero_poliza.label }}</label>
+                    {% render_field form.numero_poliza class+="form-control" %}
+                    {% for error in form.numero_poliza.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.ramo_tipo_seguro.id_for_label }}" class="form-label">{{ form.ramo_tipo_seguro.label }}</label>
+                    {% render_field form.ramo_tipo_seguro class+="form-control" placeholder="Ej: Vida, Auto, Hogar" %}
+                    {% for error in form.ramo_tipo_seguro.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-12">
+                    <label for="{{ form.descripcion_bien_asegurado.id_for_label }}" class="form-label">{{ form.descripcion_bien_asegurado.label }}</label>
+                    {% render_field form.descripcion_bien_asegurado class+="form-control" rows="2" placeholder="Ej: Placa Vehículo, Dirección Inmueble" %}
+                    {% for error in form.descripcion_bien_asegurado.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- Card 2: Vigencia, Pagos y Comisiones        -->
+    <!-- ============================================= -->
+    <div class="card mb-4">
+        <div class="card-header">Vigencia, Pagos y Comisiones</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4"><label class="form-label">{{ form.fecha_emision.label }}</label>{% render_field form.fecha_emision class+="form-control" %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.fecha_inicio_vigencia.label }}</label>{% render_field form.fecha_inicio_vigencia class+="form-control" %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.fecha_fin_vigencia.label }}</label>{% render_field form.fecha_fin_vigencia class+="form-control" %}</div>
+                
+                <div class="col-md-4"><label class="form-label">{{ form.prima_total_anual.label }}</label>{% render_field form.prima_total_anual class+="form-control" %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.frecuencia_pago.label }}</label>{% render_field form.frecuencia_pago class+="form-select" %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.valor_cuota.label }}</label>{% render_field form.valor_cuota class+="form-control" %}</div>
+
+                <div class="col-md-4"><label class="form-label">{{ form.comision_monto.label }}</label>{% render_field form.comision_monto class+="form-control" %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.fecha_cobro_comision.label }}</label>{% render_field form.fecha_cobro_comision class+="form-control" %}</div>
+                <div class="col-md-4 d-flex align-items-end"><div class="form-check mb-2">{% render_field form.comision_cobrada class+="form-check-input" %} <label for="{{ form.comision_cobrada.id_for_label }}" class="form-check-label">{{ form.comision_cobrada.label }}</label></div></div>
+            </div>
+        </div>
     </div>
     
-    <!-- ... (Otros cards para Vigencia, Comisiones, etc.) ... -->
-
-    <!-- Card 4: Asegurados en la Póliza (Formset) -->
+    <!-- ============================================= -->
+    <!-- Card 3: Otros Detalles y Archivos           -->
+    <!-- ============================================= -->
+    <div class="card mb-4">
+        <div class="card-header">Otros Detalles</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label">{{ form.estado_poliza.label }}</label>{% render_field form.estado_poliza class+="form-select" %}</div>
+                <div class="col-md-6"><label class="form-label">{{ form.archivo_poliza.label }}</label>{% render_field form.archivo_poliza class+="form-control" %}</div>
+                <div class="col-12"><label class="form-label">{{ form.notas_poliza.label }}</label>{% render_field form.notas_poliza class+="form-control" rows="3" %}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ============================================= -->
+    <!-- Card 4: Asegurados en la Póliza (Formset)   -->
+    <!-- ============================================= -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             Asegurados en la Póliza
@@ -36,13 +106,11 @@
             {% endif %}
 
             <div id="asegurado-forms-container">
-                {# Renderizamos solo los formularios que ya existen #}
                 {% for form in asegurados_formset %}
                     {% include 'polizas/_asegurado_form_snippet.html' with form=form %}
                 {% endfor %}
             </div>
 
-            <!-- Plantilla de Formulario Vacío para JavaScript (AHORA EN UN SNIPPET) -->
             <template id="empty-form-template">
                 {% include 'polizas/_asegurado_form_snippet.html' with form=asegurados_formset.empty_form %}
             </template>
@@ -60,6 +128,7 @@
 </form>
 {% endblock %}
 
+
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -76,18 +145,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     container.addEventListener('click', function(e) {
+        // Manejar el botón de cerrar 'x' en formularios nuevos
         if (e.target && e.target.classList.contains('remove-asegurado-form')) {
-            // Encuentra el formulario padre
-            const formToDelete = e.target.closest('.asegurado-form');
-            // Busca el input 'DELETE' dentro de ese formulario
-            const deleteInput = formToDelete.querySelector('input[id$="-DELETE"]');
-            if (deleteInput) {
-                // Si el input existe (es un formulario existente), lo marcamos para borrar
-                deleteInput.checked = true;
-                formToDelete.style.display = 'none'; // Ocultamos el formulario
+            e.target.closest('.asegurado-form').remove();
+        }
+        
+        // Manejar el checkbox 'Eliminar' en formularios existentes
+        if (e.target && e.target.getAttribute('name') && e.target.getAttribute('name').endsWith('-DELETE')) {
+            const formElement = e.target.closest('.asegurado-form');
+            if (e.target.checked) {
+                formElement.style.opacity = '0.5';
+                formElement.style.backgroundColor = '#ffebee'; // Un rojo claro
             } else {
-                // Si no hay input 'DELETE' (es un formulario nuevo), simplemente lo quitamos del DOM
-                formToDelete.remove();
+                formElement.style.opacity = '1';
+                formElement.style.backgroundColor = 'transparent';
             }
         }
     });
