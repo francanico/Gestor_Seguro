@@ -39,7 +39,6 @@
                         <td>{{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</td>
                         <td>
                             {% with estado=poliza.estado_renovacion dias=poliza.dias_para_renovar %}
-                                
                                 {% if estado == "Vencida" %}
                                     <span class="badge bg-danger">{{ estado }}</span>
 
@@ -49,31 +48,24 @@
                                 {% elif estado == "Próximo (31-90 días)" %}
                                     <span class="badge bg-info text-dark">Próximo</span>
 
+                                {% elif estado == "Pendiente Activación" %}
+                                    <span class="badge bg-primary">{{ estado }}</span>
+                                
                                 {% elif estado == "Vigente" %}
                                     <span class="badge bg-success">{{ estado }}</span>
 
-                                {% elif estado == "Pendiente de Pago" or estado == "En Trámite" %}
-                                    <span class="badge bg-primary">{{ estado }}</span>
-                                
-                                {% elif estado == "Renovada" or estado == "Cancelada" %}
-                                    <span class="badge bg-secondary">{{ estado }}</span>
-
-                                {% else %} {# Cubre "Indeterminado" u otros casos raros #}
-                                    <span class="badge bg-dark">{{ estado }}</span>
+                                {% else %} {# Cubre el estado "Gestionada" (Renovada, Cancelada) #}
+                                    <span class="badge bg-secondary">{{ poliza.get_estado_poliza_display }}</span>
                                 {% endif %}
 
-                                {# --- Bloque para mostrar los días --- #}
-                                {# Solo se muestra si el estado depende de los días #}
-                                {% if estado == "Crítico (0-30 días)" or estado == "Próximo (31-60 días)" or estado == "Vigente" or estado == "Vencida" %}
-                                    {% if dias is not None %}
-                                        {% if dias < 0 %}
-                                            <small class="text-muted d-block mt-1">(hace {{ dias|slice:"1:" }} día{{ dias|slice:"1:"|pluralize }})</small>
-                                        {% else %}
-                                            <small class="text-muted d-block mt-1">({{ dias }} día{{ dias|pluralize }})</small>
-                                        {% endif %}
+                                {# --- Bloque para mostrar los días (AHORA CORREGIDO Y SEPARADO) --- #}
+                                {% if dias is not None and estado != "Gestionada" and estado != "Pendiente Activación" %}
+                                    {% if dias < 0 %}
+                                        <small class="text-muted d-block mt-1">(hace {{ dias|slice:"1:" }} día{{ dias|slice:"1:"|pluralize }})</small>
+                                    {% else %}
+                                        <small class="text-muted d-block mt-1">({{ dias }} día{{ dias|pluralize }})</small>
                                     {% endif %}
                                 {% endif %}
-
                             {% endwith %}
                         </td>
                         <td class="text-end">${{ poliza.prima_total_anual|floatformat:2|intcomma }}</td>

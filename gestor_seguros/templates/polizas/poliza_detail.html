@@ -46,7 +46,6 @@
                 <!-- ... (Fechas) ... -->
             </div>
         </div>
-        <!-- LA SECCIÓN DE ASEGURADOS YA NO VA AQUÍ -->
     </div>
 </div>
 
@@ -112,6 +111,28 @@
             <div class="card-header">
                 <i class="fas fa-cash-register"></i> Registrar Nuevo Pago de Cuota
             </div>
+            <div class="card-body">
+    {% if pago_form %}
+        <form method="POST">
+            {% csrf_token %}
+            {% for field in pago_form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                    {% render_field field class+="form-control" %}
+                    {% for error in field.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Pago</button>
+        </form>
+    {% else %}
+        <div class="alert alert-success text-center">
+            <i class="fas fa-check-circle fa-2x mb-2"></i>
+            <p class="mb-0"><strong>¡Excelente!</strong> Todas las cuotas de esta póliza han sido pagadas.</p>
+        </div>
+    {% endif %}
+</div>
             <div class="card-body">
                 {% if pago_form %}
                     <form method="POST">

@@ -151,6 +151,14 @@ class PolizaDetailView(LoginRequiredMixin,OwnerRequiredMixin, DetailView):
         proxima_cuota = poliza.proxima_fecha_cobro
         # Solo mostramos el formulario si hay una próxima cuota pendiente
         if proxima_cuota:
+
+            initial_data = {
+                'fecha_pago': timezone.now().date(),
+                'monto_pagado': poliza.valor_cuota if poliza.valor_cuota else poliza.prima_total_anual,
+                'fecha_cuota_correspondiente': proxima_cuota
+            }
+            context['pago_form'] = PagoCuotaForm(initial=initial_data)
+            
             pago_form = PagoCuotaForm(initial={
                 'monto_pagado': poliza.valor_cuota or poliza.prima_total_anual,
                 'fecha_cuota_correspondiente': proxima_cuota

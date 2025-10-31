@@ -106,6 +106,14 @@ class PagoCuotaForm(forms.ModelForm):
         widgets = {
             'fecha_pago': forms.DateInput(attrs={'type': 'date'}),
             'fecha_cuota_correspondiente': forms.DateInput(attrs={'type': 'date'}),
+            'monto_pagado': forms.NumberInput(attrs={'placeholder': 'Ej: 56.43'}),
+            'notas': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Pago recibido por transferencia...'}),
+        }
+        labels = {
+            'fecha_pago': 'Fecha en que se realizó el pago',
+            'monto_pagado': 'Monto Pagado',
+            'fecha_cuota_correspondiente': 'Cuota correspondiente a la fecha',
+            'notas': 'Notas del pago',
         }
 
     def __init__(self, *args, **kwargs):

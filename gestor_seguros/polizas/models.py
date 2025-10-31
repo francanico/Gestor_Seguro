@@ -133,34 +133,35 @@ class Poliza(models.Model):
 
     @property
     def estado_renovacion(self):
-        # Primero, manejamos los estados administrativos que tienen prioridad
-        if self.estado_poliza == 'PENDIENTE_PAGO':
-            return "Pendiente de Pago" # Devolvemos el string exacto
-        if self.estado_poliza == 'EN_TRAMITE':
-            return "En Trámite"
-        if self.estado_poliza == 'RENOVADA':
-            return "Renovada"
-        if self.estado_poliza == 'CANCELADA':
-            return "Cancelada"
+        # --- PASO 1: Priorizar el estado administrativo de la póliza ---
+        # Si la póliza requiere una acción para activarse, ese es su estado principal.
+        if self.estado_poliza in ['EN_TRAMITE', 'PENDIENTE_PAGO']:
+            return "Pendiente Activación"
+        
+        # Si la póliza ya fue gestionada (cerrada), mostramos su estado final.
+        if self.estado_poliza in ['RENOVADA', 'CANCELADA']:
+            return "Gestionada"
+        
+        # Si el estado es 'VENCIDA', ese es su estado final de renovación.
+        if self.estado_poliza == 'VENCIDA':
+            return "Vencida"
 
-        # Si no es ninguno de los anteriores, procedemos a calcular por fecha
+        # --- PASO 2: Si la póliza está VIGENTE, ahora sí calculamos por fecha ---
+        # Si llegamos aquí, la única opción que queda es que self.estado_poliza == 'VIGENTE'
+        
         dias = self.dias_para_renovar
 
         if dias is None:
-            # Si el estado es VENCIDA pero dias es None (porque no está VIGENTE),
-            # nos aseguramos de devolver "Vencida"
-            if self.estado_poliza == 'VENCIDA':
-                return "Vencida"
+            # Esto no debería pasar si la póliza es VIGENTE, pero es una salvaguarda.
             return "Indeterminado"
 
         if dias < 0:
-            # Si los días son negativos, el estado debería ser 'VENCIDA'.
-            # Esto sirve como una doble verificación.
+            # Doble chequeo. Si está marcada como VIGENTE pero su fecha ya pasó.
             return "Vencida"
         elif dias <= 30:
             return "Crítico (0-30 días)"
-        elif dias <= 60:
-            return "Próximo (31-60 días)"
+        elif dias <= 90:
+            return "Próximo (31-90 días)"
         else: # Más de 90 días
             return "Vigente"
 
