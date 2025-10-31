@@ -262,7 +262,6 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
 
 class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMixin, UpdateView):
-
     model = Poliza
     form_class = PolizaForm
     template_name = 'polizas/poliza_form.html'
@@ -270,13 +269,14 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if self.request.POST:
-            context['asegurados_formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
-        else:
-            context['asegurados_formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
+        if 'asegurados_formset' not in kwargs: # Evitar sobreescribir si viene de form_invalid
+            if self.request.POST:
+                context['asegurados_formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
+            else:
+                context['asegurados_formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
         context['titulo_pagina'] = "Editar Póliza"
         return context
-    
+
     def form_valid(self, form):
         context = self.get_context_data()
         asegurados_formset = context['asegurados_formset']
@@ -284,30 +284,56 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
         if asegurados_formset.is_valid():
             with transaction.atomic():
                 self.object = form.save()
-                asegurados_formset.instance = self.object
                 asegurados_formset.save()
             return super().form_valid(form)
         else:
+            # Si el formset no es válido, pasamos al método form_invalid
             return self.form_invalid(form)
-    
+
     def form_invalid(self, form):
+        # --- LÓGICA MEJORADA PARA MANEJAR EL ERROR DE ELIMINACIÓN ---
+        
+        # Instanciamos el formset de nuevo para analizarlo
         asegurados_formset = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
+
+        # Verificamos si el ÚNICO error es el de 'submit at least 1 form'
+        # y si TODOS los formularios están marcados para borrar o están vacíos.
+        is_only_min_form_error = False
+        if asegurados_formset.non_form_errors():
+            errors = asegurados_formset.non_form_errors().as_data()
+            if len(errors) == 1 and errors[0].code == 'too_few_forms':
+                is_only_min_form_error = True
+
+        # Verificamos si el usuario realmente está intentando dejar el formset vacío
+        all_forms_to_be_deleted = True
+        for f in asegurados_formset:
+            # Si un formulario tiene datos y no está marcado para borrar, no estamos borrando todo
+            if f.has_changed() and not f.cleaned_data.get('DELETE', False):
+                all_forms_to_be_deleted = False
+                break
+        
+        # --- CONDICIÓN CLAVE ---
+        # Si el único error es el del mínimo de formularios, Y el usuario está borrando/dejando vacíos
+        # todos los formularios, entonces consideramos el formset como "válido" para nuestros propósitos.
+        if is_only_min_form_error and all_forms_to_be_deleted:
+            print("--- DEBUG: Ignorando error 'too_few_forms' porque el usuario está borrando todos los asegurados. ---")
+            with transaction.atomic():
+                self.object = form.save()
+                # Guardamos el formset aunque 'is_valid' sea False,
+                # porque lo que hará es procesar las eliminaciones.
+                asegurados_formset.save()
+            
+            # Forzamos la redirección de éxito
+            return redirect(self.get_success_url())
+
+        # Si hay otros errores, los mostramos como antes
         messages.error(self.request, 'Por favor, corrige los errores en el formulario.')
-
-        # Depuración
-        print("--- Errores del Formulario Principal ---")
-        print(form.errors)
-        print("--- Errores del Formset de Asegurados ---")
-        print(asegurados_formset.errors)
-        print(asegurados_formset.non_form_errors())
-
         return self.render_to_response(
             self.get_context_data(form=form, asegurados_formset=asegurados_formset)
         )
 
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
-
 class PolizaDeleteView(LoginRequiredMixin, DeleteView):
     model = Poliza
     template_name = 'polizas/poliza_confirm_delete.html'
