@@ -274,23 +274,20 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
 
-class PolizaDeleteView(LoginRequiredMixin, DeleteView):
+class PolizaDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     model = Poliza
     template_name = 'polizas/poliza_confirm_delete.html'
     success_url = reverse_lazy('polizas:lista_polizas')
+    context_object_name = 'poliza' # Es buena práctica definirlo
 
-    def delete(self, request, *args, **kwargs):
-        obj = self.get_object()
-        messages.success(self.request, f"Póliza No. '{obj.numero_poliza}' eliminada exitosamente.")
-        return super(PolizaDeleteView, self).delete(request, *args, **kwargs)
+    def form_valid(self, form):
+        # Sobreescribimos form_valid para añadir un mensaje de éxito
+        messages.success(self.request, f"La póliza '{self.object.numero_poliza}' ha sido eliminada exitosamente.")
+        return super().form_valid(form)
     
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
-    
+    # Nos aseguramos de que el mixin de propietario se aplique correctamente
     def get_queryset(self):
-        return self.model.objects.filter(usuario=self.request.user)
+        return super().get_queryset()
 
 @login_required
 def renovar_poliza(request, pk):
