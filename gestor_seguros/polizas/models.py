@@ -28,7 +28,6 @@ class Aseguradora(models.Model):
         unique_together = ('usuario', 'nombre')
         unique_together = ('usuario', 'rif')
 
-
 # ---  MODELO PARA CADA PERSONA CUBIERTA EN LA PÓLIZA ---
 class Asegurado(models.Model):
 
