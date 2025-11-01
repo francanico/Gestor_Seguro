@@ -117,18 +117,18 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-LANGUAGE_CODE = 'es-ve' # Código de idioma para español de Venezuela
+LANGUAGE_CODE = 'en-us'
 
-# --- LÍNEA A CAMBIAR ---
-TIME_ZONE = 'America/Caracas' # Esto corresponde a UTC-4
-
+#Establece la zona horaria de Venezuela. Esta es la clave.
+TIME_ZONE = 'America/Caracas'
+# Mantenemos la internacionalización activa por si la necesitas en el futuro.
 USE_I18N = True
 
-# --- CAMBIO IMPORTANTE ---
-USE_L10N = True # Cambia esto a True si no lo estaba. Esto activa los formatos localizados.
+# Esto hará que Django use formatos estándar (ej. punto para decimales, YYYY-MM-DD para inputs).
+USE_L10N = False # <-- CAMBIO CRÍTICO
 
-USE_TZ = True # Mantenlo en True para que Django maneje las zonas horarias correctamente
-
+# 5. Mantenemos el soporte de zonas horarias activo.
+USE_TZ = True
 
 
 LOGIN_URL = 'login' # La URL donde está tu página de login
