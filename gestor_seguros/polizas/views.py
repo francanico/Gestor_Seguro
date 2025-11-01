@@ -218,28 +218,69 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     template_name = 'polizas/poliza_form.html'
     success_message = "Póliza creada exitosamente."
 
+    def get_initial(self):
+        initial = super().get_initial()
+        cliente_id = self.request.GET.get('cliente_id')
+        if cliente_id:
+            try:
+                cliente = Cliente.objects.get(pk=cliente_id, usuario=self.request.user)
+                initial['cliente'] = cliente
+            except Cliente.DoesNotExist:
+                pass
+        return initial
+
+    def get_form_kwargs(self):
+        # Pasa el usuario al __init__ del formulario para filtrar los desplegables
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if self.request.POST:
-            context['asegurados_formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
-        else:
-            context['asegurados_formset'] = AseguradoFormSet(prefix='asegurados')
+        if 'asegurados_formset' not in kwargs:
+            if self.request.POST:
+                context['asegurados_formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
+            else:
+                context['asegurados_formset'] = AseguradoFormSet(prefix='asegurados')
         context['titulo_pagina'] = "Crear Nueva Póliza"
         return context
 
-    def form_valid(self, form):
-        context = self.get_context_data()
-        asegurados_formset = context['asegurados_formset']
+    def post(self, request, *args, **kwargs):
+        self.object = None
+        form = self.get_form()
+        asegurados_formset = AseguradoFormSet(request.POST, prefix='asegurados')
+
+        is_form_valid = form.is_valid()
+        is_formset_valid = asegurados_formset.is_valid()
+
+        print("--- DEBUG (POST CreateView): ---")
+        print(f"Form principal válido: {is_form_valid}")
+        print(f"Formset válido: {is_formset_valid}")
         
-        if asegurados_formset.is_valid():
-            with transaction.atomic():
-                form.instance.usuario = self.request.user
-                self.object = form.save()
-                asegurados_formset.instance = self.object
-                asegurados_formset.save()
-            return super().form_valid(form)
+        if is_form_valid and is_formset_valid:
+            return self.form_valid(form, asegurados_formset)
         else:
-            return self.form_invalid(form)
+            return self.form_invalid(form, asegurados_formset)
+
+    def form_valid(self, form, asegurados_formset):
+        with transaction.atomic():
+            form.instance.usuario = self.request.user
+            self.object = form.save()
+            asegurados_formset.instance = self.object
+            asegurados_formset.save()
+        return super(CreateView, self).form_valid(form)
+
+    def form_invalid(self, form, asegurados_formset):
+        messages.error(self.request, 'Por favor, corrige los errores en el formulario.')
+
+        print("--- ERRORES CreateView ---")
+        print("Form Errors:", form.errors.as_json())
+        print("Formset Errors:", asegurados_formset.errors)
+        print("Formset Non-Form Errors:", asegurados_formset.non_form_errors())
+
+        return self.render_to_response(
+            self.get_context_data(form=form, asegurados_formset=asegurados_formset)
+        )
 
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
