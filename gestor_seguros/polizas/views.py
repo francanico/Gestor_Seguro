@@ -328,157 +328,73 @@ def renovar_poliza(request, pk):
 # --- Dashboard y Recordatorios ---
 @login_required
 def dashboard_view(request):
-    """
-    Vista principal del dashboard que consolida todas las alertas y métricas clave
-    para la gestión de la agencia de seguros.
-    """
+    # Obtener la fecha local correcta
     hoy = timezone.localtime(timezone.now()).date()
     
-
-    # ==============================================================================
-    # 1. QUERIES BASE: Definimos los conjuntos de datos principales una sola vez.
-    # ==============================================================================
-
-    # Todas las pólizas del usuario que requieren algún tipo de atención o seguimiento.
-    # Excluimos las que están cerradas definitivamente ('CANCELADA', 'RENOVADA').
+    # --- QUERIES BASE ---
     polizas_activas_y_pendientes = Poliza.objects.filter(
         usuario=request.user
     ).exclude(
         estado_poliza__in=['CANCELADA', 'RENOVADA']
     ).select_related('cliente', 'aseguradora')
 
-    # ==============================================================================
-    # 2. CÁLCULOS PARA LAS SECCIONES DEL DASHBOARD
-    # ==============================================================================
+    # --- CÁLCULOS PARA EL DASHBOARD ---
 
-    # --- SECCIÓN A: Pólizas que necesitan gestión (Renovaciones / Trámites) ---
+    # A. Gestión de Renovaciones
+    polizas_en_tramite = polizas_activas_y_pendientes.filter(estado_poliza='EN_TRAMITE').order_by('fecha_inicio_vigencia')
+    polizas_vencidas = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__lt=hoy, estado_poliza__in=['VIGENTE', 'PENDIENTE_PAGO']).order_by('fecha_fin_vigencia')
+    polizas_a_vencer_30 = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=30))).order_by('fecha_fin_vigencia')
+    polizas_a_vencer_60 = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy + timedelta(days=31), hoy + timedelta(days=60))).order_by('fecha_fin_vigencia')
 
-    # A.1: Pólizas nuevas o renovadas que están esperando ser activadas.
-    polizas_en_tramite = polizas_activas_y_pendientes.filter(
-        estado_poliza='EN_TRAMITE'
-    ).order_by('fecha_inicio_vigencia')
-
-    # A.2: Pólizas cuya cobertura ya terminó y no han sido renovadas.
-    polizas_vencidas = polizas_activas_y_pendientes.filter(
-        fecha_fin_vigencia__lt=hoy,
-        estado_poliza__in=['VIGENTE', 'PENDIENTE_PAGO'] 
-    ).order_by('fecha_fin_vigencia')
-
-    # A.3: Pólizas cuya cobertura está próxima a vencer (en los próximos 30 días).
-    polizas_a_vencer_30 = polizas_activas_y_pendientes.filter(
-        fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=30))
-    ).order_by('fecha_fin_vigencia')
-    
-    # A.4: Pólizas por Vencer entre 31 y 60 Días (LÓGICA CORRECTA)
-    polizas_a_vencer_60 = polizas_activas_y_pendientes.filter(
-        fecha_fin_vigencia__range=(hoy + timedelta(days=31), hoy + timedelta(days=60))
-    ).order_by('fecha_fin_vigencia')
-    # --- FIN SECCIÓN A ---
-    # --- SECCIÓN B: Gestión de Cobros de Cuotas ---
-
+    # B. Gestión de Cobros de Cuotas
     cobros_pendientes_30_dias = []
     cobros_vencidos = []
-
-    # Iteramos sobre las pólizas activas para encontrar cuotas pendientes.
-    # Usamos list() para evaluar el queryset una sola vez.
     for poliza in list(polizas_activas_y_pendientes.exclude(frecuencia_pago__in=['UNICO', 'ANUAL'])):
         prox_cobro = poliza.proxima_fecha_cobro
         if prox_cobro:
             dias = (prox_cobro - hoy).days
-            if dias < 0:
-                cobros_vencidos.append(poliza)
-            elif 0 <= dias <= 30:
-                cobros_pendientes_30_dias.append(poliza)
-
-    # Ordenamos las listas resultantes en Python.
+            if dias < 0: cobros_vencidos.append(poliza)
+            elif 0 <= dias <= 30: cobros_pendientes_30_dias.append(poliza)
     cobros_pendientes_30_dias.sort(key=lambda p: p.proxima_fecha_cobro)
     cobros_vencidos.sort(key=lambda p: p.proxima_fecha_cobro)
 
-    # --- SECCIÓN C: Otras Tareas y Recordatorios ---
+    # C. Comisiones
+    comisiones_pendientes = Poliza.objects.filter(usuario=request.user, comision_cobrada=False, comision_monto__gt=0).select_related('cliente').order_by('fecha_fin_vigencia')
 
-    # C.1: Comisiones pendientes de cobro en toda la cartera activa.
-    # Buscamos comisiones pendientes en TODAS las pólizas del usuario,
-    # sin importar su estado (incluso si están renovadas), porque una comisión
-    # de una póliza antigua puede seguir pendiente de cobro.
-    comisiones_pendientes = Poliza.objects.filter(
-        usuario=request.user,
-        comision_cobrada=False,
-        comision_monto__gt=0
-    ).select_related('cliente').order_by('fecha_fin_vigencia')
-
-    # C.2: Cumpleaños del mes actual.
-    # --- LÓGICA DE CUMPLEAÑOS (CORREGIDA Y AMPLIADA) ---
+    # D. Cumpleaños (Lógica unificada)
     mes_actual = hoy.month
-
-    # Buscamos en el modelo Cliente
-    cumpleaneros_clientes = Cliente.objects.filter(
-        usuario=request.user,
-        fecha_nacimiento__month=mes_actual
-    ).exclude(fecha_nacimiento__isnull=True) # Excluimos los que no tienen fecha
-
-    # Buscamos en el modelo Asegurado
-    cumpleaneros_asegurados = Asegurado.objects.filter(
-        poliza__usuario=request.user, # Filtramos a través de la póliza del usuario
-        fecha_nacimiento__month=mes_actual
-    ).exclude(fecha_nacimiento__isnull=True)
-
-    # Creamos una lista unificada de personas (clientes o asegurados) que cumplen años
-    lista_cumpleaneros = []
+    cumpleaneros_clientes = Cliente.objects.filter(usuario=request.user, fecha_nacimiento__month=mes_actual).exclude(fecha_nacimiento__isnull=True)
+    cumpleaneros_asegurados = Asegurado.objects.filter(poliza__usuario=request.user, fecha_nacimiento__month=mes_actual).exclude(fecha_nacimiento__isnull=True)
     
-    # Añadimos clientes, con una referencia a su objeto
-    for cliente in cumpleaneros_clientes:
-        lista_cumpleaneros.append({
-            'nombre': cliente.nombre_completo,
-            'fecha_nacimiento': cliente.fecha_nacimiento,
-            'objeto': cliente
-        })
+    lista_cumpleaneros = []
+    nombres_ya_en_lista = set()
 
-    # Añadimos asegurados, evitando duplicados si ya están como clientes
-    nombres_ya_en_lista = {c['nombre'] for c in lista_cumpleaneros}
+    for cliente in cumpleaneros_clientes:
+        if cliente.nombre_completo not in nombres_ya_en_lista:
+            lista_cumpleaneros.append({'nombre': cliente.nombre_completo, 'fecha_nacimiento': cliente.fecha_nacimiento, 'objeto': cliente})
+            nombres_ya_en_lista.add(cliente.nombre_completo)
+
     for asegurado in cumpleaneros_asegurados:
         if asegurado.nombre_completo not in nombres_ya_en_lista:
-            lista_cumpleaneros.append({
-                'nombre': asegurado.nombre_completo,
-                'fecha_nacimiento': asegurado.fecha_nacimiento,
-                'objeto': asegurado # En la plantilla no usaremos get_absolute_url para este
-            })
+            lista_cumpleaneros.append({'nombre': asegurado.nombre_completo, 'fecha_nacimiento': asegurado.fecha_nacimiento, 'objeto': asegurado})
+            nombres_ya_en_lista.add(asegurado.nombre_completo)
 
-    # Ordenamos la lista final por día de cumpleaños
     lista_cumpleaneros.sort(key=lambda item: item['fecha_nacimiento'].day)
 
-
-    # --- DATOS PARA NOTIFICACIONES JS  ---
-
-    # Filtramos la lista de Python que ya tenemos
-    cumpleaneros_hoy = [  item for item in lista_cumpleaneros if item['fecha_nacimiento'].day == hoy.day  ]
-
-    # Accedemos a la clave 'nombre' del diccionario 'c' usando c['nombre']
-    cumpleaneros_hoy_json = json.dumps([{'nombre': c['nombre']} for c in cumpleaneros_hoy])
-
-    # ==============================================================================
-    # 3. KPIs (INDICADORES CLAVE) Y DATOS PARA NOTIFICACIONES JS
-    # ==============================================================================
-
-    # Indicadores para las tarjetas superiores
+    # --- KPIs Y DATOS JS ---
     total_clientes = Cliente.objects.filter(usuario=request.user).count()
     total_polizas_vigentes = polizas_activas_y_pendientes.filter(estado_poliza='VIGENTE').count()
-
-    # Datos para las notificaciones "Toast" de JavaScript
-    # Filtramos la lista de Python que ya tenemos
+    
+    # --- LÍNEA CORREGIDA ---
     cumpleaneros_hoy = [item for item in lista_cumpleaneros if item['fecha_nacimiento'].day == hoy.day]
-    cumpleaneros_hoy_json = json.dumps([{'nombre': c.nombre_completo} for c in cumpleaneros_hoy])
-
+    cumpleaneros_hoy_json = json.dumps([{'nombre': c['nombre']} for c in cumpleaneros_hoy])
+    
     polizas_vencen_semana = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=7)))
     polizas_vencen_semana_json = json.dumps([{'numero': p.numero_poliza} for p in polizas_vencen_semana])
 
-    # ==============================================================================
-    # 4. CONSTRUCCIÓN DEL CONTEXTO FINAL PARA LA PLANTILLA
-    # ==============================================================================
+    # --- CONTEXTO FINAL ---
     context = {
-        # Fecha de hoy para comparaciones en la plantilla
         'hoy': hoy,
-        
-        # Listas para las secciones de alertas
         'polizas_en_tramite': polizas_en_tramite,
         'polizas_vencidas': polizas_vencidas,
         'polizas_a_vencer_30': polizas_a_vencer_30,
@@ -486,20 +402,14 @@ def dashboard_view(request):
         'cobros_vencidos': cobros_vencidos,
         'cobros_pendientes_30_dias': cobros_pendientes_30_dias,
         'comisiones_pendientes': comisiones_pendientes,
-        'cumpleaneros_mes': lista_cumpleaneros, # <-- Usamos la variable correcta
-        
-        # KPIs para las tarjetas
+        'cumpleaneros_mes': lista_cumpleaneros,
         'total_clientes': total_clientes,
         'total_polizas_vigentes': total_polizas_vigentes,
-        
-        # Datos JSON para JavaScript
         'cumpleaneros_hoy_json': cumpleaneros_hoy_json,
         'polizas_vencen_semana_json': polizas_vencen_semana_json,
-
-        # Título de la página
         'titulo_pagina': "Dashboard de Pólizas",
     }
-
+    
     return render(request, 'polizas/dashboard.html', context)
 
 # ---  VISTA DE ACCIÓN RÁPIDA PARA REGISTRAR PAGO ---
