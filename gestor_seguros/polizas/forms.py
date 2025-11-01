@@ -48,7 +48,8 @@ class AseguradoForm(forms.ModelForm):
             else:
                 field.widget.attrs['class'] = css_class
 
-# --- CONFIGURACIÓN DEFINITIVA DEL FORMSET ---
+# --- CONFIGURACIÓN DEFINITIVA DEL FORMSET "TAMBIEN SE ENCUENTRA EN POLIZA.VIEWS 
+# OJOOOO HAY QUE CAMBIAR EN AMBOS LUGARES---
 AseguradoFormSet = inlineformset_factory(
     Poliza,
     Asegurado,

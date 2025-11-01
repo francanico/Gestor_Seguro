@@ -27,9 +27,9 @@ AseguradoFormSet = inlineformset_factory(
     Poliza,
     Asegurado,
     form=AseguradoForm,
-    extra=0, 
-    min_num=1,
-    validate_min=True,
+    extra=0,            # 1. No se muestran formularios vacíos por defecto.
+    min_num=0,          # 2. El número mínimo de formularios requeridos es CERO.
+    validate_min=False,   # 3. Se desactiva explícitamente la validación del mínimo.
     can_delete=True,
     fk_name='poliza'
 )
@@ -332,7 +332,8 @@ def dashboard_view(request):
     Vista principal del dashboard que consolida todas las alertas y métricas clave
     para la gestión de la agencia de seguros.
     """
-    hoy = timezone.now().date()
+    hoy = timezone.localtime(timezone.now()).date()
+    
 
     # ==============================================================================
     # 1. QUERIES BASE: Definimos los conjuntos de datos principales una sola vez.
@@ -406,10 +407,51 @@ def dashboard_view(request):
     ).select_related('cliente').order_by('fecha_fin_vigencia')
 
     # C.2: Cumpleaños del mes actual.
-    cumpleaneros_mes = Cliente.objects.filter(
+    # --- LÓGICA DE CUMPLEAÑOS (CORREGIDA Y AMPLIADA) ---
+    mes_actual = hoy.month
+
+    # Buscamos en el modelo Cliente
+    cumpleaneros_clientes = Cliente.objects.filter(
         usuario=request.user,
-        fecha_nacimiento__month=hoy.month
-    ).order_by('fecha_nacimiento__day')
+        fecha_nacimiento__month=mes_actual
+    ).exclude(fecha_nacimiento__isnull=True) # Excluimos los que no tienen fecha
+
+    # Buscamos en el modelo Asegurado
+    cumpleaneros_asegurados = Asegurado.objects.filter(
+        poliza__usuario=request.user, # Filtramos a través de la póliza del usuario
+        fecha_nacimiento__month=mes_actual
+    ).exclude(fecha_nacimiento__isnull=True)
+
+    # Creamos una lista unificada de personas (clientes o asegurados) que cumplen años
+    lista_cumpleaneros = []
+    
+    # Añadimos clientes, con una referencia a su objeto
+    for cliente in cumpleaneros_clientes:
+        lista_cumpleaneros.append({
+            'nombre': cliente.nombre_completo,
+            'fecha_nacimiento': cliente.fecha_nacimiento,
+            'objeto': cliente
+        })
+
+    # Añadimos asegurados, evitando duplicados si ya están como clientes
+    nombres_ya_en_lista = {c['nombre'] for c in lista_cumpleaneros}
+    for asegurado in cumpleaneros_asegurados:
+        if asegurado.nombre_completo not in nombres_ya_en_lista:
+            lista_cumpleaneros.append({
+                'nombre': asegurado.nombre_completo,
+                'fecha_nacimiento': asegurado.fecha_nacimiento,
+                'objeto': asegurado # En la plantilla no usaremos get_absolute_url para este
+            })
+
+    # Ordenamos la lista final por día de cumpleaños
+    lista_cumpleaneros.sort(key=lambda item: item['fecha_nacimiento'].day)
+
+
+    # --- DATOS PARA NOTIFICACIONES JS (ACTUALIZADO) ---
+    cumpleaneros_hoy = [
+        item for item in lista_cumpleaneros if item['fecha_nacimiento'].day == hoy.day
+    ]
+    cumpleaneros_hoy_json = json.dumps([{'nombre': c['nombre']} for c in cumpleaneros_hoy])
 
     # ==============================================================================
     # 3. KPIs (INDICADORES CLAVE) Y DATOS PARA NOTIFICACIONES JS
@@ -420,7 +462,8 @@ def dashboard_view(request):
     total_polizas_vigentes = polizas_activas_y_pendientes.filter(estado_poliza='VIGENTE').count()
 
     # Datos para las notificaciones "Toast" de JavaScript
-    cumpleaneros_hoy = cumpleaneros_mes.filter(fecha_nacimiento__day=hoy.day)
+    # Filtramos la lista de Python que ya tenemos
+    cumpleaneros_hoy = [item for item in lista_cumpleaneros if item['fecha_nacimiento'].day == hoy.day]
     cumpleaneros_hoy_json = json.dumps([{'nombre': c.nombre_completo} for c in cumpleaneros_hoy])
 
     polizas_vencen_semana = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=7)))
@@ -437,11 +480,11 @@ def dashboard_view(request):
         'polizas_en_tramite': polizas_en_tramite,
         'polizas_vencidas': polizas_vencidas,
         'polizas_a_vencer_30': polizas_a_vencer_30,
+        'polizas_a_vencer_60': polizas_a_vencer_60,
         'cobros_vencidos': cobros_vencidos,
         'cobros_pendientes_30_dias': cobros_pendientes_30_dias,
         'comisiones_pendientes': comisiones_pendientes,
-        'cumpleaneros_mes': cumpleaneros_mes,
-        'polizas_a_vencer_60': polizas_a_vencer_60,
+        'cumpleaneros_mes': lista_cumpleaneros, # <-- Usamos la variable correcta
         
         # KPIs para las tarjetas
         'total_clientes': total_clientes,
