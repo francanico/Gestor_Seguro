@@ -447,10 +447,12 @@ def dashboard_view(request):
     lista_cumpleaneros.sort(key=lambda item: item['fecha_nacimiento'].day)
 
 
-    # --- DATOS PARA NOTIFICACIONES JS (ACTUALIZADO) ---
-    cumpleaneros_hoy = [
-        item for item in lista_cumpleaneros if item['fecha_nacimiento'].day == hoy.day
-    ]
+    # --- DATOS PARA NOTIFICACIONES JS  ---
+
+    # Filtramos la lista de Python que ya tenemos
+    cumpleaneros_hoy = [  item for item in lista_cumpleaneros if item['fecha_nacimiento'].day == hoy.day  ]
+
+    # Accedemos a la clave 'nombre' del diccionario 'c' usando c['nombre']
     cumpleaneros_hoy_json = json.dumps([{'nombre': c['nombre']} for c in cumpleaneros_hoy])
 
     # ==============================================================================
