@@ -35,8 +35,9 @@ class AseguradoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            field.required = False # Mantenemos todos los campos como opcionales
+        for field in self.fields.values():
+            field.required = False
+            field.widget.attrs['required'] = False
             
             # Aplicamos clases CSS
             css_class = 'form-control'
@@ -93,12 +94,9 @@ class PolizaForm(forms.ModelForm):
             self.fields['cliente'].queryset = Cliente.objects.filter(usuario=user).order_by('nombre_completo')
             self.fields['aseguradora'].queryset = Aseguradora.objects.filter(usuario=user).order_by('nombre')
         
-        # 4. (Opcional) Aplicamos las clases CSS a los campos
-        for field_name, field in self.fields.items():
-            if field.widget.attrs.get('class'):
-                field.widget.attrs['class'] += ' form-control'
-            else:
-                field.widget.attrs['class'] = 'form-control'
+        # 4. # Desactivamos la validación HTML5 del navegador
+        for field in self.fields.values():
+            field.widget.attrs['required'] = False
 
     def clean(self):
         cleaned_data = super().clean()

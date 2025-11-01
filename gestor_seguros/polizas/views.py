@@ -297,13 +297,11 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
             context['asegurados_formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
         else:
             context['asegurados_formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
-        context['titulo_pagina'] = "Editar Póliza"
         return context
     
     def form_valid(self, form):
         context = self.get_context_data()
         asegurados_formset = context['asegurados_formset']
-        
         if asegurados_formset.is_valid():
             with transaction.atomic():
                 self.object = form.save()
