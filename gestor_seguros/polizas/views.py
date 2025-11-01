@@ -15,8 +15,7 @@ from django.db import transaction
 from .models import Poliza, Aseguradora,PagoCuota,Siniestro,Asegurado 
 from .forms import PolizaForm, AseguradoraForm,PagoCuotaForm,SiniestroForm,AseguradoForm 
 from clientes.models import Cliente # Para el selector de clientes
-from django.db.models import F, ExpressionWrapper, DateField
-from django.db.models.functions import ExtractMonth, ExtractDay
+from django.db.models import F,Prefetch
 from django.forms import inlineformset_factory
 import copy,json
 from .mixins import OwnerRequiredMixin
@@ -84,7 +83,6 @@ class AseguradoraDeleteView(LoginRequiredMixin, DeleteView): # SuccessMessageMix
         obj = self.get_object()
         messages.success(self.request, f"Aseguradora '{obj.nombre}' eliminada exitosamente.")
         return super(AseguradoraDeleteView, self).delete(request, *args, **kwargs)
-
 
 # --- Vistas para Pólizas ---
 class PolizaListView(LoginRequiredMixin, ListView):
@@ -408,13 +406,20 @@ def dashboard_view(request):
     # corresponde a la zona horaria del servidor (America/Caracas).
     hoy = timezone.localtime(timezone.now()).date()
     
-    # --- QUERIES BASE ---
+    # --- QUERIES BASE OPTIMIZADOS ---
+    
+    # Usamos prefetch_related para cargar todos los pagos de cuotas en una sola consulta extra
+    prefetch_pagos = Prefetch('pagos_cuotas', queryset=PagoCuota.objects.order_by('-fecha_cuota_correspondiente'))
+    
     polizas_activas_y_pendientes = Poliza.objects.filter(
         usuario=request.user
     ).exclude(
         estado_poliza__in=['CANCELADA', 'RENOVADA']
-    ).select_related('cliente', 'aseguradora')
-
+    ).select_related(
+        'cliente', 'aseguradora'
+    ).prefetch_related(
+        prefetch_pagos # <-- APLICAMOS LA PRE-CARGA
+    )
     # --- CÁLCULOS PARA EL DASHBOARD ---
 
     # A. Gestión de Renovaciones
@@ -424,9 +429,14 @@ def dashboard_view(request):
     polizas_a_vencer_60 = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy + timedelta(days=31), hoy + timedelta(days=60))).order_by('fecha_fin_vigencia')
 
     # B. Gestión de Cobros de Cuotas
+    # --- LÓGICA PARA PRÓXIMOS COBROS (AHORA MUCHO MÁS RÁPIDA) ---
     cobros_pendientes_30_dias = []
     cobros_vencidos = []
-    for poliza in list(polizas_activas_y_pendientes.exclude(frecuencia_pago__in=['UNICO', 'ANUAL'])):
+    
+    # Ya no es necesario usar list() aquí, podemos iterar directamente sobre el queryset
+    for poliza in polizas_activas_y_pendientes.exclude(frecuencia_pago__in=['UNICO', 'ANUAL']):
+        # Esta llamada ahora es casi instantánea, porque los pagos ya están en memoria.
+        # No se realiza una nueva consulta a la BD.
         prox_cobro = poliza.proxima_fecha_cobro
         if prox_cobro:
             dias = (prox_cobro - hoy).days
@@ -434,8 +444,6 @@ def dashboard_view(request):
                 cobros_vencidos.append(poliza)
             elif 0 <= dias <= 30:
                 cobros_pendientes_30_dias.append(poliza)
-    cobros_pendientes_30_dias.sort(key=lambda p: p.proxima_fecha_cobro)
-    cobros_vencidos.sort(key=lambda p: p.proxima_fecha_cobro)
 
     # C. Comisiones
     comisiones_pendientes = Poliza.objects.filter(usuario=request.user, comision_cobrada=False, comision_monto__gt=0).select_related('cliente').order_by('fecha_fin_vigencia')
