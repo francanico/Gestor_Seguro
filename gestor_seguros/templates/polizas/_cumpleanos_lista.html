@@ -1,23 +1,23 @@
 <!-- templates/polizas/_cumpleanos_lista.html -->
 {% if cumpleaneros_mes %}
     <div class="list-group list-group-flush">
-        {% for persona in cumpleaneros_mes %}
-            {# Ahora iteramos sobre 'persona', que es un diccionario #}
-            {% if persona.fecha_nacimiento.day == hoy.day and persona.fecha_nacimiento.month == hoy.month %}
-                <a href="{{ persona.url }}" class="list-group-item list-group-item-action list-group-item-warning birthday-today">
+        {% for cliente in cumpleaneros_mes %}
+            {# Ahora iteramos sobre objetos 'cliente' de nuevo #}
+            {% if cliente.fecha_nacimiento.day == hoy.day and cliente.fecha_nacimiento.month == hoy.month %}
+                <a href="{{ cliente.get_absolute_url }}" class="list-group-item list-group-item-action list-group-item-warning birthday-today">
                     <div class="d-flex w-100 justify-content-between">
-                        <h6 class="mb-1 fw-bold"><i class="fas fa-gift text-danger me-2"></i> {{ persona.nombre }}</h6>
+                        <h6 class="mb-1 fw-bold"><i class="fas fa-gift text-danger me-2"></i> {{ cliente.nombre_completo }}</h6>
                         <small class="text-danger fw-bold">¡Hoy!</small>
                     </div>
-                    <small class="text-muted">{{ persona.tipo }} | Cumple el {{ persona.fecha_nacimiento|date:"d \d\e F" }}</small>
+                    <small class="text-muted">Cumple el {{ cliente.fecha_nacimiento|date:"d \d\e F" }}.</small>
                 </a>
             {% else %}
-                <a href="{{ persona.url }}" class="list-group-item list-group-item-action">
+                <a href="{{ cliente.get_absolute_url }}" class="list-group-item list-group-item-action">
                     <div class="d-flex w-100 justify-content-between">
-                        <h6 class="mb-1">{{ persona.nombre }}</h6>
-                        <small class="text-muted">{{ persona.fecha_nacimiento|date:"d/m" }}</small>
+                        <h6 class="mb-1">{{ cliente.nombre_completo }}</h6>
+                        <small class="text-muted">{{ cliente.fecha_nacimiento|date:"d/m" }}</small>
                     </div>
-                    <small class="text-muted">{{ persona.tipo }} | Cumple el {{ persona.fecha_nacimiento|date:"d \d\e F" }}</small>
+                    <small class="text-muted">Cumple el {{ cliente.fecha_nacimiento|date:"d \d\e F" }}.</small>
                 </a>
             {% endif %}
         {% endfor %}

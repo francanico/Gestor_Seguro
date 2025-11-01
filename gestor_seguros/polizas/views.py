@@ -440,44 +440,30 @@ def dashboard_view(request):
     # C. Comisiones
     comisiones_pendientes = Poliza.objects.filter(usuario=request.user, comision_cobrada=False, comision_monto__gt=0).select_related('cliente').order_by('fecha_fin_vigencia')
 
-    # D. Cumpleaños (Lógica Unificada)
-    mes_actual = hoy.month
-    cumpleaneros_clientes = Cliente.objects.filter(usuario=request.user, fecha_nacimiento__isnull=False, fecha_nacimiento__month=mes_actual)
-    cumpleaneros_asegurados = Asegurado.objects.filter(poliza__usuario=request.user, fecha_nacimiento__isnull=False, fecha_nacimiento__month=mes_actual).select_related('poliza', 'poliza__cliente')
+    # D. CUMPLEAÑOS (LÓGICA SIMPLE Y CONSCIENTE DE TIMEZONE)
+    # =========================================================
     
-    lista_unificada_cumpleanos = [] # <-- Se crea la variable
-    nombres_procesados = set()
-
-    for cliente in cumpleaneros_clientes:
-        if cliente.nombre_completo.lower() not in nombres_procesados:
-            lista_unificada_cumpleanos.append({
-                'nombre': cliente.nombre_completo,
-                'fecha_nacimiento': cliente.fecha_nacimiento,
-                'tipo': 'Cliente',
-                'url': cliente.get_absolute_url()
-            })
-            nombres_procesados.add(cliente.nombre_completo.lower())
-
-    for asegurado in cumpleaneros_asegurados:
-        if asegurado.nombre_completo.lower() not in nombres_procesados:
-            lista_unificada_cumpleanos.append({
-                'nombre': asegurado.nombre_completo,
-                'fecha_nacimiento': asegurado.fecha_nacimiento,
-                'tipo': 'Asegurado',
-                'url': asegurado.poliza.get_absolute_url()
-            })
-            nombres_procesados.add(asegurado.nombre_completo.lower())
-
-    lista_unificada_cumpleanos.sort(key=lambda item: item['fecha_nacimiento'].day)
+    # Obtenemos la fecha local correcta para evitar discrepancias UTC
+    fecha_local_hoy = timezone.localtime(timezone.now()).date()
+    mes_actual = fecha_local_hoy.month
+    
+    # La consulta ahora usa solo el modelo Cliente, que es más simple y robusto
+    cumpleaneros_mes = Cliente.objects.filter(
+        usuario=request.user,
+        fecha_nacimiento__isnull=False,
+        fecha_nacimiento__month=mes_actual
+    ).order_by('fecha_nacimiento__day')
 
     # --- KPIs Y DATOS JS ---
     total_clientes = Cliente.objects.filter(usuario=request.user).count()
     total_polizas_vigentes = polizas_activas_y_pendientes.filter(estado_poliza='VIGENTE').count()
     
-    # --- CORRECCIÓN DEL NOMBRE DE LA VARIABLE ---
-    cumpleaneros_hoy = [item for item in lista_unificada_cumpleanos if item['fecha_nacimiento'].day == hoy.day] # <-- Se usa la variable correcta
-    cumpleaneros_hoy_json = json.dumps([{'nombre': c['nombre']} for c in cumpleaneros_hoy])
-    
+    # --- LÓGICA CORREGIDA PARA NOTIFICACIONES JS ---
+    # Filtramos el queryset 'cumpleaneros_mes' que ya tenemos
+    cumpleaneros_hoy = cumpleaneros_mes.filter(fecha_nacimiento__day=fecha_local_hoy.day)
+    # Convertimos el queryset de objetos Cliente a JSON
+    cumpleaneros_hoy_json = json.dumps([{'nombre': c.nombre_completo} for c in cumpleaneros_hoy])
+    # Pólizas que vencen en la próxima semana    
     polizas_vencen_semana = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=7)))
     polizas_vencen_semana_json = json.dumps([{'numero': p.numero_poliza} for p in polizas_vencen_semana])
 
@@ -491,7 +477,7 @@ def dashboard_view(request):
         'cobros_vencidos': cobros_vencidos,
         'cobros_pendientes_30_dias': cobros_pendientes_30_dias,
         'comisiones_pendientes': comisiones_pendientes,
-        'cumpleaneros_mes': lista_unificada_cumpleanos, # <-- Se pasa la variable correcta
+        'cumpleaneros_mes': cumpleaneros_mes, 
         'total_clientes': total_clientes,
         'total_polizas_vigentes': total_polizas_vigentes,
         'cumpleaneros_hoy_json': cumpleaneros_hoy_json,
