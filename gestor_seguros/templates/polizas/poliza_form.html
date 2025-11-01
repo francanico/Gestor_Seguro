@@ -139,7 +139,6 @@
 </form>
 {% endblock %}
 
-
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -150,7 +149,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const noAseguradosMessage = document.getElementById('no-asegurados-message');
 
     addButton.addEventListener('click', function() {
-        // Ocultar el mensaje de "no hay asegurados"
         if (noAseguradosMessage) {
             noAseguradosMessage.style.display = 'none';
         }
@@ -164,9 +162,17 @@ document.addEventListener('DOMContentLoaded', function() {
     container.addEventListener('click', function(e) {
         if (e.target && e.target.classList.contains('remove-asegurado-form')) {
             e.target.closest('.asegurado-form').remove();
-            // Si al borrar nos quedamos sin formularios, mostrar el mensaje
             if (container.children.length === 0 && noAseguradosMessage) {
                 noAseguradosMessage.style.display = 'block';
+            }
+        }
+        
+        if (e.target && e.target.getAttribute('name') && e.target.getAttribute('name').endsWith('-DELETE')) {
+            const formElement = e.target.closest('.asegurado-form');
+            if (e.target.checked) {
+                formElement.style.opacity = '0.5';
+            } else {
+                formElement.style.opacity = '1';
             }
         }
     });
