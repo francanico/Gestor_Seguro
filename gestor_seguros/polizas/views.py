@@ -27,7 +27,7 @@ AseguradoFormSet = inlineformset_factory(
     Poliza,
     Asegurado,
     form=AseguradoForm,
-    extra=1,            # 1. No se muestran formularios vacíos por defecto.
+    extra=0,            # 1. No se muestran formularios vacíos por defecto.
     min_num=0,          # 2. El número mínimo de formularios requeridos es CERO.
     validate_min=False,   # 3. Se desactiva explícitamente la validación del mínimo.
     can_delete=True,
@@ -219,6 +219,9 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     success_message = "Póliza creada exitosamente."
 
     def get_initial(self):
+        """
+        Pre-rellena el campo 'cliente' si se pasa un 'cliente_id' en la URL.
+        """
         initial = super().get_initial()
         cliente_id = self.request.GET.get('cliente_id')
         if cliente_id:
@@ -229,58 +232,45 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
                 pass
         return initial
 
-    def get_form_kwargs(self):
-        # Pasa el usuario al __init__ del formulario para filtrar los desplegables
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
-
     def get_context_data(self, **kwargs):
+        """
+        Añade el formset de asegurados al contexto.
+        """
         context = super().get_context_data(**kwargs)
-        if 'asegurados_formset' not in kwargs:
-            if self.request.POST:
-                context['asegurados_formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
-            else:
-                context['asegurados_formset'] = AseguradoFormSet(prefix='asegurados')
+        if self.request.POST:
+            context['asegurados_formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
+        else:
+            # Al crear una póliza, siempre mostramos 1 formulario vacío para el titular.
+            formset = AseguradoFormSet(prefix='asegurados')
+            formset.extra = 1
+            context['asegurados_formset'] = formset
         context['titulo_pagina'] = "Crear Nueva Póliza"
         return context
 
-    def post(self, request, *args, **kwargs):
-        self.object = None
-        form = self.get_form()
-        asegurados_formset = AseguradoFormSet(request.POST, prefix='asegurados')
-
-        is_form_valid = form.is_valid()
-        is_formset_valid = asegurados_formset.is_valid()
-
-        print("--- DEBUG (POST CreateView): ---")
-        print(f"Form principal válido: {is_form_valid}")
-        print(f"Formset válido: {is_formset_valid}")
+    def form_valid(self, form):
+        """
+        Procesa el formulario principal y el formset de asegurados.
+        Ambos deben ser válidos para guardar los datos.
+        """
+        context = self.get_context_data()
+        asegurados_formset = context['asegurados_formset']
         
-        if is_form_valid and is_formset_valid:
-            return self.form_valid(form, asegurados_formset)
+        if form.is_valid() and asegurados_formset.is_valid():
+            with transaction.atomic():
+                form.instance.usuario = self.request.user
+                self.object = form.save()
+                asegurados_formset.instance = self.object
+                asegurados_formset.save()
+            return super().form_valid(form)
         else:
-            return self.form_invalid(form, asegurados_formset)
+            return self.form_invalid(form)
 
-    def form_valid(self, form, asegurados_formset):
-        with transaction.atomic():
-            form.instance.usuario = self.request.user
-            self.object = form.save()
-            asegurados_formset.instance = self.object
-            asegurados_formset.save()
-        return super(CreateView, self).form_valid(form)
-
-    def form_invalid(self, form, asegurados_formset):
-        messages.error(self.request, 'Por favor, corrige los errores en el formulario.')
-
-        print("--- ERRORES CreateView ---")
-        print("Form Errors:", form.errors.as_json())
-        print("Formset Errors:", asegurados_formset.errors)
-        print("Formset Non-Form Errors:", asegurados_formset.non_form_errors())
-
-        return self.render_to_response(
-            self.get_context_data(form=form, asegurados_formset=asegurados_formset)
-        )
+    def form_invalid(self, form):
+        """
+        Si algo no es válido, vuelve a renderizar la página con los errores.
+        """
+        messages.error(self.request, "Por favor, corrige los errores en el formulario.")
+        return super().form_invalid(form)
 
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
@@ -292,23 +282,43 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
     success_message = "Póliza actualizada exitosamente."
 
     def get_context_data(self, **kwargs):
+        """
+        Añade el formset de asegurados al contexto.
+        Si la póliza no tiene asegurados, muestra un formulario vacío.
+        """
         context = super().get_context_data(**kwargs)
         if self.request.POST:
             context['asegurados_formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
         else:
-            context['asegurados_formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
+            formset = AseguradoFormSet(instance=self.object, prefix='asegurados')
+            # Si es una póliza existente sin asegurados, forzamos un form extra.
+            if not formset.forms:
+                formset.extra = 1
+            context['asegurados_formset'] = formset
+        context['titulo_pagina'] = "Editar Póliza"
         return context
     
     def form_valid(self, form):
+        """
+        Procesa el formulario principal y el formset de asegurados.
+        """
         context = self.get_context_data()
         asegurados_formset = context['asegurados_formset']
-        if asegurados_formset.is_valid():
+        
+        if form.is_valid() and asegurados_formset.is_valid():
             with transaction.atomic():
                 self.object = form.save()
                 asegurados_formset.save()
             return super().form_valid(form)
         else:
             return self.form_invalid(form)
+
+    def form_invalid(self, form):
+        """
+        Si algo no es válido, vuelve a renderizar la página con los errores.
+        """
+        messages.error(self.request, "Por favor, corrige los errores en el formulario.")
+        return super().form_invalid(form)
 
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
@@ -328,38 +338,65 @@ class PolizaDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     def get_queryset(self):
         return super().get_queryset()
 
+# --- VISTA PARA RENOVAR PÓLIZA ---
 @login_required
 def renovar_poliza(request, pk):
     poliza_original = get_object_or_404(Poliza, pk=pk, usuario=request.user)
     
     # --- LÓGICA DE RENOVACIÓN CORREGIDA ---
-    # La nueva póliza es una copia de la original
-    poliza_nueva = poliza_original
+    # ¡CRUCIAL! Crear una COPIA REAL del objeto de la póliza
+    poliza_nueva = copy.copy(poliza_original)
     poliza_nueva.pk = None
     poliza_nueva.id = None
+    poliza_nueva.usuario = request.user # Aseguramos que el usuario es el mismo
     
     # Sumamos exactamente un año a las fechas de vigencia
     if poliza_original.fecha_inicio_vigencia and poliza_original.fecha_fin_vigencia:
         poliza_nueva.fecha_inicio_vigencia = poliza_original.fecha_inicio_vigencia + relativedelta(years=1)
         poliza_nueva.fecha_fin_vigencia = poliza_original.fecha_fin_vigencia + relativedelta(years=1)
+    else:
+        # Si no hay fechas de vigencia, podemos establecer unas por defecto
+        poliza_nueva.fecha_inicio_vigencia = timezone.localtime(timezone.now()).date()
+        poliza_nueva.fecha_fin_vigencia = timezone.localtime(timezone.now()).date() + relativedelta(years=1)
+
 
     # Reiniciamos los estados para la nueva póliza
     poliza_nueva.estado_poliza = 'EN_TRAMITE' # Inicia como "En Trámite"
     poliza_nueva.comision_cobrada = False
     poliza_nueva.fecha_cobro_comision = None
-    poliza_nueva.fecha_emision = timezone.now().date()
-    poliza_nueva.numero_poliza = f"{poliza_original.numero_poliza}-R" # Sugerir un nuevo número
+    poliza_nueva.fecha_emision = timezone.localtime(timezone.now()).date()
+    # Generar un número de póliza sugerido para la renovación
+    # Nos aseguramos de que sea único añadiendo un timestamp si ya existe
+    base_numero_poliza = f"{poliza_original.numero_poliza}-R"
+    num_suffix = 1
+    while Poliza.objects.filter(usuario=request.user, numero_poliza=base_numero_poliza).exists():
+        base_numero_poliza = f"{poliza_original.numero_poliza}-R{num_suffix}"
+        num_suffix += 1
+    poliza_nueva.numero_poliza = base_numero_poliza
+
 
     poliza_nueva.save() # Guardamos la nueva póliza
+
+
+    # --- Copiar Asegurados (y Pagos, Siniestros si fuera necesario) ---
+    # Copiamos los asegurados de la póliza original a la nueva.
+    for asegurado_original in poliza_original.asegurados.all():
+        asegurado_nuevo = copy.copy(asegurado_original)
+        asegurado_nuevo.pk = None
+        asegurado_nuevo.id = None
+        asegurado_nuevo.poliza = poliza_nueva # Asignar a la nueva póliza
+        asegurado_nuevo.save()
+    
+    # IMPORTANTE: Los pagos y siniestros NO deben copiarse en una renovación.
+    # Son eventos específicos de la vigencia de la póliza original.
+
 
     # Marcamos la póliza original como RENOVADA
     poliza_original.estado_poliza = 'RENOVADA'
     poliza_original.save()
 
-    # Eliminamos los pagos antiguos de la nueva póliza copiada (si los hubiera)
-    poliza_nueva.pagos_cuotas.all().delete()
-
-    messages.info(request, f"Póliza {poliza_original.numero_poliza} marcada como renovada. Revisa los detalles de la nueva póliza de renovación.")
+    messages.info(request, f"Póliza {poliza_original.numero_poliza} marcada como renovada. "
+                        f"Gestiona los detalles de la nueva póliza de renovación: {poliza_nueva.numero_poliza}.")
     
     # Redirigimos al formulario de EDICIÓN de la NUEVA póliza para confirmar datos
     return redirect('polizas:editar_poliza', pk=poliza_nueva.pk)

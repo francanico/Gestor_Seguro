@@ -12,9 +12,7 @@
 <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
 
-    <!-- ============================================= -->
-    <!-- Card 1: Datos Principales de la Póliza      -->
-    <!-- ============================================= -->
+    <!-- Card 1: Datos Principales de la Póliza -->
     <div class="card mb-4">
         <div class="card-header">Información de la Póliza</div>
         <div class="card-body">
@@ -51,108 +49,87 @@
         </div>
     </div>
 
-    <!-- ============================================= -->
-    <!-- Card 2: Vigencia, Pagos y Comisiones        -->
-    <!-- ============================================= -->
+    <!-- Card 2: Vigencia, Pagos y Comisiones -->
     <div class="card mb-4">
         <div class="card-header">Vigencia, Pagos y Comisiones</div>
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_emision.label }}</label>{% render_field form.fecha_emision class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_inicio_vigencia.label }}</label>{% render_field form.fecha_inicio_vigencia class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_fin_vigencia.label }}</label>{% render_field form.fecha_fin_vigencia class+="form-control" %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.fecha_emision.label }}</label>{% render_field form.fecha_emision class+="form-control" %}{% for error in form.fecha_emision.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.fecha_inicio_vigencia.label }}</label>{% render_field form.fecha_inicio_vigencia class+="form-control" %}{% for error in form.fecha_inicio_vigencia.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.fecha_fin_vigencia.label }}</label>{% render_field form.fecha_fin_vigencia class+="form-control" %}{% for error in form.fecha_fin_vigencia.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
                 
-                <div class="col-md-4"><label class="form-label">{{ form.prima_total_anual.label }}</label>{% render_field form.prima_total_anual class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.frecuencia_pago.label }}</label>{% render_field form.frecuencia_pago class+="form-select" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.valor_cuota.label }}</label>{% render_field form.valor_cuota class+="form-control" %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.prima_total_anual.label }}</label>{% render_field form.prima_total_anual class+="form-control" %}{% for error in form.prima_total_anual.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.frecuencia_pago.label }}</label>{% render_field form.frecuencia_pago class+="form-select" %}{% for error in form.frecuencia_pago.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.valor_cuota.label }}</label>{% render_field form.valor_cuota class+="form-control" %}{% for error in form.valor_cuota.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
 
-                <div class="col-md-4"><label class="form-label">{{ form.comision_monto.label }}</label>{% render_field form.comision_monto class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_cobro_comision.label }}</label>{% render_field form.fecha_cobro_comision class+="form-control" %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.comision_monto.label }}</label>{% render_field form.comision_monto class+="form-control" %}{% for error in form.comision_monto.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.fecha_cobro_comision.label }}</label>{% render_field form.fecha_cobro_comision class+="form-control" %}{% for error in form.fecha_cobro_comision.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
                 <div class="col-md-4 d-flex align-items-end"><div class="form-check mb-2">{% render_field form.comision_cobrada class+="form-check-input" %} <label for="{{ form.comision_cobrada.id_for_label }}" class="form-check-label">{{ form.comision_cobrada.label }}</label></div></div>
             </div>
         </div>
     </div>
     
-    <!-- ============================================= -->
-    <!-- Card 3: Otros Detalles y Archivos           -->
-    <!-- ============================================= -->
+    <!-- Card 3: Otros Detalles y Archivos -->
     <div class="card mb-4">
         <div class="card-header">Otros Detalles</div>
         <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-6"><label class="form-label">{{ form.estado_poliza.label }}</label>{% render_field form.estado_poliza class+="form-select" %}</div>
-                <div class="col-md-6"><label class="form-label">{{ form.archivo_poliza.label }}</label>{% render_field form.archivo_poliza class+="form-control" %}</div>
-                <div class="col-12"><label class="form-label">{{ form.notas_poliza.label }}</label>{% render_field form.notas_poliza class+="form-control" rows="3" %}</div>
-            </div>
+             <div class="row g-3">
+                <div class="col-md-6"><label class="form-label">{{ form.estado_poliza.label }}</label>{% render_field form.estado_poliza class+="form-select" %}{% for error in form.estado_poliza.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                <div class="col-md-6"><label class="form-label">{{ form.archivo_poliza.label }}</label>{% render_field form.archivo_poliza class+="form-control" %}{% for error in form.archivo_poliza.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                <div class="col-12"><label class="form-label">{{ form.notas_poliza.label }}</label>{% render_field form.notas_poliza class+="form-control" rows="3" %}{% for error in form.notas_poliza.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+             </div>
         </div>
     </div>
     
-<!-- ============================================= -->
-<!-- Card 4: Asegurados en la Póliza (Formset)   -->
-<!-- ============================================= -->
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Asegurados en la Póliza</span>
-        <button type="button" class="btn btn-sm btn-success" id="add-asegurado-form">
-            <i class="fas fa-plus"></i> Añadir Asegurado
-        </button>
-    </div>
-    <div class="card-body">
-        {{ asegurados_formset.management_form }}
-        
-        {% if asegurados_formset.non_form_errors %}
-            <div class="alert alert-danger">
-                <strong>Error en los Asegurados:</strong>
-                {% for error in asegurados_formset.non_form_errors %}{{ error }}{% endfor %}
-            </div>
-        {% endif %}
+    <!-- Card 4: Asegurados en la Póliza (Formset) -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            Asegurados en la Póliza
+            <button type="button" class="btn btn-sm btn-success" id="add-asegurado-form"><i class="fas fa-plus"></i> Añadir Asegurado</button>
+        </div>
+        <div class="card-body">
+            {{ asegurados_formset.management_form }}
+            
+            {% if asegurados_formset.non_form_errors %}
+                <div class="alert alert-danger">
+                    <strong>Error en los Asegurados:</strong>
+                    {% for error in asegurados_formset.non_form_errors %}{{ error }}{% endfor %}
+                </div>
+            {% endif %}
 
-        <div id="asegurado-forms-container">
-            {# --- LÓGICA CORREGIDA --- #}
-            {# Renderizamos SOLO los formularios que ya existen (tienen una instancia) #}
-            {% for form in asegurados_formset %}
-                {% if form.instance.pk %}
+            <div id="asegurado-forms-container">
+                {% for form in asegurados_formset %}
                     {% include 'polizas/_asegurado_form_snippet.html' with form=form %}
-                {% endif %}
-            {% endfor %}
-        </div>
-        
-        {# Mensaje que se muestra si no hay asegurados existentes #}
-        <div id="no-asegurados-message" {% if asegurados_formset.initial_form_count > 0 %}style="display: none;"{% endif %}>
-            <p class="text-muted">No hay asegurados registrados. Haz clic en "Añadir Asegurado" para agregar el primero.</p>
-        </div>
+                {% endfor %}
+            </div>
 
-        {# La plantilla para el JavaScript siempre usa el 'empty_form' #}
-        <template id="empty-form-template">
-            {% include 'polizas/_asegurado_form_snippet.html' with form=asegurados_formset.empty_form %}
-        </template>
+            <template id="empty-form-template">
+                {% include 'polizas/_asegurado_form_snippet.html' with form=asegurados_formset.empty_form %}
+            </template>
+        </div>
     </div>
-</div>
 
-<!-- ... (botones de Guardar/Cancelar) ... -->
+    <!-- Botones de Acción Finales -->
     <div class="mt-4">
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Cambios</button>
         <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'polizas:lista_polizas' %}{% endif %}" class="btn btn-secondary">
             <i class="fas fa-times"></i> Cancelar
         </a>
     </div>
+
 </form>
 {% endblock %}
 
 {% block extra_js %}
+<!-- El JavaScript se mantiene igual que en las respuestas anteriores -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const addButton = document.getElementById('add-asegurado-form');
     const container = document.getElementById('asegurado-forms-container');
     const totalFormsInput = document.getElementById('id_asegurados-TOTAL_FORMS');
     const emptyFormTemplate = document.getElementById('empty-form-template');
-    const noAseguradosMessage = document.getElementById('no-asegurados-message');
 
     addButton.addEventListener('click', function() {
-        if (noAseguradosMessage) {
-            noAseguradosMessage.style.display = 'none';
-        }
-
         let formNum = parseInt(totalFormsInput.value);
         let newFormHtml = emptyFormTemplate.innerHTML.replace(/__prefix__/g, formNum);
         container.insertAdjacentHTML('beforeend', newFormHtml);
@@ -162,9 +139,6 @@ document.addEventListener('DOMContentLoaded', function() {
     container.addEventListener('click', function(e) {
         if (e.target && e.target.classList.contains('remove-asegurado-form')) {
             e.target.closest('.asegurado-form').remove();
-            if (container.children.length === 0 && noAseguradosMessage) {
-                noAseguradosMessage.style.display = 'block';
-            }
         }
         
         if (e.target && e.target.getAttribute('name') && e.target.getAttribute('name').endsWith('-DELETE')) {
