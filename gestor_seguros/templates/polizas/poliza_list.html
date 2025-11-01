@@ -6,15 +6,17 @@
 
 {% block content %}
 
+<!-- Cabecera de la Página -->
 <div class="page-header">
     <h2><i class="fas fa-file-invoice"></i> Lista de Pólizas</h2>
     <a href="{% url 'polizas:crear_poliza' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Añadir Póliza</a>
 </div>
 
 {% if polizas %}
+    <!-- Contenedor para la Tabla -->
     <div class="table-container">
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover align-middle">
                 <thead>
                     <tr>
                         <th># Póliza</th>
@@ -41,24 +43,18 @@
                             {% with estado=poliza.estado_renovacion dias=poliza.dias_para_renovar %}
                                 {% if estado == "Vencida" %}
                                     <span class="badge bg-danger">{{ estado }}</span>
-
                                 {% elif estado == "Crítico (0-30 días)" %}
                                     <span class="badge bg-warning text-dark">Crítico</span>
-
                                 {% elif estado == "Próximo (31-90 días)" %}
                                     <span class="badge bg-info text-dark">Próximo</span>
-
                                 {% elif estado == "Pendiente Activación" %}
                                     <span class="badge bg-primary">{{ estado }}</span>
-                                
                                 {% elif estado == "Vigente" %}
                                     <span class="badge bg-success">{{ estado }}</span>
-
-                                {% else %} {# Cubre el estado "Gestionada" (Renovada, Cancelada) #}
+                                {% else %}
                                     <span class="badge bg-secondary">{{ poliza.get_estado_poliza_display }}</span>
                                 {% endif %}
-
-                                {# --- Bloque para mostrar los días (AHORA CORREGIDO Y SEPARADO) --- #}
+                                
                                 {% if dias is not None and estado != "Gestionada" and estado != "Pendiente Activación" %}
                                     {% if dias < 0 %}
                                         <small class="text-muted d-block mt-1">(hace {{ dias|slice:"1:" }} día{{ dias|slice:"1:"|pluralize }})</small>
@@ -72,13 +68,13 @@
                         <td class="text-end">${{ poliza.comision_monto|floatformat:2|intcomma }}</td>
                         <td class="text-center">
                             {% if poliza.comision_cobrada %}
-                                <i class="fas fa-check-circle com-cobrada-icon" title="Sí"></i>
+                                <i class="fas fa-check-circle text-success" title="Sí"></i>
                             {% else %}
-                                <i class="fas fa-times-circle com-cobrada-icon" title="No"></i>
+                                <i class="fas fa-times-circle text-danger" title="No"></i>
                             {% endif %}
                         </td>
                         <td class="text-center">
-                            <div class="action-buttons">
+                            <div class="action-buttons btn-group" role="group">
                                 <a href="{{ poliza.get_absolute_url }}" class="btn btn-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
                                 <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-warning" title="Editar"><i class="fas fa-edit"></i></a>
                                 <a href="{% url 'polizas:eliminar_poliza' poliza.pk %}" class="btn btn-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
@@ -98,7 +94,9 @@
     {% endif %}
 
 {% else %}
-    <div class="alert alert-info">No hay pólizas registradas. <a href="{% url 'polizas:crear_poliza' %}">Añade una nueva</a>.</div>
+    <div class="alert alert-info mt-4">
+        No hay pólizas registradas. <a href="{% url 'polizas:crear_poliza' %}" class="alert-link">Añade una nueva</a>.
+    </div>
 {% endif %}
 
 {% endblock %}
