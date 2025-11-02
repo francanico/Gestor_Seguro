@@ -84,7 +84,7 @@ def exportar_polizas_csv(request):
         polizas_query = polizas_query.filter(fecha_emision__lte=fecha_fin_str)
 
     # --- 5. Definir las cabeceras del CSV (más claras y en español) ---
-    writer = csv.writer(response)
+    writer = csv.writer(response, delimiter=';')
     writer.writerow([
         'Nro. Poliza',
         'Cliente',
