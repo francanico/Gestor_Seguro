@@ -112,3 +112,60 @@ main.main-content-area { padding-bottom: 3rem; }
     50% { background-color: #fff9e0; }
 }
 .birthday-today { animation: pulse-warning 2s infinite; }
+
+/* --- Estilos para la Página de Inicio (Landing Page) --- */
+
+.hero-section {
+    padding: 6rem 0;
+    background-color: var(--surface-color);
+    text-align: center;
+}
+
+.hero-section h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.hero-section .lead {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin: 0 auto 2rem auto;
+}
+
+.hero-section .btn {
+    padding: 0.8rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.features-section {
+    padding: 4rem 0;
+}
+
+.feature-card {
+    text-align: center;
+    padding: 2rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--surface-color);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 2rem rgba(0, 0, 0, .075);
+}
+
+.feature-card .feature-icon {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    display: inline-block;
+}
+
+.feature-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}

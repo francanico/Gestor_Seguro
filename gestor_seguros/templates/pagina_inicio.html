@@ -1,55 +1,101 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ titulo_pagina|default:"Inicio" }} - Gestor Seguros{% endblock %}
+{% block title %}Bienvenido a Gestor de Seguros{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="p-5 mb-4 bg-light rounded-3">
-        <div class="container-fluid py-5">
-            <h1 class="display-5 fw-bold">{{ titulo_pagina|default:"Gestión de Pólizas Simplificada" }}</h1>
-            <p class="col-md-8 fs-4">
-                Organiza y controla todas tus pólizas de seguros y clientes de manera eficiente.
-                Nunca más olvides una renovación o pierdas el rastro de tus comisiones.
-            </p>
-            {% if not user.is_authenticated %}
-            <a href="{% url 'cuentas:registro' %}" class="btn btn-primary btn-lg me-2" type="button">
-                <i class="fas fa-user-plus"></i> Regístrate Ahora
-            </a>
-            <a href="{% url 'login' %}" class="btn btn-success btn-lg" type="button">
-                <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
-            </a>
+
+<!-- =============================== -->
+<!-- Sección "Héroe"                 -->
+<!-- =============================== -->
+<div class="hero-section">
+    <div class="container">
+        <h1 class="display-4">Simplifica la Gestión de tus Pólizas</h1>
+        <p class="lead">
+            Organiza y controla todas tus pólizas de seguros y clientes de manera eficiente.
+            Nunca más olvides una renovación o pierdas el rastro de tus comisiones.
+        </p>
+        
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+            {% if user.is_authenticated %}
+                <a href="{% url 'dashboard' %}" class="btn btn-primary btn-lg px-4 gap-3">
+                    <i class="fas fa-tachometer-alt me-2"></i> Ir al Dashboard
+                </a>
             {% else %}
-            <a href="{% url 'dashboard' %}" class="btn btn-info btn-lg" type="button">
-                <i class="fas fa-tachometer-alt"></i> Ir al Dashboard
-            </a>
+                <a href="{% url 'cuentas:registro' %}" class="btn btn-primary btn-lg px-4 gap-3">
+                    <i class="fas fa-user-plus me-2"></i> Crear Cuenta
+                </a>
+                <a href="{% url 'login' %}" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="fas fa-sign-in-alt me-2"></i> Iniciar Sesión
+                </a>
             {% endif %}
         </div>
     </div>
+</div>
 
-    <div class="row align-items-md-stretch">
-        <div class="col-md-6">
-            <div class="h-100 p-5 bg-light border rounded-3">
-                <h2>Para Agentes y Agencias</h2>
-                <p>
-                    Nuestra plataforma te ofrece las herramientas necesarias para llevar un control detallado
-                    de cada cliente, sus pólizas, fechas de vencimiento, pagos y comisiones.
-                    Optimiza tu trabajo y mejora la relación con tus clientes.
-                </p>
+<!-- =============================== -->
+<!-- Sección de Características      -->
+<!-- =============================== -->
+<div class="features-section">
+    <div class="container">
+        <div class="row g-4">
+            
+            <!-- Característica 1 -->
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card h-100">
+                    <div class="feature-icon"><i class="fas fa-users"></i></div>
+                    <h3>Gestión de Clientes</h3>
+                    <p>Mantén una base de datos completa de tus clientes, incluyendo información personal, de contacto y notas relevantes.</p>
+                </div>
             </div>
-        </div>
-        <div class="col-md-6">
-            <div class="h-100 p-5 bg-light border rounded-3">
-                <h2>Características Principales</h2>
-                <ul>
-                    <li>Gestión integral de clientes y pólizas.</li>
-                    <li>Recordatorios automáticos de renovación.</li>
-                    <li>Seguimiento de comisiones.</li>
-                    <li>Interfaz intuitiva y fácil de usar.</li>
-                    <li>Seguridad y respaldo de tu información.</li>
-                </ul>
+            
+            <!-- Característica 2 -->
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card h-100">
+                    <div class="feature-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+                    <h3>Control Total de Pólizas</h3>
+                    <p>Registra todos los detalles de las pólizas, desde la vigencia y las primas hasta el historial de pagos de cuotas.</p>
+                </div>
             </div>
+
+            <!-- Característica 3 -->
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card h-100">
+                    <div class="feature-icon"><i class="fas fa-bell"></i></div>
+                    <h3>Alertas y Recordatorios</h3>
+                    <p>El dashboard te notifica proactivamente sobre renovaciones próximas, cuotas vencidas y cumpleaños de clientes.</p>
+                </div>
+            </div>
+
+            <!-- Característica 4 -->
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card h-100">
+                    <div class="feature-icon"><i class="fas fa-car-crash"></i></div>
+                    <h3>Seguimiento de Siniestros</h3>
+                    <p>Lleva un registro detallado de cada siniestro reportado, desde la fecha de ocurrencia hasta el monto indemnizado.</p>
+                </div>
+            </div>
+
+            <!-- Característica 5 -->
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card h-100">
+                    <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                    <h3>Reportes de Agencia</h3>
+                    <p>Visualiza el rendimiento de tu cartera con gráficos de producción, distribución por ramo y resúmenes de comisiones.</p>
+                </div>
+            </div>
+
+            <!-- Característica 6 -->
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card h-100">
+                    <div class="feature-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                    <h3>Gestión Documental</h3>
+                    <p>Adjunta documentos importantes (cédulas, informes, etc.) directamente a tus clientes, pólizas o siniestros.</p>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
+
 {% endblock %}
