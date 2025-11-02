@@ -100,11 +100,6 @@
         </div>
         
         <div class="card mb-4">
-            <div class="card-header"><i class="fas fa-calendar-alt"></i> Pólizas por Vencer entre 31 y 60 Días ({{ polizas_a_vencer_60.count }})</div>
-            <div class="card-body p-0">{% include "polizas/_tabla_polizas_recordatorio.html" with polizas=polizas_a_vencer_60 %}</div>
-        </div>
-
-        <div class="card mb-4">
             <div class="card-header"><i class="fas fa-dollar-sign"></i> Próximos Cobros de Cuotas (en 30 días) ({{ cobros_pendientes_30_dias|length }})</div>
             <div class="card-body p-0">{% include "polizas/_proximos_cobros_tabla.html" with cobros_pendientes_30_dias=cobros_pendientes_30_dias %}</div>
         </div>

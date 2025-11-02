@@ -426,7 +426,6 @@ def dashboard_view(request):
     polizas_en_tramite = polizas_activas_y_pendientes.filter(estado_poliza='EN_TRAMITE').order_by('fecha_inicio_vigencia')
     polizas_vencidas = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__lt=hoy, estado_poliza__in=['VIGENTE', 'PENDIENTE_PAGO']).order_by('fecha_fin_vigencia')
     polizas_a_vencer_30 = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=30))).order_by('fecha_fin_vigencia')
-    polizas_a_vencer_60 = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy + timedelta(days=31), hoy + timedelta(days=60))).order_by('fecha_fin_vigencia')
 
     # B. Gestión de Cobros de Cuotas
     # --- LÓGICA PARA PRÓXIMOS COBROS (AHORA MUCHO MÁS RÁPIDA) ---
@@ -481,7 +480,6 @@ def dashboard_view(request):
         'polizas_en_tramite': polizas_en_tramite,
         'polizas_vencidas': polizas_vencidas,
         'polizas_a_vencer_30': polizas_a_vencer_30,
-        'polizas_a_vencer_60': polizas_a_vencer_60,
         'cobros_vencidos': cobros_vencidos,
         'cobros_pendientes_30_dias': cobros_pendientes_30_dias,
         'comisiones_pendientes': comisiones_pendientes,
