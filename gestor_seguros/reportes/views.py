@@ -38,9 +38,9 @@ def reportes_dashboard(request):
     )
     
     # 3. Reporte de Cartera (Pólizas por Ramo - TOTAL, no filtrado por fecha)
-    cartera_por_ramo_total = Poliza.objects.filter(usuario=user).values('ramo_tipo_seguro').annotate(
+    cartera_por_ramo_total = list(Poliza.objects.filter(usuario=user).values('ramo_tipo_seguro').annotate(
         cantidad=Count('id')
-    ).order_by('-cantidad')
+    ).order_by('-cantidad'))
 
     # --- NUEVOS CÁLCULOS PARA KPIs ---
     # Suma total de primas en el período filtrado
