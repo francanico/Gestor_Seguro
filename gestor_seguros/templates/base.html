@@ -78,98 +78,130 @@
 <!-- MODAL DE LA CALCULADORA                        -->
 <!-- ============================================== -->
 <div class="modal fade" id="calculadoraModal" tabindex="-1" aria-labelledby="calculadoraModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="calculadoraModalLabel"><i class="fas fa-calculator"></i> Calculadora USD a BsD (Tasa BCV)</h5>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--border-radius); border: none; box-shadow: var(--box-shadow);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border-color);">
+                <h5 class="modal-title" id="calculadoraModalLabel"><i class="fas fa-calculator text-primary me-2"></i> Calculadora USD a BsD</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div id="tasa-loader" class="text-center">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Cargando tasa...</span>
-                    </div>
-                    <p class="mt-2">Obteniendo tasa del BCV...</p>
+            <div class="modal-body p-4">
+                <!-- Loader -->
+                <div id="tasa-loader" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-3 text-muted">Obteniendo tasa del BCV...</p>
                 </div>
 
+                <!-- Contenido Principal de la Calculadora -->
                 <div id="calculadora-content" style="display: none;">
-                    <div class="alert alert-info">
-                        Tasa USD/VES: <strong id="tasa-display"></strong>
+                    <!-- Tasa de Referencia -->
+                    <div class="text-center mb-4">
+                        <small class="text-muted text-uppercase">Tasa de Referencia (BCV)</small>
+                        <h4 class="fw-bold" id="tasa-display"></h4>
                     </div>
+                    
+                    <!-- Input -->
                     <div class="mb-3">
                         <label for="monto-usd" class="form-label">Monto en Dólares (USD)</label>
-                        <input type="number" class="form-control" id="monto-usd" placeholder="Ej: 100.00" step="0.01">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control form-control-lg" id="monto-usd" placeholder="0.00" step="0.01">
+                        </div>
                     </div>
-                    <hr>
-                    <h4>Equivalente en Bolívares (BsD)</h4>
-                    <h3 id="resultado-bsd" class="text-center text-success fw-bold">BsD 0,00</h3>
+                    
+                    <!-- Resultado -->
+                    <div class="text-center mt-4 p-3 bg-light rounded">
+                        <small class="text-muted text-uppercase">Equivalente en Bolívares (BsD)</small>
+                        <div class="d-flex align-items-center justify-content-center mt-1">
+                            <h2 id="resultado-bsd" class="fw-bolder text-success mb-0 me-2">BsD 0,00</h2>
+                            <button class="btn btn-sm btn-outline-secondary" id="copy-bsd-btn" title="Copiar al portapapeles">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 
+                <!-- Mensaje de Error -->
                 <div id="tasa-error" class="alert alert-danger" style="display: none;"></div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Bootstrap JS Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
-{% block extra_js %}{% endblock %}
 
 <!-- ============================================== -->
-<!-- JAVASCRIPT PARA LA CALCULADORA                 -->
+<!-- JAVASCRIPT PARA LA CALCULADORA (VERSIÓN MEJORADA) -->
 <!-- ============================================== -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const modal = document.getElementById('calculadoraModal');
-    const loader = document.getElementById('tasa-loader');
-    const content = document.getElementById('calculadora-content');
-    const errorDiv = document.getElementById('tasa-error');
-    const tasaDisplay = document.getElementById('tasa-display');
-    const montoUsdInput = document.getElementById('monto-usd');
-    const resultadoBsd = document.getElementById('resultado-bsd');
+    const modalEl = document.getElementById('calculadoraModal');
+    if (!modalEl) return;
+
+    const loader = modalEl.querySelector('#tasa-loader');
+    const content = modalEl.querySelector('#calculadora-content');
+    const errorDiv = modalEl.querySelector('#tasa-error');
+    const tasaDisplay = modalEl.querySelector('#tasa-display');
+    const montoUsdInput = modalEl.querySelector('#monto-usd');
+    const resultadoBsd = modalEl.querySelector('#resultado-bsd');
+    const copyBtn = modalEl.querySelector('#copy-bsd-btn');
     
     let tasaBCV = 0;
+    let rawBsdValue = 0;
 
-    // Cuando el modal se muestra, obtenemos la tasa
-    modal.addEventListener('show.bs.modal', function () {
-        // Reseteamos la vista
+    const formatAsBsd = (value) => {
+        return 'BsD ' + value.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    const updateBsdValue = () => {
+        const montoUSD = parseFloat(montoUsdInput.value) || 0;
+        rawBsdValue = montoUSD * tasaBCV;
+        resultadoBsd.textContent = formatAsBsd(rawBsdValue);
+    };
+
+    modalEl.addEventListener('show.bs.modal', async () => {
         loader.style.display = 'block';
         content.style.display = 'none';
         errorDiv.style.display = 'none';
         montoUsdInput.value = '';
-        resultadoBsd.textContent = 'BsD 0,00';
+        resultadoBsd.textContent = formatAsBsd(0);
 
-        fetch("{% url 'polizas:api_tasa_bcv' %}")
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('No se pudo conectar con el servidor para obtener la tasa.');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                tasaBCV = parseFloat(data.tasa_usd);
-                tasaDisplay.textContent = tasaBCV.toLocaleString('es-VE', { minimumFractionDigits: 4 });
-                
-                loader.style.display = 'none';
-                content.style.display = 'block';
-            })
-            .catch(error => {
-                loader.style.display = 'none';
-                errorDiv.textContent = 'Error: ' + error.message;
-                errorDiv.style.display = 'block';
-            });
+        try {
+            const response = await fetch("{% url 'polizas:api_tasa_bcv' %}");
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'No se pudo conectar con el servidor.');
+            }
+            
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            tasaBCV = parseFloat(data.tasa_usd);
+            tasaDisplay.textContent = tasaBCV.toLocaleString('es-VE', { minimumFractionDigits: 4 });
+            
+            loader.style.display = 'none';
+            content.style.display = 'block';
+        } catch (error) {
+            loader.style.display = 'none';
+            errorDiv.textContent = 'Error al obtener la tasa: ' + error.message;
+            errorDiv.style.display = 'block';
+        }
     });
 
-    // Cuando el usuario escribe en el campo de USD, calculamos
-    montoUsdInput.addEventListener('input', function() {
-        const montoUSD = parseFloat(this.value) || 0;
-        const montoBSD = montoUSD * tasaBCV;
-        
-        resultadoBsd.textContent = 'BsD ' + montoBSD.toLocaleString('es-VE', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    montoUsdInput.addEventListener('input', updateBsdValue);
+    
+    copyBtn.addEventListener('click', () => {
+        // Copiamos el valor numérico con coma como separador decimal
+        const valueToCopy = rawBsdValue.toLocaleString('es-VE', { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace('.', ',');
+        navigator.clipboard.writeText(valueToCopy).then(() => {
+            const originalIcon = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="fas fa-check text-success"></i>';
+            setTimeout(() => {
+                copyBtn.innerHTML = originalIcon;
+            }, 1500);
+        }).catch(err => {
+            console.error('Error al copiar: ', err);
+        });
     });
 });
 </script>
