@@ -91,7 +91,12 @@
 {% endblock %}
 
 {% block extra_js %}
+{% load static %} {# <-- AÑADE ESTA LÍNEA #}
+
+<!-- Primero, cargamos la librería Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Luego, cargamos NUESTRO archivo de script -->
 <script src="{% static 'js/reportes.js' %}"></script>
 {% endblock %}
 
