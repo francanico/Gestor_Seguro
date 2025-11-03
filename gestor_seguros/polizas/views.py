@@ -609,7 +609,7 @@ def obtener_tasa_bcv_api(request):
             url = 'https://www.bcv.org.ve/' # <-- CAMBIO: A veces la raíz es más estable
             headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'}
             
-            response = requests.get(url, headers=headers, timeout=15)
+            response = requests.get(url, headers=headers, timeout=15, verify=False)
             response.raise_for_status()
             
             soup = BeautifulSoup(response.content, 'html.parser')
