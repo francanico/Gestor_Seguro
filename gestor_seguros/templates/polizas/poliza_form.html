@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
+{% load static %}
 
 {% block title %}{{ titulo_pagina|default:"Formulario de Póliza" }}{% endblock %}
 
@@ -49,11 +50,11 @@
     <div class="card mb-4">
         <div class="card-header">Otros Detalles</div>
         <div class="card-body">
-             <div class="row g-3">
+            <div class="row g-3">
                 <div class="col-md-6"><label class="form-label">{{ form.estado_poliza.label }}</label>{% render_field form.estado_poliza class+="form-select" %}</div>
                 <div class="col-md-6"><label class="form-label">{{ form.archivo_poliza.label }}</label>{% render_field form.archivo_poliza class+="form-control" %}</div>
                 <div class="col-12"><label class="form-label">{{ form.notas_poliza.label }}</label>{% render_field form.notas_poliza class+="form-control" rows="3" %}</div>
-             </div>
+            </div>
         </div>
     </div>
     
@@ -92,37 +93,11 @@
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Cambios</button>
         <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'polizas:lista_polizas' %}{% endif %}" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
     </div>
+</form> <!-- FIN DE LA ETIQUETA FORM -->
 
-</form>
-{% endblock %}
+{% endblock %} <!-- FIN DEL BLOQUE DE CONTENIDO PRINCIPAL -->
+
 
 {% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const addButton = document.getElementById('add-asegurado-form');
-    const container = document.getElementById('asegurado-forms-container');
-    const totalFormsInput = document.getElementById('id_asegurados-TOTAL_FORMS');
-    const emptyFormTemplate = document.getElementById('empty-form-template');
-
-    if (addButton && container && totalFormsInput && emptyFormTemplate) {
-        addButton.addEventListener('click', function() {
-            let formNum = parseInt(totalFormsInput.value);
-            let newFormHtml = emptyFormTemplate.innerHTML.replace(/__prefix__/g, formNum);
-            container.insertAdjacentHTML('beforeend', newFormHtml);
-            totalFormsInput.value = formNum + 1;
-        });
-
-        container.addEventListener('click', function(e) {
-            if (e.target && e.target.classList.contains('remove-asegurado-form')) {
-                e.target.closest('.asegurado-form').remove();
-            } else if (e.target && e.target.name && e.target.name.endsWith('-DELETE')) {
-                const formElement = e.target.closest('.asegurado-form');
-                formElement.style.opacity = e.target.checked ? '0.5' : '1';
-            }
-        });
-    } else {
-        console.error("No se encontraron todos los elementos necesarios para el formset dinámico.");
-    }
-});
-</script>
+<script src="{% static 'js/poliza_form.js' %}"></script>
 {% endblock %}
