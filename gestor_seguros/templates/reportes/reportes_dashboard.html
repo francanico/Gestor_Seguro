@@ -4,87 +4,213 @@
 {% block title %}Reportes de Agencia{% endblock %}
 
 {% block content %}
-<!-- ... (El HTML de la cabecera, filtros y KPIs se mantiene igual) ... -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="fas fa-chart-pie"></i> Reportes de Agencia</h2>
+    <a href="{% url 'reportes:exportar_polizas_csv' %}?fecha_inicio={{ request.GET.fecha_inicio|default:'' }}&fecha_fin={{ request.GET.fecha_fin|default:'' }}" 
+    class="btn btn-success">
+        <i class="fas fa-file-csv"></i> Exportar a CSV
+    </a>
+</div>
+
+<!-- Filtros de Fecha -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-center">
+            <div class="col-md-5">
+                <label for="id_fecha_inicio" class="form-label">Desde</label>
+                <input type="date" name="fecha_inicio" value="{{ request.GET.fecha_inicio }}" class="form-control" id="id_fecha_inicio">
+            </div>
+            <div class="col-md-5">
+                <label for="id_fecha_fin" class="form-label">Hasta</label>
+                <input type="date" name="fecha_fin" value="{{ request.GET.fecha_fin }}" class="form-control" id="id_fecha_fin">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100 me-2"><i class="fas fa-filter"></i> Filtrar</button>
+                <a href="{% url 'reportes:dashboard_reportes' %}" class="btn btn-secondary w-100"><i class="fas fa-times"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Fila de Indicadores Clave (KPIs) -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="fs-4 fw-bold">${{ total_primas|default:0|floatformat:2|intcomma }}</div>
+                        <div>Producción Total (Primas)</div>
+                    </div>
+                    <i class="fas fa-dollar-sign fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="fs-4 fw-bold">${{ comisiones.cobradas|default:0|floatformat:2|intcomma }}</div>
+                        <div>Comisiones Cobradas</div>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card text-dark bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="fs-4 fw-bold">${{ comisiones.pendientes|default:0|floatformat:2|intcomma }}</div>
+                        <div>Comisiones Pendientes</div>
+                    </div>
+                    <i class="fas fa-hourglass-half fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card text-white bg-danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="fs-4 fw-bold">{{ total_polizas_periodo|default:0 }}</div>
+                        <div>Nuevas Pólizas (Periodo)</div>
+                    </div>
+                    <i class="fas fa-file-signature fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <!-- Fila de Gráficos -->
 <div class="row">
     <!-- Gráfico de Producción por Mes -->
     <div class="col-xl-8">
         <div class="card mb-4">
-            <div class="card-header"><i class="fas fa-chart-bar me-1"></i> Producción (Primas Emitidas) por Mes</div>
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-1"></i>
+                Producción (Primas Emitidas) por Mes
+            </div>
             <div class="card-body">
-                <canvas id="produccionChart" width="100%" height="40"></canvas>
+                {% if produccion_por_mes %}
+                    <canvas id="produccionChart" width="100%" height="40"></canvas>
+                {% else %}
+                    <p class="text-muted text-center">No hay datos de producción para el período seleccionado.</p>
+                {% endif %}
             </div>
         </div>
     </div>
     <!-- Gráfico de Cartera por Ramo -->
     <div class="col-xl-4">
         <div class="card mb-4">
-            <div class="card-header"><i class="fas fa-chart-pie me-1"></i> Distribución de Cartera por Ramo</div>
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-1"></i>
+                Distribución de Cartera por Ramo
+            </div>
             <div class="card-body">
-                <canvas id="carteraChart" width="100%" height="40"></canvas>
+                {% if cartera_por_ramo %}
+                    <canvas id="carteraChart" width="100%" height="40"></canvas>
+                {% else %}
+                    <p class="text-muted text-center">No hay datos de cartera para el período seleccionado.</p>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- ======================================================= -->
-<!-- DATOS JSON SEGUROS CON json_script                      -->
-<!-- ======================================================= -->
-{{ produccion_por_mes|json_script:"produccion-data" }}
-{{ cartera_por_ramo|json_script:"cartera-data" }}
-
 {% endblock %}
 
+
 {% block extra_js %}
+<!-- Incluimos Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // --- Lógica para Gráfico de Producción (Barras) ---
-    const produccionData = JSON.parse(document.getElementById('produccion-data').textContent);
+    // --- Lógica para el Gráfico de Producción (Barras) ---
     const produccionCtx = document.getElementById('produccionChart');
-
-    if (produccionData.length > 0) {
-        const produccionLabels = produccionData.map(item => new Date(item.mes).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }));
-        const produccionValues = produccionData.map(item => item.total_prima);
-        
+    if (produccionCtx) {
         new Chart(produccionCtx, {
             type: 'bar',
             data: {
-                labels: produccionLabels,
+                labels: [{% for item in produccion_por_mes %}"{{ item.mes|date:"M Y" }}",{% endfor %}],
                 datasets: [{
                     label: 'Prima Emitida',
-                    data: produccionValues,
-                    backgroundColor: 'rgba(59, 113, 202, 0.6)',
-                    borderColor: 'rgba(59, 113, 202, 1)',
+                    data: [{% for item in produccion_por_mes %}{{ item.total_prima|floatformat:2 }},{% endfor %}],
+                    backgroundColor: 'rgba(0, 90, 156, 0.6)', // Azul de nuestro tema
+                    borderColor: 'rgba(0, 90, 156, 1)',
                     borderWidth: 1
                 }]
             },
-            options: { /* ... (opciones del gráfico, como los tooltips de moneda) ... */ }
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            // Formatear el eje Y como moneda
+                            callback: function(value, index, values) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
         });
     }
 
-    // --- Lógica para Gráfico de Cartera (Dona) ---
-    const carteraData = JSON.parse(document.getElementById('cartera-data').textContent);
+    // --- Lógica para el Gráfico de Cartera (Dona) ---
     const carteraCtx = document.getElementById('carteraChart');
-
-    if (carteraData.length > 0) {
-        const carteraLabels = carteraData.map(item => item.ramo_tipo_seguro);
-        const carteraValues = carteraData.map(item => item.cantidad);
-
+    if (carteraCtx) {
         new Chart(carteraCtx, {
             type: 'doughnut',
             data: {
-                labels: carteraLabels,
+                labels: [{% for item in cartera_por_ramo %}'{{ item.ramo_tipo_seguro }}',{% endfor %}],
                 datasets: [{
                     label: '# de Pólizas',
-                    data: carteraValues,
+                    data: [{% for item in cartera_por_ramo %}{{ item.cantidad }},{% endfor %}],
+                    // Paleta de colores atractiva
                     backgroundColor: [
-                        'rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)',
-                        'rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)',
-                        'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)'
-                    ]
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)'
+                    ],
+                    borderColor: '#fff',
+                    borderWidth: 2
                 }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
             }
         });
     }
