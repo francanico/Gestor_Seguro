@@ -1,5 +1,4 @@
-import csv, json
-from django.core.serializers.json import DjangoJSONEncoder
+import csv
 from django.db import models
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -16,7 +15,7 @@ def reportes_dashboard(request):
     fecha_inicio_str = request.GET.get('fecha_inicio')
     fecha_fin_str = request.GET.get('fecha_fin')
     
-    # Queryset base para los filtros de fecha
+    # Queryset base para los datos del período (KPIs y gráfico de barras)
     polizas_query_periodo = Poliza.objects.filter(usuario=user)
     if fecha_inicio_str:
         polizas_query_periodo = polizas_query_periodo.filter(fecha_emision__gte=fecha_inicio_str)
@@ -24,7 +23,9 @@ def reportes_dashboard(request):
         polizas_query_periodo = polizas_query_periodo.filter(fecha_emision__lte=fecha_fin_str)
 
     # 1. Producción por Mes (para gráfico de barras)
-    produccion_por_mes = list(polizas_query_periodo.annotate(
+    produccion_por_mes = list(polizas_query_periodo.filter(
+        prima_total_anual__gt=0
+    ).annotate(
         mes=TruncMonth('fecha_emision')
     ).values('mes').annotate(
         total_prima=Sum('prima_total_anual')
@@ -32,28 +33,27 @@ def reportes_dashboard(request):
 
     # 2. Resumen de Comisiones (para KPI)
     comisiones = polizas_query_periodo.aggregate(
-        cobradas=Sum('comision_monto', filter=models.Q(comision_cobrada=True)),
-        pendientes=Sum('comision_monto', filter=models.Q(comision_cobrada=False)),
+        cobradas=Sum('comision_monto', filter=Q(comision_cobrada=True), default=0),
+        pendientes=Sum('comision_monto', filter=Q(comision_cobrada=False), default=0),
     )
     
-    # 3. Cartera por Ramo (para gráfico de dona) - Se calcula sobre el total
+    # 3. Cartera por Ramo (para gráfico de dona) - Se calcula sobre TODA la cartera, no solo el período
     cartera_por_ramo = list(Poliza.objects.filter(usuario=user).values('ramo_tipo_seguro').annotate(
         cantidad=Count('id')
     ).order_by('-cantidad'))
 
     # 4. KPIs
-    total_primas_periodo = polizas_query_periodo.aggregate(total=Sum('prima_total_anual'))['total']
-    total_polizas_periodo = polizas_query_periodo.count()
+    agregados_kpi = polizas_query_periodo.aggregate(
+        total_primas=Sum('prima_total_anual', default=0),
+        total_polizas=Count('id')
+    )
 
     context = {
-        # --- DATOS PARA GRÁFICOS Y TABLAS ---
         'produccion_por_mes': produccion_por_mes,
         'cartera_por_ramo': cartera_por_ramo,
-        
-        # --- DATOS PARA KPIs Y FILTROS ---
         'comisiones': comisiones,
-        'total_primas': total_primas_periodo,
-        'total_polizas_periodo': total_polizas_periodo,
+        'total_primas': agregados_kpi.get('total_primas'),
+        'total_polizas_periodo': agregados_kpi.get('total_polizas'),
         'fecha_inicio': fecha_inicio_str,
         'fecha_fin': fecha_fin_str,
         'titulo_pagina': 'Reportes de Agencia',

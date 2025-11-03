@@ -1,0 +1,171 @@
+/* static/css/style.css - Versión 2.0 Global y Definitiva */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    /* Paleta de Colores Principal */
+    --primary-color: #3B71CA;
+    --primary-color-hover: #315eab;
+    --bs-primary: var(--primary-color);
+    --bs-primary-rgb: 59, 113, 202;
+    
+    /* Colores de Texto y Fondos */
+    --text-color: #212529;
+    --text-muted: #6c757d;
+    --background-color: #f4f7f6;
+    --surface-color: #ffffff;
+    --border-color: #dee2e6;
+    
+    /* Colores Semánticos */
+    --success-color: #198754;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --info-color: #0dcaf0;
+    
+    /* Tipografía y Geometría */
+    --font-family-sans-serif: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .05);
+    --border-radius: 0.5rem;
+}
+
+/* --- Base y Reseteo --- */
+body {
+    font-family: var(--font-family-sans-serif);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+a { color: var(--primary-color); text-decoration: none; }
+a:hover { color: var(--primary-color-hover); text-decoration: none; }
+
+/* --- Layout Principal --- */
+.navbar {
+    background-color: var(--surface-color);
+    box-shadow: var(--box-shadow);
+}
+.navbar-brand strong { color: var(--primary-color); }
+.navbar-nav .nav-link.active, .navbar-nav .nav-link:hover { color: var(--primary-color) !important; }
+
+main.main-content-area { padding-bottom: 3rem; }
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+.page-header h2 { font-weight: 700; font-size: 1.8rem; margin: 0; }
+.page-header i { color: var(--primary-color); margin-right: 0.75rem; }
+
+/* --- Cards --- */
+.card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 1.5rem;
+}
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    padding: 1rem 1.25rem;
+}
+.card-header i { color: var(--primary-color); margin-right: 0.5rem; }
+
+/* --- Tablas --- */
+.table-container {
+    background-color: var(--surface-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    overflow: hidden;
+}
+.table thead th {
+    background-color: #f8f9fa;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    vertical-align: middle;
+}
+.table tbody td { vertical-align: middle; }
+.table-hover > tbody > tr:hover { --bs-table-accent-bg: #f8f9fa; }
+
+/* --- Formularios --- */
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* --- Dashboard KPI Cards --- */
+.kpi-card .card-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.kpi-card .kpi-value { font-size: 2rem; font-weight: 700; }
+.kpi-card .kpi-icon { font-size: 2.5rem; opacity: 0.3; }
+.kpi-card .card-footer { background-color: rgba(0,0,0,0.1); border-top: none; }
+.kpi-card .card-footer a { color: inherit; text-decoration: none; }
+
+/* --- Animación de Cumpleaños --- */
+@keyframes pulse-warning {
+    0%, 100% { background-color: #fff3cd; }
+    50% { background-color: #fff9e0; }
+}
+.birthday-today { animation: pulse-warning 2s infinite; }
+
+/* --- Estilos para la Página de Inicio (Landing Page) --- */
+
+.hero-section {
+    padding: 6rem 0;
+    background-color: var(--surface-color);
+    text-align: center;
+}
+
+.hero-section h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.hero-section .lead {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin: 0 auto 2rem auto;
+}
+
+.hero-section .btn {
+    padding: 0.8rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.features-section {
+    padding: 4rem 0;
+}
+
+.feature-card {
+    text-align: center;
+    padding: 2rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--surface-color);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 2rem rgba(0, 0, 0, .075);
+}
+
+.feature-card .feature-icon {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    display: inline-block;
+}
+
+.feature-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}

@@ -7,7 +7,7 @@
 <div class="page-header">
     <h2><i class="fas fa-chart-pie"></i> Reportes de Agencia</h2>
     <a href="{% url 'reportes:exportar_polizas_csv' %}?fecha_inicio={{ request.GET.fecha_inicio|default:'' }}&fecha_fin={{ request.GET.fecha_fin|default:'' }}" 
-    class="btn btn-success">
+       class="btn btn-success">
         <i class="fas fa-file-csv"></i> Exportar a CSV
     </a>
 </div>
@@ -16,8 +16,8 @@
 <div class="card mb-4">
     <div class="card-body">
         <form method="get" class="row g-3 align-items-center">
-            <div class="col-md-5"><label for="id_fecha_inicio" class="form-label">Desde</label><input type="date" name="fecha_inicio" value="{{ request.GET.fecha_inicio }}" class="form-control" id="id_fecha_inicio"></div>
-            <div class="col-md-5"><label for="id_fecha_fin" class="form-label">Hasta</label><input type="date" name="fecha_fin" value="{{ request.GET.fecha_fin }}" class="form-control" id="id_fecha_fin"></div>
+            <div class="col-md-5"><label for="id_fecha_inicio" class="form-label">Desde</label><input type="date" name="fecha_inicio" value="{{ request.GET.fecha_inicio|default:'' }}" class="form-control" id="id_fecha_inicio"></div>
+            <div class="col-md-5"><label for="id_fecha_fin" class="form-label">Hasta</label><input type="date" name="fecha_fin" value="{{ request.GET.fecha_fin|default:'' }}" class="form-control" id="id_fecha_fin"></div>
             <div class="col-md-2 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary w-100 me-2"><i class="fas fa-filter"></i> Filtrar</button>
                 <a href="{% url 'reportes:dashboard_reportes' %}" class="btn btn-secondary w-100"><i class="fas fa-times"></i></a>
@@ -28,52 +28,70 @@
 
 <!-- Fila de KPIs -->
 <div class="row">
-    <!-- ... (Tus KPIs aquí, no necesitan cambios) ... -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card kpi-card bg-primary text-white h-100">
+            <div class="card-body">
+                <div><div class="kpi-value">${{ total_primas|default:0|floatformat:2|intcomma }}</div><div class="kpi-label">Producción Total (Primas)</div></div><i class="fas fa-dollar-sign kpi-icon"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card kpi-card bg-success text-white h-100">
+            <div class="card-body">
+                <div><div class="kpi-value">${{ comisiones.cobradas|default:0|floatformat:2|intcomma }}</div><div class="kpi-label">Comisiones Cobradas</div></div><i class="fas fa-check-circle kpi-icon"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card kpi-card bg-warning text-dark h-100">
+            <div class="card-body">
+                <div><div class="kpi-value">${{ comisiones.pendientes|default:0|floatformat:2|intcomma }}</div><div class="kpi-label">Comisiones Pendientes</div></div><i class="fas fa-hourglass-half kpi-icon"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card kpi-card bg-danger text-white h-100">
+            <div class="card-body">
+                <div><div class="kpi-value">{{ total_polizas_periodo|default:0 }}</div><div class="kpi-label">Nuevas Pólizas (Periodo)</div></div><i class="fas fa-file-signature kpi-icon"></i>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Fila de Gráficos -->
 <div class="row">
-    <div class="col-xl-8">
+    <div class="col-lg-7">
         <div class="card mb-4">
             <div class="card-header"><i class="fas fa-chart-bar me-1"></i> Producción (Primas Emitidas) por Mes</div>
             <div class="card-body">
                 {% if produccion_por_mes %}
-                    <canvas id="produccionChart" width="100%" height="40"></canvas>
+                    <canvas id="produccionChart" style="min-height: 250px;"></canvas>
                 {% else %}
-                    <p class="text-muted text-center">No hay datos de producción para el período seleccionado.</p>
+                    <p class="text-muted text-center pt-5 pb-5">No hay datos de producción para mostrar.</p>
                 {% endif %}
             </div>
         </div>
     </div>
-    <div class="col-xl-4">
+    <div class="col-lg-5">
         <div class="card mb-4">
             <div class="card-header"><i class="fas fa-chart-pie me-1"></i> Distribución de Cartera por Ramo</div>
             <div class="card-body">
                 {% if cartera_por_ramo %}
-                    <canvas id="carteraChart" width="100%" height="40"></canvas>
+                    <canvas id="carteraChart" style="min-height: 250px;"></canvas>
                 {% else %}
-                    <p class="text-muted text-center">No hay datos de cartera para mostrar.</p>
+                    <p class="text-muted text-center pt-5 pb-5">No hay datos de cartera para mostrar.</p>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- ======================================================= -->
-<!-- DATOS PASADOS A JS DE FORMA SEGURA -->
-<!-- ======================================================= -->
 {{ produccion_por_mes|json_script:"produccion-data" }}
 {{ cartera_por_ramo|json_script:"cartera-data" }}
-
-
-{% block extra_js %}
-{% load static %}
-<!-- Primero, cargamos la librería Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<!-- Luego, cargamos NUESTRO archivo de script -->
-<script src="{% static 'js/reportes.js' %}"></script>
 {% endblock %}
 
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/reportes.js' %}"></script>
 {% endblock %}
 
