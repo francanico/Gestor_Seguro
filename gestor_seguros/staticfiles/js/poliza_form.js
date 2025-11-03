@@ -1,4 +1,3 @@
-
 (function() {
     document.addEventListener('DOMContentLoaded', function() {
         console.log("poliza_form.js cargado."); // Depuración: Verifica que el archivo se carga
