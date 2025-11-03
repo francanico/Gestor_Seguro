@@ -7,7 +7,7 @@
 <div class="page-header">
     <h2><i class="fas fa-chart-pie"></i> Reportes de Agencia</h2>
     <a href="{% url 'reportes:exportar_polizas_csv' %}?fecha_inicio={{ request.GET.fecha_inicio|default:'' }}&fecha_fin={{ request.GET.fecha_fin|default:'' }}" 
-       class="btn btn-success">
+    class="btn btn-success">
         <i class="fas fa-file-csv"></i> Exportar a CSV
     </a>
 </div>
@@ -65,76 +65,15 @@
 {{ produccion_por_mes|json_script:"produccion-data" }}
 {{ cartera_por_ramo|json_script:"cartera-data" }}
 
-{% endblock %}
 
 {% block extra_js %}
+{% load static %}
+<!-- Primero, cargamos la librería Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/esm/index.js"></script> <!-- Opcional, para mejor formato de fechas -->
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // --- Gráfico de Producción ---
-    try {
-        const produccionDataEl = document.getElementById('produccion-data');
-        if (produccionDataEl) {
-            const produccionData = JSON.parse(produccionDataEl.textContent);
-            if (produccionData.length > 0) {
-                const produccionCtx = document.getElementById('produccionChart');
-                
-                // Formateamos las etiquetas y los valores
-                const produccionLabels = produccionData.map(item => {
-                    const date = new Date(item.mes);
-                    // Formato "Ene 2025"
-                    return date.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
-                });
-                const produccionValues = produccionData.map(item => item.total_prima);
-                
-                new Chart(produccionCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: produccionLabels,
-                        datasets: [{
-                            label: 'Prima Emitida',
-                            data: produccionValues,
-                            backgroundColor: 'rgba(59, 113, 202, 0.7)',
-                            borderColor: 'rgba(59, 113, 202, 1)',
-                            borderRadius: 4,
-                        }]
-                    },
-                    options: {
-                        scales: { y: { beginAtZero: true } },
-                        plugins: { tooltip: { callbacks: { label: context => '$' + context.parsed.y.toLocaleString('es-VE') } } }
-                    }
-                });
-            }
-        }
-    } catch (e) { console.error('Error al renderizar gráfico de producción:', e); }
-
-    // --- Gráfico de Cartera ---
-    try {
-        const carteraDataEl = document.getElementById('cartera-data');
-        if (carteraDataEl) {
-            const carteraData = JSON.parse(carteraDataEl.textContent);
-            if (carteraData.length > 0) {
-                const carteraCtx = document.getElementById('carteraChart');
-                const carteraLabels = carteraData.map(item => item.ramo_tipo_seguro);
-                const carteraValues = carteraData.map(item => item.cantidad);
-
-                new Chart(carteraCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: carteraLabels,
-                        datasets: [{
-                            label: '# de Pólizas',
-                            data: carteraValues,
-                            backgroundColor: ['#3B71CA', '#198754', '#ffc107', '#dc3545', '#0dcaf0', '#6f42c1'],
-                            hoverOffset: 4
-                        }]
-                    }
-                });
-            }
-        }
-    } catch (e) { console.error('Error al renderizar gráfico de cartera:', e); }
-});
-</script>
+<!-- Luego, cargamos NUESTRO archivo de script -->
+<script src="{% static 'js/reportes.js' %}"></script>
 {% endblock %}
+
+{% endblock %}
+
