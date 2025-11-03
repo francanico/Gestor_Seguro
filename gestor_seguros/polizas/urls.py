@@ -13,6 +13,8 @@ urlpatterns = [
     path('<int:pk>/renovar/', views.renovar_poliza, name='renovar_poliza'),
     path('pago/<int:pk>/eliminar/', views.eliminar_pago_cuota, name='eliminar_pago_cuota'),
     path('<int:pk>/registrar_pago_rapido/', views.registrar_pago_rapido, name='registrar_pago_rapido'),
+    path('api/tasa-bcv/', views.obtener_tasa_bcv_api, name='api_tasa_bcv'),
+
 
     # URLs para Aseguradoras
     path('aseguradoras/', views.AseguradoraListView.as_view(), name='lista_aseguradoras'),

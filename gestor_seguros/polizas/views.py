@@ -17,7 +17,11 @@ from .forms import PolizaForm, AseguradoraForm,PagoCuotaForm,SiniestroForm,Asegu
 from clientes.models import Cliente # Para el selector de clientes
 from django.db.models import F,Prefetch
 from django.forms import inlineformset_factory
-import copy,json
+import copy,json,requests
+from django.http import JsonResponse
+from bs4 import BeautifulSoup
+from django.core.cache import cache
+from decimal import Decimal
 from .mixins import OwnerRequiredMixin
 
 
@@ -60,7 +64,6 @@ class AseguradoraCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView)
         form.instance.usuario = self.request.user # Asigna el usuario
         return super().form_valid(form)
     
-
 class AseguradoraUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Aseguradora
     form_class = AseguradoraForm
@@ -594,3 +597,54 @@ def eliminar_pago_cuota(request, pk):
     
     # Si es una petición GET, mostramos la página de confirmación normal
     return render(request, 'polizas/pago_cuota_confirm_delete.html', {'pago': pago})
+
+#<--------- END ELIMINAR PAGO CUOTA POR ERROR --------->
+
+def obtener_tasa_bcv_api(request):
+    """
+    Vista de API que obtiene la tasa de cambio USD/VES del BCV.
+    Utiliza caché para no hacer scraping en cada petición.
+    """
+    # La clave de caché para almacenar la tasa
+    CACHE_KEY = 'tasa_bcv_usd'
+    
+    # 1. Intentamos obtener la tasa desde la caché
+    tasa_str = cache.get(CACHE_KEY)
+    
+    if not tasa_str:
+        # 2. Si no está en caché, hacemos el web scraping
+        try:
+            url = 'https://www.bcv.org.ve/estadisticas/tipo-de-cambio-de-referencia'
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+            
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()  # Lanza un error si la petición falla (ej. 404, 500)
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # --- LÓGICA DE SCRAPING ---
+            # Buscamos el div que contiene la palabra "USD" y su valor
+            # Esta es la parte frágil: si el BCV cambia su HTML, esto se romperá.
+            # Actualizado a Diciembre 2023 / Enero 2024, esto funciona.
+            usd_div = soup.find('div', id='dolar')
+            if usd_div:
+                tasa_str = usd_div.find('strong').get_text(strip=True)
+                # El formato es "35,98760000". Necesitamos convertirlo a un número.
+                tasa_str = tasa_str.replace('.', '').replace(',', '.')
+                tasa_decimal = Decimal(tasa_str)
+                
+                # 3. Guardamos la tasa en caché por 12 horas (43200 segundos)
+                cache.set(CACHE_KEY, str(tasa_decimal), timeout=43200)
+                
+                print(f"TASA BCV OBTENIDA (SCRAPING): {tasa_decimal}")
+            else:
+                return JsonResponse({'error': 'No se pudo encontrar el contenedor de la tasa de USD en la página del BCV.'}, status=500)
+
+        except (requests.RequestException, ValueError, AttributeError) as e:
+            # Si el scraping falla, devolvemos un error
+            return JsonResponse({'error': f'Error al obtener la tasa del BCV: {str(e)}'}, status=500)
+    else:
+        print(f"TASA BCV OBTENIDA (CACHE): {tasa_str}")
+
+    # 4. Devolvemos la tasa en formato JSON
+    return JsonResponse({'tasa_usd': tasa_str})

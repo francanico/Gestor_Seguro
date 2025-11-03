@@ -34,7 +34,8 @@
                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.app_name == 'polizas' and 'aseguradora' not in request.resolver_match.view_name %}active{% endif %}" href="{% url 'polizas:lista_polizas' %}"><i class="fas fa-file-invoice fa-fw me-1"></i> Pólizas</a></li>
                         <li class="nav-item"><a class="nav-link {% if 'aseguradora' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'polizas:lista_aseguradoras' %}"><i class="fas fa-building fa-fw me-1"></i> Aseguradoras</a></li>
                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.app_name == 'reportes' %}active{% endif %}" href="{% url 'reportes:dashboard_reportes' %}"><i class="fas fa-chart-line fa-fw me-1"></i> Reportes</a></li>
-                    {% endif %}
+                        <li class="nav-item"><button type="button" class="btn btn-outline-primary btn-sm me-2 mt-1" data-bs-toggle="modal" data-bs-target="#calculadoraModal"><i class="fas fa-calculator"></i> Calculadora BCV </button></li>
+                        {% endif %}
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     {% if user.is_authenticated %}
@@ -73,11 +74,109 @@
         </div>
     </main>
 
+<!-- ============================================== -->
+<!-- MODAL DE LA CALCULADORA                        -->
+<!-- ============================================== -->
+<div class="modal fade" id="calculadoraModal" tabindex="-1" aria-labelledby="calculadoraModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="calculadoraModalLabel"><i class="fas fa-calculator"></i> Calculadora USD a BsD (Tasa BCV)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="tasa-loader" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando tasa...</span>
+                    </div>
+                    <p class="mt-2">Obteniendo tasa del BCV...</p>
+                </div>
+
+                <div id="calculadora-content" style="display: none;">
+                    <div class="alert alert-info">
+                        Tasa USD/VES: <strong id="tasa-display"></strong>
+                    </div>
+                    <div class="mb-3">
+                        <label for="monto-usd" class="form-label">Monto en Dólares (USD)</label>
+                        <input type="number" class="form-control" id="monto-usd" placeholder="Ej: 100.00" step="0.01">
+                    </div>
+                    <hr>
+                    <h4>Equivalente en Bolívares (BsD)</h4>
+                    <h3 id="resultado-bsd" class="text-center text-success fw-bold">BsD 0,00</h3>
+                </div>
+                
+                <div id="tasa-error" class="alert alert-danger" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+{% block extra_js %}{% endblock %}
+
+<!-- ============================================== -->
+<!-- JAVASCRIPT PARA LA CALCULADORA                 -->
+<!-- ============================================== -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('calculadoraModal');
+    const loader = document.getElementById('tasa-loader');
+    const content = document.getElementById('calculadora-content');
+    const errorDiv = document.getElementById('tasa-error');
+    const tasaDisplay = document.getElementById('tasa-display');
+    const montoUsdInput = document.getElementById('monto-usd');
+    const resultadoBsd = document.getElementById('resultado-bsd');
+    
+    let tasaBCV = 0;
+
+    // Cuando el modal se muestra, obtenemos la tasa
+    modal.addEventListener('show.bs.modal', function () {
+        // Reseteamos la vista
+        loader.style.display = 'block';
+        content.style.display = 'none';
+        errorDiv.style.display = 'none';
+        montoUsdInput.value = '';
+        resultadoBsd.textContent = 'BsD 0,00';
+
+        fetch("{% url 'polizas:api_tasa_bcv' %}")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('No se pudo conectar con el servidor para obtener la tasa.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                tasaBCV = parseFloat(data.tasa_usd);
+                tasaDisplay.textContent = tasaBCV.toLocaleString('es-VE', { minimumFractionDigits: 4 });
+                
+                loader.style.display = 'none';
+                content.style.display = 'block';
+            })
+            .catch(error => {
+                loader.style.display = 'none';
+                errorDiv.textContent = 'Error: ' + error.message;
+                errorDiv.style.display = 'block';
+            });
+    });
+
+    // Cuando el usuario escribe en el campo de USD, calculamos
+    montoUsdInput.addEventListener('input', function() {
+        const montoUSD = parseFloat(this.value) || 0;
+        const montoBSD = montoUSD * tasaBCV;
+        
+        resultadoBsd.textContent = 'BsD ' + montoBSD.toLocaleString('es-VE', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    });
+});
+</script>
+
     <footer class="py-3 bg-light mt-auto">
         <div class="container text-center"><small class="text-muted">Gestor de Seguros &copy; {% now "Y" %}</small></div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    {% block extra_js %}{% endblock %}
 </body>
 </html>
