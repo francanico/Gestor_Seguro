@@ -99,66 +99,30 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-
-    console.log("Página cargada. Iniciando script del formset.");
-
     const addButton = document.getElementById('add-asegurado-form');
     const container = document.getElementById('asegurado-forms-container');
-    const totalFormsInput = document.getElementById('id_asegurados-TOTAL_FORMS'); // Correcto
+    const totalFormsInput = document.getElementById('id_asegurados-TOTAL_FORMS');
     const emptyFormTemplate = document.getElementById('empty-form-template');
-    const noAseguradosMessage = document.getElementById('no-asegurados-message');
 
-       console.log("Botón 'Añadir':", addButton); // <-- PUNTO DE CONTROL 2
-    console.log("Contenedor:", container);
-    console.log("Input Total Forms:", totalFormsInput);
-    console.log("Plantilla vacía:", emptyFormTemplate);
+    if (addButton && container && totalFormsInput && emptyFormTemplate) {
+        addButton.addEventListener('click', function() {
+            let formNum = parseInt(totalFormsInput.value);
+            let newFormHtml = emptyFormTemplate.innerHTML.replace(/__prefix__/g, formNum);
+            container.insertAdjacentHTML('beforeend', newFormHtml);
+            totalFormsInput.value = formNum + 1;
+        });
 
-    if (!addButton || !container || !totalFormsInput || !emptyFormTemplate) {
-        console.error('ERROR FATAL: Uno o más elementos del formset no fueron encontrados en el DOM. El script no puede continuar.');
-        return; 
-    }
-
-    console.log("Todos los elementos encontrados. Añadiendo el event listener."); // <-- PUNTO DE CONTROL 3
-
-    addButton.addEventListener('click', function() {
-        console.log("¡Botón 'Añadir Asegurado' ha sido presionado!"); // <-- PUNTO DE CONTROL 4
-        // ... (resto del código del click) ...
-    });
-
-    // Comprobación de depuración
-    if (!addButton || !container || !totalFormsInput || !emptyFormTemplate) {
-        console.error('Error: Uno o más elementos del formset no se encontraron en el DOM.');
-        return; // Detiene la ejecución si falta algo
-    }
-
-    addButton.addEventListener('click', function() {
-        if (noAseguradosMessage) {
-            noAseguradosMessage.style.display = 'none';
-        }
-
-        let formNum = parseInt(totalFormsInput.value);
-        let newFormHtml = emptyFormTemplate.innerHTML.replace(/__prefix__/g, formNum);
-        container.insertAdjacentHTML('beforeend', newFormHtml);
-        totalFormsInput.value = formNum + 1;
-    });
-
-    container.addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('remove-asegurado-form')) {
-            e.target.closest('.asegurado-form').remove();
-            if (container.children.length === 0 && noAseguradosMessage) {
-                noAseguradosMessage.style.display = 'block';
+        container.addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('remove-asegurado-form')) {
+                e.target.closest('.asegurado-form').remove();
+            } else if (e.target && e.target.name && e.target.name.endsWith('-DELETE')) {
+                const formElement = e.target.closest('.asegurado-form');
+                formElement.style.opacity = e.target.checked ? '0.5' : '1';
             }
-        }
-        
-        if (e.target && e.target.getAttribute('name') && e.target.getAttribute('name').endsWith('-DELETE')) {
-            const formElement = e.target.closest('.asegurado-form');
-            if (e.target.checked) {
-                formElement.style.opacity = '0.5';
-            } else {
-                formElement.style.opacity = '1';
-            }
-        }
-    });
+        });
+    } else {
+        console.error("No se encontraron todos los elementos necesarios para el formset dinámico.");
+    }
 });
 </script>
 {% endblock %}

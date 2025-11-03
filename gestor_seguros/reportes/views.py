@@ -1,4 +1,5 @@
-import csv
+import csv, json
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -17,42 +18,41 @@ def reportes_dashboard(request):
     
     polizas_query = Poliza.objects.filter(usuario=user)
     
-    # Aplicamos el filtro de fecha SOLO al queryset base
     if fecha_inicio_str:
         polizas_query = polizas_query.filter(fecha_emision__gte=fecha_inicio_str)
     if fecha_fin_str:
         polizas_query = polizas_query.filter(fecha_emision__lte=fecha_fin_str)
 
-    # 1. Reporte de Producción (Primas emitidas por mes)
-    produccion_por_mes = polizas_query.annotate(
+    # 1. Producción por Mes
+    produccion_por_mes = list(polizas_query.annotate(
         mes=TruncMonth('fecha_emision')
     ).values('mes').annotate(
         total_prima=Sum('prima_total_anual')
-    ).order_by('mes')
+    ).order_by('mes'))
 
-    # 2. Reporte de Comisiones (para el período filtrado)
+    # 2. Resumen de Comisiones
     comisiones = polizas_query.aggregate(
         cobradas=Sum('comision_monto', filter=models.Q(comision_cobrada=True)),
         pendientes=Sum('comision_monto', filter=models.Q(comision_cobrada=False)),
     )
     
-    # 3. Reporte de Cartera (Pólizas por Ramo - TOTAL, no filtrado por fecha)
-    cartera_por_ramo_total = Poliza.objects.filter(usuario=user).values('ramo_tipo_seguro').annotate(
+    # 3. Cartera por Ramo
+    cartera_por_ramo_total = list(Poliza.objects.filter(usuario=user).values('ramo_tipo_seguro').annotate(
         cantidad=Count('id')
-    ).order_by('-cantidad')
+    ).order_by('-cantidad'))
 
-    # --- NUEVOS CÁLCULOS PARA KPIs ---
-    # Suma total de primas en el período filtrado
+    # KPIs
     total_primas_periodo = polizas_query.aggregate(total=Sum('prima_total_anual'))['total']
-    # Conteo de pólizas en el período filtrado
     total_polizas_periodo = polizas_query.count()
 
     context = {
-        'produccion_por_mes': produccion_por_mes,
+        # Estas líneas ahora funcionarán porque los módulos están importados
+        'produccion_por_mes_json': json.dumps(produccion_por_mes, cls=DjangoJSONEncoder),
+        'cartera_por_ramo_json': json.dumps(cartera_por_ramo_total),
+        
         'comisiones': comisiones,
-        'cartera_por_ramo': cartera_por_ramo_total, # Usamos el total para el gráfico
-        'total_primas': total_primas_periodo,      # Nuevo KPI
-        'total_polizas_periodo': total_polizas_periodo, # Nuevo KPI
+        'total_primas': total_primas_periodo,
+        'total_polizas_periodo': total_polizas_periodo,
         'fecha_inicio': fecha_inicio_str,
         'fecha_fin': fecha_fin_str,
         'titulo_pagina': 'Reportes de Agencia',
