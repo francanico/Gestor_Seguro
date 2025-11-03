@@ -81,7 +81,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: var(--border-radius); border: none; box-shadow: var(--box-shadow);">
             <div class="modal-header" style="border-bottom: 1px solid var(--border-color);">
-                <h5 class="modal-title" id="calculadoraModalLabel"><i class="fas fa-calculator text-primary me-2"></i> Calculadora USD a BsD</h5>
+                <h5 class="modal-title" id="calculadoraModalLabel"><i class="fas fa-calculator text-primary me-2"></i> Calculadora USD a Bs</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let rawBsdValue = 0;
 
     const formatAsBsd = (value) => {
-        return 'BsD ' + value.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return 'Bs ' + value.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     const updateBsdValue = () => {

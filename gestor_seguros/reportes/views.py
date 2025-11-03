@@ -23,12 +23,12 @@ def reportes_dashboard(request):
     if fecha_fin_str:
         polizas_query_periodo = polizas_query_periodo.filter(fecha_emision__lte=fecha_fin_str)
 
-    # 1. Producción por Mes (para el gráfico de barras)
-    produccion_por_mes = polizas_query_periodo.annotate(
+    # 1. Producción por Mes (para gráfico de barras)
+    produccion_por_mes = list(polizas_query_periodo.annotate(
         mes=TruncMonth('fecha_emision')
     ).values('mes').annotate(
         total_prima=Sum('prima_total_anual')
-    ).order_by('mes')
+    ).order_by('mes'))
 
     # 2. Resumen de Comisiones (para KPI)
     comisiones = polizas_query_periodo.aggregate(
@@ -36,19 +36,19 @@ def reportes_dashboard(request):
         pendientes=Sum('comision_monto', filter=models.Q(comision_cobrada=False)),
     )
     
-    # 3. Cartera por Ramo (para el gráfico de dona) - Se calcula sobre el total, no sobre el período
-    cartera_por_ramo = Poliza.objects.filter(usuario=user).values('ramo_tipo_seguro').annotate(
+    # 3. Cartera por Ramo (para gráfico de dona) - Se calcula sobre el total
+    cartera_por_ramo = list(Poliza.objects.filter(usuario=user).values('ramo_tipo_seguro').annotate(
         cantidad=Count('id')
-    ).order_by('-cantidad')
+    ).order_by('-cantidad'))
 
     # 4. KPIs
     total_primas_periodo = polizas_query_periodo.aggregate(total=Sum('prima_total_anual'))['total']
     total_polizas_periodo = polizas_query_periodo.count()
 
     context = {
-        # --- DATOS PARA LOS GRÁFICOS (PASADOS DIRECTAMENTE) ---
-        'produccion_por_mes': list(produccion_por_mes),
-        'cartera_por_ramo': list(cartera_por_ramo),
+        # --- DATOS PARA GRÁFICOS Y TABLAS ---
+        'produccion_por_mes': produccion_por_mes,
+        'cartera_por_ramo': cartera_por_ramo,
         
         # --- DATOS PARA KPIs Y FILTROS ---
         'comisiones': comisiones,
