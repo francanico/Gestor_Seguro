@@ -21,7 +21,7 @@ import copy,json,requests
 from django.http import JsonResponse
 from bs4 import BeautifulSoup
 from django.core.cache import cache
-from decimal import Decimal
+from decimal import Decimal,InvalidOperation
 from .mixins import OwnerRequiredMixin
 
 
@@ -601,50 +601,47 @@ def eliminar_pago_cuota(request, pk):
 #<--------- END ELIMINAR PAGO CUOTA POR ERROR --------->
 
 def obtener_tasa_bcv_api(request):
-    """
-    Vista de API que obtiene la tasa de cambio USD/VES del BCV.
-    Utiliza caché para no hacer scraping en cada petición.
-    """
-    # La clave de caché para almacenar la tasa
     CACHE_KEY = 'tasa_bcv_usd'
-    
-    # 1. Intentamos obtener la tasa desde la caché
     tasa_str = cache.get(CACHE_KEY)
     
     if not tasa_str:
-        # 2. Si no está en caché, hacemos el web scraping
         try:
-            url = 'https://www.bcv.org.ve/estadisticas/tipo-de-cambio-de-referencia'
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+            url = 'https://www.bcv.org.ve/' # <-- CAMBIO: A veces la raíz es más estable
+            headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'}
             
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()  # Lanza un error si la petición falla (ej. 404, 500)
+            response = requests.get(url, headers=headers, timeout=15)
+            response.raise_for_status()
             
             soup = BeautifulSoup(response.content, 'html.parser')
             
-            # --- LÓGICA DE SCRAPING ---
-            # Buscamos el div que contiene la palabra "USD" y su valor
-            # Esta es la parte frágil: si el BCV cambia su HTML, esto se romperá.
-            # Actualizado a Diciembre 2023 / Enero 2024, esto funciona.
+            # --- LÓGICA DE SCRAPING MEJORADA Y MÁS SEGURA ---
             usd_div = soup.find('div', id='dolar')
-            if usd_div:
-                tasa_str = usd_div.find('strong').get_text(strip=True)
-                # El formato es "35,98760000". Necesitamos convertirlo a un número.
-                tasa_str = tasa_str.replace('.', '').replace(',', '.')
-                tasa_decimal = Decimal(tasa_str)
+            if not usd_div:
+                raise ValueError("No se pudo encontrar el div con id='dolar'. La estructura de la página del BCV puede haber cambiado.")
                 
-                # 3. Guardamos la tasa en caché por 12 horas (43200 segundos)
-                cache.set(CACHE_KEY, str(tasa_decimal), timeout=43200)
-                
-                print(f"TASA BCV OBTENIDA (SCRAPING): {tasa_decimal}")
-            else:
-                return JsonResponse({'error': 'No se pudo encontrar el contenedor de la tasa de USD en la página del BCV.'}, status=500)
+            strong_tag = usd_div.find('strong')
+            if not strong_tag:
+                raise ValueError("No se pudo encontrar la etiqueta <strong> dentro del div 'dolar'.")
 
-        except (requests.RequestException, ValueError, AttributeError) as e:
-            # Si el scraping falla, devolvemos un error
-            return JsonResponse({'error': f'Error al obtener la tasa del BCV: {str(e)}'}, status=500)
+            tasa_raw_str = strong_tag.get_text(strip=True)
+            if not tasa_raw_str:
+                raise ValueError("La etiqueta <strong> para la tasa del dólar está vacía.")
+
+            # Limpiamos el string: quitamos puntos de miles y cambiamos coma decimal a punto
+            tasa_limpia_str = tasa_raw_str.replace('.', '').replace(',', '.')
+            tasa_decimal = Decimal(tasa_limpia_str)
+            
+            tasa_str = str(tasa_decimal)
+            cache.set(CACHE_KEY, tasa_str, timeout=43200) # 12 horas
+            
+            print(f"TASA BCV OBTENIDA (SCRAPING): {tasa_str}")
+
+        except (requests.RequestException, ValueError, InvalidOperation, AttributeError) as e:
+            # Si el scraping falla, devolvemos un error claro
+            error_message = f'Error al hacer scraping en BCV: {str(e)}'
+            print(error_message)
+            return JsonResponse({'error': error_message}, status=503) # 503: Service Unavailable
     else:
         print(f"TASA BCV OBTENIDA (CACHE): {tasa_str}")
 
-    # 4. Devolvemos la tasa en formato JSON
     return JsonResponse({'tasa_usd': tasa_str})
