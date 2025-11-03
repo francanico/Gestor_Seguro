@@ -88,15 +88,15 @@
 
 {{ produccion_por_mes|json_script:"produccion-data" }}
 {{ cartera_por_ramo|json_script:"cartera-data" }}
-{% endblock %}
 
 {% block extra_js %}
-{% load static %} {# <-- AÑADE ESTA LÍNEA #}
+{% load static %} 
 
 <!-- Primero, cargamos la librería Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <!-- Luego, cargamos NUESTRO archivo de script -->
 <script src="{% static 'js/reportes.js' %}"></script>
+{% endblock %}
 {% endblock %}
 
