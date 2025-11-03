@@ -134,30 +134,37 @@ class Poliza(models.Model):
 
     @property
     def estado_renovacion(self):
-        # --- PASO 1: Priorizar el estado administrativo de la póliza ---
-        # Si la póliza requiere una acción para activarse, ese es su estado principal.
-        if self.estado_poliza in ['EN_TRAMITE', 'PENDIENTE_PAGO']:
-            return "Pendiente Activación"
-        
-        # Si la póliza ya fue gestionada (cerrada), mostramos su estado final.
-        if self.estado_poliza in ['RENOVADA', 'CANCELADA']:
-            return "Gestionada"
-        
-        # Si el estado es 'VENCIDA', ese es su estado final de renovación.
-        if self.estado_poliza == 'VENCIDA':
-            return "Vencida"
+        """
+        Determina el estado de renovación basado en una jerarquía de prioridades:
+        1. Estados administrativos finales (Renovada, Cancelada).
+        2. Estados que requieren acción (En Trámite, Pendiente de Pago).
+        3. Estados basados en la fecha de vencimiento (Vencida, Crítico, Próximo, Vigente).
+        """
+        # Prioridad 1: Estados finales que no requieren más seguimiento de renovación.
+        if self.estado_poliza == 'RENOVADA':
+            return "Renovada"
+        if self.estado_poliza == 'CANCELADA':
+            return "Cancelada"
 
-        # --- PASO 2: Si la póliza está VIGENTE, ahora sí calculamos por fecha ---
-        # Si llegamos aquí, la única opción que queda es que self.estado_poliza == 'VIGENTE'
-        
+        # Prioridad 2: Estados que requieren una acción para activarse.
+        if self.estado_poliza == 'EN_TRAMITE':
+            return "En Trámite"
+        if self.estado_poliza == 'PENDIENTE_PAGO':
+            return "Pendiente de Pago"
+
+        # Prioridad 3: Si no es ninguno de los anteriores, calculamos por fecha.
         dias = self.dias_para_renovar
-
+        
+        # Si 'dias' es None, significa que la póliza no está 'VIGENTE'.
+        # Podría estar 'VENCIDA' según su estado administrativo.
         if dias is None:
-            # Esto no debería pasar si la póliza es VIGENTE, pero es una salvaguarda.
-            return "Indeterminado"
+            # Comprobamos si la fecha ya pasó para marcarla como vencida
+            # incluso si su estado administrativo aún no se ha actualizado.
+            if self.fecha_fin_vigencia and self.fecha_fin_vigencia < timezone.now().date():
+                return "Vencida"
+            return "Indeterminado" # Caso raro, no debería ocurrir
 
         if dias < 0:
-            # Doble chequeo. Si está marcada como VIGENTE pero su fecha ya pasó.
             return "Vencida"
         elif dias <= 30:
             return "Crítico (0-30 días)"

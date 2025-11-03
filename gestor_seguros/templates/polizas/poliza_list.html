@@ -41,27 +41,46 @@
                         <td>{{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</td>
                         <td>
                             {% with estado=poliza.estado_renovacion dias=poliza.dias_para_renovar %}
-                                {% if estado == "Vencida" %}
+                                
+                                {# --- Estados que NO muestran contador de días --- #}
+                                {% if estado == "Renovada" or estado == "Cancelada" %}
+                                    <span class="badge bg-secondary">{{ estado }}</span>
+
+                                {% elif estado == "En Trámite" %}
+                                    <span class="badge" style="background-color: #6f42c1; color: white;">{{ estado }}</span> {# Un color púrpura para 'En Trámite' #}
+
+                                {% elif estado == "Pendiente de Pago" %}
+                                    <span class="badge bg-primary">{{ estado }}</span>
+
+                                {# --- Estados que SÍ muestran contador de días --- #}
+                                {% elif estado == "Vencida" %}
                                     <span class="badge bg-danger">{{ estado }}</span>
+
                                 {% elif estado == "Crítico (0-30 días)" %}
                                     <span class="badge bg-warning text-dark">Crítico</span>
+
                                 {% elif estado == "Próximo (31-90 días)" %}
                                     <span class="badge bg-info text-dark">Próximo</span>
-                                {% elif estado == "Pendiente Activación" %}
-                                    <span class="badge bg-primary">{{ estado }}</span>
+
                                 {% elif estado == "Vigente" %}
                                     <span class="badge bg-success">{{ estado }}</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">{{ poliza.get_estado_poliza_display }}</span>
-                                {% endif %}
                                 
-                                {% if dias is not None and estado != "Gestionada" and estado != "Pendiente Activación" %}
-                                    {% if dias < 0 %}
-                                        <small class="text-muted d-block mt-1">(hace {{ dias|slice:"1:" }} día{{ dias|slice:"1:"|pluralize }})</small>
-                                    {% else %}
-                                        <small class="text-muted d-block mt-1">({{ dias }} día{{ dias|pluralize }})</small>
-                                    {% endif %}
+                                {% else %} {# Cubre "Indeterminado" #}
+                                    <span class="badge bg-dark">{{ estado }}</span>
                                 {% endif %}
+
+                                {# --- Bloque para mostrar los días (AHORA CONDICIONAL) --- #}
+                                {# 'dias' solo tendrá un valor si el estado es VIGENTE, gracias a la nueva lógica del modelo #}
+                                {% if dias is not None %}
+                                    <small class="text-muted d-block mt-1">
+                                        {% if dias < 0 %}
+                                            (hace {{ dias|slice:"1:" }} día{{ dias|slice:"1:"|pluralize }})
+                                        {% else %}
+                                            ({{ dias }} día{{ dias|pluralize }})
+                                        {% endif %}
+                                    </small>
+                                {% endif %}
+
                             {% endwith %}
                         </td>
                         <td class="text-end">${{ poliza.prima_total_anual|floatformat:2|intcomma }}</td>
