@@ -101,12 +101,29 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     console.log("Página cargada. Iniciando script del formset.");
-    
+
     const addButton = document.getElementById('add-asegurado-form');
     const container = document.getElementById('asegurado-forms-container');
     const totalFormsInput = document.getElementById('id_asegurados-TOTAL_FORMS'); // Correcto
     const emptyFormTemplate = document.getElementById('empty-form-template');
     const noAseguradosMessage = document.getElementById('no-asegurados-message');
+
+       console.log("Botón 'Añadir':", addButton); // <-- PUNTO DE CONTROL 2
+    console.log("Contenedor:", container);
+    console.log("Input Total Forms:", totalFormsInput);
+    console.log("Plantilla vacía:", emptyFormTemplate);
+
+    if (!addButton || !container || !totalFormsInput || !emptyFormTemplate) {
+        console.error('ERROR FATAL: Uno o más elementos del formset no fueron encontrados en el DOM. El script no puede continuar.');
+        return; 
+    }
+
+    console.log("Todos los elementos encontrados. Añadiendo el event listener."); // <-- PUNTO DE CONTROL 3
+
+    addButton.addEventListener('click', function() {
+        console.log("¡Botón 'Añadir Asegurado' ha sido presionado!"); // <-- PUNTO DE CONTROL 4
+        // ... (resto del código del click) ...
+    });
 
     // Comprobación de depuración
     if (!addButton || !container || !totalFormsInput || !emptyFormTemplate) {
