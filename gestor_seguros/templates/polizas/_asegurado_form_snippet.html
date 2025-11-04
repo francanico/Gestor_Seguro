@@ -1,11 +1,10 @@
 {% load widget_tweaks %}
 
 <div class="asegurado-form mb-4 p-3 border rounded position-relative">
-    {# Renderiza todos los campos ocultos necesarios para el formset #}
+    {# Renderiza TODOS los campos ocultos del formulario, crucial para el formset #}
     {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
     
-    {# --- LÓGICA DE ELIMINACIÓN SIMPLIFICADA --- #}
-    {# Mostramos el checkbox de 'Eliminar' solo si el asegurado ya existe #}
+    {# Mostramos el checkbox de 'Eliminar' solo si el asegurado ya existe en la BD #}
     {% if form.instance.pk %}
         <div class="form-check position-absolute top-0 end-0 mt-2 me-2">
             {% render_field form.DELETE class+="form-check-input" %}
@@ -13,21 +12,47 @@
         </div>
     {% endif %}
     
+    {# Renderizado explícito de cada campo visible para control total #}
     <div class="row g-3">
         <div class="col-md-6">
-            <label>{{ form.nombre_completo.label }}</label>
+            <label for="{{ form.nombre_completo.id_for_label }}">{{ form.nombre_completo.label }}</label>
             {% render_field form.nombre_completo class+="form-control" placeholder="Nombre y Apellido" %}
+            {% for error in form.nombre_completo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </div>
         <div class="col-md-6">
-            <label>{{ form.parentesco.label }}</label>
+            <label for="{{ form.parentesco.id_for_label }}">{{ form.parentesco.label }}</label>
             {% render_field form.parentesco class+="form-select" %}
+            {% for error in form.parentesco.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </div>
-        <!-- ... (resto de los campos del formulario de asegurado) ... -->
-        <div class="col-md-6"><label>{{ form.cedula.label }}</label>{% render_field form.cedula class+="form-control" %}</div>
-        <div class="col-md-6"><label>{{ form.fecha_nacimiento.label }}</label>{% render_field form.fecha_nacimiento class+="form-control" %}</div>
-        <div class="col-md-6"><label>{{ form.sexo.label }}</label>{% render_field form.sexo class+="form-select" %}</div>
-        <div class="col-md-6"><label>{{ form.email.label }}</label>{% render_field form.email class+="form-control" %}</div>
-        <div class="col-md-6"><label>{{ form.telefono.label }}</label>{% render_field form.telefono class+="form-control" %}</div>
-        <div class="col-md-6"><label>{{ form.notas.label }}</label>{% render_field form.notas class+="form-control" %}</div>
+        <div class="col-md-6">
+            <label for="{{ form.cedula.id_for_label }}">{{ form.cedula.label }}</label>
+            {% render_field form.cedula class+="form-control" placeholder="V-12345678" %}
+            {% for error in form.cedula.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6">
+            <label for="{{ form.fecha_nacimiento.id_for_label }}">{{ form.fecha_nacimiento.label }}</label>
+            {% render_field form.fecha_nacimiento class+="form-control" %}
+            {% for error in form.fecha_nacimiento.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6">
+            <label for="{{ form.sexo.id_for_label }}">{{ form.sexo.label }}</label>
+            {% render_field form.sexo class+="form-select" %}
+            {% for error in form.sexo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6">
+            <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+            {% render_field form.email class+="form-control" placeholder="correo@ejemplo.com" %}
+            {% for error in form.email.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6">
+            <label for="{{ form.telefono.id_for_label }}">{{ form.telefono.label }}</label>
+            {% render_field form.telefono class+="form-control" placeholder="0414-1234567" %}
+            {% for error in form.telefono.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6">
+            <label for="{{ form.notas.id_for_label }}">{{ form.notas.label }}</label>
+            {% render_field form.notas class+="form-control" rows="1" %}
+            {% for error in form.notas.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
     </div>
 </div>

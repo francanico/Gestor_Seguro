@@ -5,14 +5,12 @@
 
 {% block content %}
 
-<!-- Cabecera de la Página -->
 <div class="page-header">
     <h2><i class="fas fa-building"></i> Lista de Aseguradoras</h2>
     <a href="{% url 'polizas:crear_aseguradora' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Añadir Aseguradora</a>
 </div>
 
 {% if aseguradoras %}
-    <!-- Contenedor para la Tabla -->
     <div class="table-container">
         <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -30,6 +28,7 @@
                     {% for aseguradora in aseguradoras %}
                     <tr>
                         <td>
+                            <!-- El enlace principal ahora usa get_absolute_url -->
                             <a href="{{ aseguradora.get_absolute_url }}">{{ aseguradora.nombre }}</a>
                         </td>
                         <td>{{ aseguradora.rif|default:"N/A" }}</td>
@@ -38,6 +37,7 @@
                         <td>{{ aseguradora.contacto_telefono|default:"N/A" }}</td>
                         <td class="text-center">
                             <div class="action-buttons btn-group" role="group">
+                                <!-- El botón de 'Ver' también usa get_absolute_url -->
                                 <a href="{{ aseguradora.get_absolute_url }}" class="btn btn-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
                                 <a href="{% url 'polizas:editar_aseguradora' aseguradora.pk %}" class="btn btn-warning" title="Editar"><i class="fas fa-edit"></i></a>
                                 <a href="{% url 'polizas:eliminar_aseguradora' aseguradora.pk %}" class="btn btn-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
@@ -57,8 +57,7 @@
     {% endif %}
 
 {% else %}
-    <div class="alert alert-info mt-4">
-        No hay aseguradoras registradas. <a href="{% url 'polizas:crear_aseguradora' %}" class="alert-link">Añade una nueva</a>.
-    </div>
+    <div class="alert alert-info mt-4">No hay aseguradoras registradas. <a href="{% url 'polizas:crear_aseguradora' %}" class="alert-link">Añade una nueva</a>.</div>
 {% endif %}
+
 {% endblock %}

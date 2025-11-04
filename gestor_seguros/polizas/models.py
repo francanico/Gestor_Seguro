@@ -18,8 +18,13 @@ class Aseguradora(models.Model):
     contacto_email = models.EmailField(blank=True, null=True, verbose_name="Email de Contacto")
     contacto_telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono de Contacto")
 
+
+    def get_absolute_url(self):
+            # Esta línea es la clave. Genera la URL para el detalle de esta aseguradora.
+            return reverse('polizas:detalle_aseguradora', kwargs={'pk': self.pk})
+
     def __str__(self):
-        return self.nombre
+            return self.nombre
 
     class Meta:
         verbose_name = "Aseguradora"

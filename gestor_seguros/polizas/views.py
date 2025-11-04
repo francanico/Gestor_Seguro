@@ -48,7 +48,10 @@ class AseguradoraDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['polizas_asociadas'] = self.object.polizas.select_related('cliente').order_by('-fecha_fin_vigencia')
+        # Obtenemos las pólizas asociadas a esta aseguradora y que pertenecen al usuario
+        context['polizas_asociadas'] = self.object.polizas.filter(
+            usuario=self.request.user
+        ).select_related('cliente').order_by('-fecha_fin_vigencia')
         return context
 
 class AseguradoraCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
