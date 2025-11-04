@@ -18,7 +18,7 @@ from clientes.models import Cliente # Para el selector de clientes
 from django.db.models import F,Prefetch
 from django.forms import inlineformset_factory
 import copy,json,requests
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from bs4 import BeautifulSoup
 from django.core.cache import cache
 from decimal import Decimal,InvalidOperation
@@ -35,35 +35,86 @@ class AseguradoraListView(LoginRequiredMixin, ListView):
     context_object_name = 'aseguradoras'
     paginate_by = 10
 
-class AseguradoraCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
-    model = Aseguradora
-    form_class = AseguradoraForm
-    template_name = 'polizas/aseguradora_form.html'
-    success_url = reverse_lazy('polizas:lista_aseguradoras')
-    success_message = "Aseguradora '%(nombre)s' creada exitosamente."
+class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    model = Poliza
+    form_class = PolizaForm
+    template_name = 'polizas/poliza_form.html'
+    success_message = "Póliza creada exitosamente."
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['titulo_pagina'] = "Registrar Nueva Aseguradora"
-        context['boton_submit'] = "Crear Aseguradora"
+        context['titulo_pagina'] = "Crear Nueva Póliza"
+        if self.request.POST:
+            context['formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
+        else:
+            context['formset'] = AseguradoFormSet(prefix='asegurados')
         return context
-    
+
     def form_valid(self, form):
-        form.instance.usuario = self.request.user # Asigna el usuario
-        return super().form_valid(form)
+        context = self.get_context_data()
+        formset = context['formset']
+        if formset.is_valid():
+            with transaction.atomic():
+                form.instance.usuario = self.request.user
+                self.object = form.save()
+                formset.instance = self.object
+                formset.save()
+            return super().form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})    
     
-class AseguradoraUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
-    model = Aseguradora
-    form_class = AseguradoraForm
-    template_name = 'polizas/aseguradora_form.html'
-    success_url = reverse_lazy('polizas:lista_aseguradoras')
-    success_message = "Aseguradora '%(nombre)s' actualizada exitosamente."
+class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = Poliza
+    form_class = PolizaForm
+    template_name = 'polizas/poliza_form.html'
+    success_message = "Póliza actualizada exitosamente."
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['titulo_pagina'] = "Editar Aseguradora"
-        context['boton_submit'] = "Actualizar Aseguradora"
+        context['titulo_pagina'] = "Editar Póliza"
+        if 'formset' not in kwargs:
+            if self.request.POST:
+                context['formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
+            else:
+                context['formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
         return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form()
+        formset = AseguradoFormSet(request.POST, instance=self.object, prefix='asegurados')
+
+        # --- LÓGICA CORREGIDA PARA EL BOTÓN "AÑADIR OTRO" ---
+        if 'add_item' in request.POST:
+            # Creamos una nueva instancia del formset con un formulario extra
+            # pero NO la validamos ni la guardamos.
+            # `extra` no se puede cambiar dinámicamente así, pero el truco del management form funciona.
+            form_data = request.POST.copy()
+            form_count = int(form_data.get('asegurados-TOTAL_FORMS', 0))
+            form_data['asegurados-TOTAL_FORMS'] = form_count + 1
+            
+            # Pasamos los datos modificados para que se conserven los valores escritos
+            new_formset = AseguradoFormSet(form_data, instance=self.object, prefix='asegurados')
+            
+            # Devolvemos una respuesta HTTP renderizando la plantilla con los formularios actualizados
+            return self.render_to_response(self.get_context_data(form=form, formset=new_formset))
+
+        # --- LÓGICA DE GUARDADO NORMAL ---
+        if form.is_valid() and formset.is_valid():
+            with transaction.atomic():
+                form.save()
+                formset.save()
+            messages.success(request, self.success_message)
+            return HttpResponseRedirect(self.get_success_url())
+        else:
+            # Devolvemos una respuesta HTTP renderizando la plantilla con los errores
+            return self.render_to_response(self.get_context_data(form=form, formset=formset))
+
+    def get_success_url(self):
+        return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
 
 class AseguradoraDeleteView(LoginRequiredMixin, DeleteView): # SuccessMessageMixin da problemas con %()s en DeleteView a veces
     model = Aseguradora
