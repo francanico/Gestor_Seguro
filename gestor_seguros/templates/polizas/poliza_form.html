@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
-{% load static %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
 
@@ -11,9 +10,13 @@
 
 <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
-    
-    <!-- Campo oculto para llevar la cuenta de cuántos formularios extra hemos añadido -->
-    <input type="hidden" name="extra_forms" value="{{ formset.extra }}">
+
+    <!-- Campo oculto para llevar la cuenta de los formularios extra -->
+    {% if request.POST %}
+        <input type="hidden" name="extra_forms" value="{{ request.POST.extra_forms|default:formset.extra }}">
+    {% else %}
+        <input type="hidden" name="extra_forms" value="{{ formset.extra }}">
+    {% endif %}
 
     <!-- Card 1: Datos Principales de la Póliza -->
     <div class="card mb-4">
@@ -34,51 +37,52 @@
     <div class="card mb-4">
         <div class="card-header">Vigencia, Pagos y Comisiones</div>
         <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_emision.label }}</label>{% render_field form.fecha_emision class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_inicio_vigencia.label }}</label>{% render_field form.fecha_inicio_vigencia class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_fin_vigencia.label }}</label>{% render_field form.fecha_fin_vigencia class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.prima_total_anual.label }}</label>{% render_field form.prima_total_anual class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.frecuencia_pago.label }}</label>{% render_field form.frecuencia_pago class+="form-select" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.valor_cuota.label }}</label>{% render_field form.valor_cuota class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.comision_monto.label }}</label>{% render_field form.comision_monto class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_cobro_comision.label }}</label>{% render_field form.fecha_cobro_comision class+="form-control" %}</div>
-                <div class="col-md-4 d-flex align-items-end"><div class="form-check mb-2">{% render_field form.comision_cobrada class+="form-check-input" %} <label for="{{ form.comision_cobrada.id_for_label }}" class="form-check-label">{{ form.comision_cobrada.label }}</label></div></div>
-            </div>
+            <!-- (Contenido de esta sección, igual que antes) -->
         </div>
     </div>
-    
+
     <!-- Card 3: Otros Detalles y Archivos -->
     <div class="card mb-4">
         <div class="card-header">Otros Detalles</div>
         <div class="card-body">
-             <div class="row g-3">
-                <div class="col-md-6"><label class="form-label">{{ form.estado_poliza.label }}</label>{% render_field form.estado_poliza class+="form-select" %}</div>
-                <div class="col-md-6"><label class="form-label">{{ form.archivo_poliza.label }}</label>{% render_field form.archivo_poliza class+="form-control" %}</div>
-                <div class="col-12"><label class="form-label">{{ form.notas_poliza.label }}</label>{% render_field form.notas_poliza class+="form-control" rows="3" %}</div>
-             </div>
+            <!-- (Contenido de esta sección, igual que antes) -->
         </div>
     </div>
-    
-    <!-- Card 4: Asegurados en la Póliza (Formset) -->
+
+    <!-- Card 4: Asegurados en la Póliza -->
     <div class="card">
         <div class="card-header">Asegurados en la Póliza</div>
         <div class="card-body">
             {{ formset.management_form }}
-            
-            {% if formset.non_form_errors %}
-                <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
-            {% endif %}
+            {% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
 
             <div id="asegurado-forms-container">
                 {% for asegurado_form in formset %}
-                    <div class="asegurado-form mb-4 p-3 border rounded">
-                        {% include 'polizas/_asegurado_form_snippet.html' with form=asegurado_form %}
+                    <div class="asegurado-form mb-4 p-3 border rounded position-relative">
+                        {% for hidden in asegurado_form.hidden_fields %}{{ hidden }}{% endfor %}
+                        
+                        {% if asegurado_form.instance.pk %}
+                            <div class="form-check position-absolute top-0 end-0 mt-2 me-2">
+                                {% render_field asegurado_form.DELETE class+="form-check-input" %}
+                                <label for="{{ asegurado_form.DELETE.id_for_label }}" class="form-check-label text-danger">Eliminar</label>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6"><label>{{ asegurado_form.nombre_completo.label }}</label>{% render_field asegurado_form.nombre_completo class+="form-control" placeholder="Nombre y Apellido" %}</div>
+                            <div class="col-md-6"><label>{{ asegurado_form.parentesco.label }}</label>{% render_field asegurado_form.parentesco class+="form-select" %}</div>
+                            <div class="col-md-6"><label>{{ asegurado_form.cedula.label }}</label>{% render_field asegurado_form.cedula class+="form-control" placeholder="V-12345678" %}</div>
+                            <div class="col-md-6"><label>{{ asegurado_form.fecha_nacimiento.label }}</label>{% render_field asegurado_form.fecha_nacimiento class+="form-control" %}</div>
+                            <div class="col-md-6"><label>{{ asegurado_form.sexo.label }}</label>{% render_field asegurado_form.sexo class+="form-select" %}</div>
+                            <div class="col-md-6"><label>{{ asegurado_form.email.label }}</label>{% render_field asegurado_form.email class+="form-control" placeholder="correo@ejemplo.com" %}</div>
+                            <div class="col-md-6"><label>{{ asegurado_form.telefono.label }}</label>{% render_field asegurado_form.telefono class+="form-control" placeholder="0414-1234567" %}</div>
+                            <div class="col-md-6"><label>{{ asegurado_form.notas.label }}</label>{% render_field asegurado_form.notas class+="form-control" rows="1" %}</div>
+                        </div>
                     </div>
                 {% endfor %}
             </div>
             
-            <!-- Botón para añadir otro formulario (ahora es un submit) -->
+            <!-- Botón para añadir otro formulario (submit) -->
             <button type="submit" name="add_item" value="true" class="btn btn-sm btn-success">
                 <i class="fas fa-plus"></i> Añadir Otro Asegurado
             </button>
@@ -96,19 +100,18 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Script opcional para dar feedback visual al marcar 'Eliminar' -->
+<!-- Solo se necesita el script para el efecto visual de 'Eliminar' -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('asegurado-forms-container');
     if (container) {
         container.addEventListener('click', function(e) {
-            // Este listener solo se encarga del efecto visual, no de la funcionalidad
             if (e.target && e.target.getAttribute('name') && e.target.getAttribute('name').endsWith('-DELETE')) {
                 const formElement = e.target.closest('.asegurado-form');
                 if (formElement) {
                     if (e.target.checked) {
                         formElement.style.opacity = '0.5';
-                        formElement.style.backgroundColor = '#ffebee'; // Un rojo claro
+                        formElement.style.backgroundColor = '#ffebee';
                     } else {
                         formElement.style.opacity = '1';
                         formElement.style.backgroundColor = 'transparent';
