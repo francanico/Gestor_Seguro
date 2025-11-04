@@ -128,79 +128,6 @@ class PolizaListView(LoginRequiredMixin, ListView):
         #     del self.request.session['titulo_lista_polizas']
         return context
 
-class PolizaDetailView(LoginRequiredMixin,OwnerRequiredMixin, DetailView):
-    model = Poliza
-    template_name = 'polizas/poliza_detail.html'
-    context_object_name = 'poliza'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        poliza = self.get_object()
-
-        proxima_cuota = poliza.proxima_fecha_cobro
-        # Solo mostramos el formulario si hay una próxima cuota pendiente
-        if proxima_cuota:
-
-            initial_data = {
-                'fecha_pago': timezone.now().date(),
-                'monto_pagado': poliza.valor_cuota if poliza.valor_cuota else poliza.prima_total_anual,
-                'fecha_cuota_correspondiente': proxima_cuota
-            }
-            context['pago_form'] = PagoCuotaForm(initial=initial_data)
-            
-            pago_form = PagoCuotaForm(initial={
-                'monto_pagado': poliza.valor_cuota or poliza.prima_total_anual,
-                'fecha_cuota_correspondiente': proxima_cuota
-            })
-            context['pago_form'] = pago_form
-        
-        context['pagos_realizados'] = poliza.pagos_cuotas.all()
-
-
-        # Formulario para registrar un nuevo pago
-        pago_form = PagoCuotaForm(initial={
-            'monto_pagado': poliza.valor_cuota or poliza.prima_total_anual,
-            'fecha_cuota_correspondiente': poliza.proxima_fecha_cobro
-        })
-        context['pago_form'] = pago_form
-        
-        # Lista de pagos existentes
-        context['pagos_realizados'] = poliza.pagos_cuotas.all()
-
-            # Lista de siniestros asociados
-        context['siniestros_asociados'] = self.object.siniestros.all()
-
-        
-        # ContentType para uso en formularios genéricos
-        obj = self.get_object()
-        context['content_type'] = ContentType.objects.get_for_model(obj)
-        
-        return context
-
-    def post(self, request, *args, **kwargs):
-        poliza = self.get_object()
-        form = PagoCuotaForm(request.POST)
-
-
-        if not poliza.proxima_fecha_cobro:
-            messages.error(request, 'No se pueden registrar más pagos. Todas las cuotas de esta póliza ya han sido cubiertas.')
-            return redirect(poliza.get_absolute_url())
-
-        form = PagoCuotaForm(request.POST)
-
-        if form.is_valid():
-            nuevo_pago = form.save(commit=False)
-            nuevo_pago.poliza = poliza
-            nuevo_pago.save()
-            messages.success(request, '¡Pago de cuota registrado exitosamente!')
-            return redirect(poliza.get_absolute_url())
-        else:
-            # Si el formulario no es válido, volvemos a renderizar la página con los errores
-            context = self.get_context_data()
-            context['pago_form'] = form # Pasamos el formulario con errores
-            messages.error(request, 'Hubo un error al registrar el pago. Por favor, revisa los datos.')
-            return self.render_to_response(context)
-
 class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Poliza
     form_class = PolizaForm
@@ -211,14 +138,14 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Crear Nueva Póliza"
         if self.request.POST:
-            context['asegurados_formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
+            context['formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
         else:
-            context['asegurados_formset'] = AseguradoFormSet(prefix='asegurados')
+            context['formset'] = AseguradoFormSet(prefix='asegurados')
         return context
 
     def form_valid(self, form):
         context = self.get_context_data()
-        formset = context['asegurados_formset']
+        formset = context['formset']
         if form.is_valid() and formset.is_valid():
             with transaction.atomic():
                 form.instance.usuario = self.request.user
@@ -229,6 +156,35 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         else:
             return self.form_invalid(form)
 
+    def get_success_url(self):
+        return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
+
+class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = Poliza
+    form_class = PolizaForm
+    template_name = 'polizas/poliza_form.html'
+    success_message = "Póliza actualizada exitosamente."
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = "Editar Póliza"
+        if self.request.POST:
+            context['formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
+        else:
+            context['formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
+        return context
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        formset = context['formset']
+        if form.is_valid() and formset.is_valid():
+            with transaction.atomic():
+                self.object = form.save()
+                formset.save()
+            return super().form_valid(form)
+        else:
+            return self.form_invalid(form)
+            
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
 
