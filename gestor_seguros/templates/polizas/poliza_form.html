@@ -2,17 +2,20 @@
 {% load widget_tweaks %}
 {% load static %}
 
-{% block title %}{{ titulo_pagina }}{% endblock %}
+{% block title %}{{ titulo_pagina|default:"Formulario de Póliza" }}{% endblock %}
 
 {% block content %}
+
 <div class="page-header">
-    <h2><i class="fas fa-file-signature"></i> {{ titulo_pagina }}</h2>
+    <h2><i class="fas fa-file-signature"></i> {{ titulo_pagina|default:"Formulario de Póliza" }}</h2>
 </div>
 
 <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
 
-    <!-- Card 1: Datos Principales de la Póliza -->
+    <!-- ============================================= -->
+    <!-- Card 1: Datos Principales de la Póliza      -->
+    <!-- ============================================= -->
     <div class="card mb-4">
         <div class="card-header">Información de la Póliza</div>
         <div class="card-body">
@@ -47,7 +50,9 @@
         </div>
     </div>
 
-    <!-- Card 2: Vigencia, Pagos y Comisiones -->
+    <!-- ============================================= -->
+    <!-- Card 2: Vigencia, Pagos y Comisiones        -->
+    <!-- ============================================= -->
     <div class="card mb-4">
         <div class="card-header">Vigencia, Pagos y Comisiones</div>
         <div class="card-body">
@@ -67,25 +72,28 @@
         </div>
     </div>
     
-    <!-- Card 3: Otros Detalles y Archivos -->
+    <!-- ============================================= -->
+    <!-- Card 3: Otros Detalles y Archivos           -->
+    <!-- ============================================= -->
     <div class="card mb-4">
         <div class="card-header">Otros Detalles</div>
         <div class="card-body">
-            <div class="row g-3">
+             <div class="row g-3">
                 <div class="col-md-6"><label class="form-label">{{ form.estado_poliza.label }}</label>{% render_field form.estado_poliza class+="form-select" %}</div>
                 <div class="col-md-6"><label class="form-label">{{ form.archivo_poliza.label }}</label>{% render_field form.archivo_poliza class+="form-control" %}</div>
                 <div class="col-12"><label class="form-label">{{ form.notas_poliza.label }}</label>{% render_field form.notas_poliza class+="form-control" rows="3" %}</div>
-            </div>
+             </div>
         </div>
     </div>
     
-    <!-- Card 4: Asegurados en la Póliza (Formset) -->
-
+    <!-- ============================================= -->
+    <!-- Card 4: Asegurados en la Póliza (Formset)   -->
+    <!-- ============================================= -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>Asegurados en la Póliza</span>
-            <button type="button" class="btn btn-sm btn-success" onclick="addAseguradoForm()">
-        <i class="fas fa-plus"></i> Añadir Asegurado
+            <button type="button" class="btn btn-sm btn-success" id="add-asegurado-form">
+                <i class="fas fa-plus"></i> Añadir Asegurado
             </button>
         </div>
         <div class="card-body">
@@ -96,20 +104,19 @@
             {% endif %}
 
             <div id="asegurado-forms-container">
-                {# Renderizamos solo los formularios que ya existen #}
                 {% for form in formset %}
-                    {% include 'polizas/_asegurado_form_snippet.html' with form=form %}
+                    {% if form.instance.pk %}
+                        {% include 'polizas/_asegurado_form_snippet.html' with form=form %}
+                    {% endif %}
                 {% endfor %}
             </div>
             
-            {# Mensaje por defecto si no hay formularios al cargar la página #}
             {% if not formset.forms %}
             <div id="no-asegurados-message">
                 <p class="text-muted">No hay asegurados registrados. Haz clic en "Añadir Asegurado" para agregar el primero.</p>
             </div>
             {% endif %}
 
-            {# Plantilla oculta para clonar con JavaScript #}
             <template id="empty-form-template">
                 {% include 'polizas/_asegurado_form_snippet.html' with form=formset.empty_form %}
             </template>
@@ -123,9 +130,51 @@
             <i class="fas fa-times"></i> Cancelar
         </a>
     </div>
+
 </form>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/poliza_form.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const addButton = document.getElementById('add-asegurado-form');
+    const container = document.getElementById('asegurado-forms-container');
+    const totalFormsInput = document.querySelector('input[name="asegurados-TOTAL_FORMS"]');
+    const emptyFormTemplate = document.getElementById('empty-form-template');
+    const noAseguradosMessage = document.getElementById('no-asegurados-message');
+
+    if (!addButton || !container || !totalFormsInput || !emptyFormTemplate) {
+        console.error("Error de inicialización: Faltan elementos del formset en el DOM. Revisa los IDs.");
+        return;
+    }
+
+    addButton.addEventListener('click', function() {
+        if (noAseguradosMessage) {
+            noAseguradosMessage.style.display = 'none';
+        }
+        let formNum = parseInt(totalFormsInput.value);
+        let newFormHtml = emptyFormTemplate.innerHTML.replace(/__prefix__/g, formNum);
+        container.insertAdjacentHTML('beforeend', newFormHtml);
+        totalFormsInput.value = formNum + 1;
+    });
+
+    container.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('remove-asegurado-form')) {
+            e.target.closest('.asegurado-form').remove();
+            if (container.children.length === 0 && noAseguradosMessage) {
+                noAseguradosMessage.style.display = 'block';
+            }
+        }
+        
+        if (e.target && e.target.getAttribute('name') && e.target.getAttribute('name').endsWith('-DELETE')) {
+            const formElement = e.target.closest('.asegurado-form');
+            if (e.target.checked) {
+                formElement.style.opacity = '0.5';
+            } else {
+                formElement.style.opacity = '1';
+            }
+        }
+    });
+});
+</script>
 {% endblock %}
