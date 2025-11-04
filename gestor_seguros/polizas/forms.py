@@ -52,11 +52,12 @@ AseguradoFormSet = inlineformset_factory(
     Poliza,
     Asegurado,
     form=AseguradoForm,
-    extra=1,          # <-- Empezar siempre con al menos 1 formulario vacío
+    extra=0,            # <-- CLAVE: No renderizar ningún formulario extra por defecto.
+    min_num=0,          # No requerir un mínimo de formularios.
+    validate_min=False,   # No validar el número mínimo.
     can_delete=True,
     fk_name='poliza'
 )
-
 class PolizaForm(forms.ModelForm):
     class Meta:
         model = Poliza
