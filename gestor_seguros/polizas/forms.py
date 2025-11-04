@@ -32,7 +32,6 @@ from .models import Poliza, Asegurado
 class AseguradoForm(forms.ModelForm):
     class Meta:
         model = Asegurado
-        # Todos los campos que el usuario puede editar
         fields = ['nombre_completo', 'cedula', 'fecha_nacimiento', 'parentesco', 'sexo', 'email', 'telefono', 'notas']
         widgets = {
             'fecha_nacimiento': forms.DateInput(attrs={'type': 'date'}),
@@ -41,23 +40,23 @@ class AseguradoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Hacemos todos los campos opcionales para máxima flexibilidad
-        for field_name, field in self.fields.items():
+        # Hacemos todos los campos opcionales para evitar validaciones no deseadas
+        for field in self.fields.values():
             field.required = False
-            # Asignamos clases CSS
             css_class = 'form-select' if isinstance(field.widget, forms.Select) else 'form-control'
             field.widget.attrs.update({'class': css_class})
 
-# --- Formset Factory (Configuración Simple y Permisiva) ---
+
+# --- Formset Factory (Configuración para Lógica de Servidor) ---
 AseguradoFormSet = inlineformset_factory(
     Poliza,
     Asegurado,
     form=AseguradoForm,
-    extra=1,            # No mostrar formularios vacíos al cargar la página
-    can_delete=True,    # Permitir eliminar asegurados existentes
+    extra=1,          # <-- Empezar siempre con al menos 1 formulario vacío
+    can_delete=True,
     fk_name='poliza'
-
 )
+
 class PolizaForm(forms.ModelForm):
     class Meta:
         model = Poliza
