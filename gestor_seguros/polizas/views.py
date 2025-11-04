@@ -13,7 +13,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db import transaction
 from .models import Poliza, Aseguradora,PagoCuota,Siniestro,Asegurado 
-from .forms import PolizaForm, AseguradoraForm,PagoCuotaForm,SiniestroForm,AseguradoForm 
+from .forms import PolizaForm, AseguradoraForm,PagoCuotaForm,SiniestroForm,AseguradoForm,AseguradoFormSet 
 from clientes.models import Cliente # Para el selector de clientes
 from django.db.models import F,Prefetch
 from django.forms import inlineformset_factory
@@ -24,18 +24,6 @@ from django.core.cache import cache
 from decimal import Decimal,InvalidOperation
 from .mixins import OwnerRequiredMixin
 
-
-# --- Factory para el Formset de Asegurados ---
-AseguradoFormSet = inlineformset_factory(
-    Poliza,
-    Asegurado,
-    form=AseguradoForm,
-    extra=0,            # 1. No se muestran formularios vacíos por defecto.
-    min_num=0,          # 2. El número mínimo de formularios requeridos es CERO.
-    validate_min=False,   # 3. Se desactiva explícitamente la validación del mínimo.
-    can_delete=True,
-    fk_name='poliza'
-)
 
 # Constantes para estados de póliza activos
 ESTADOS_POLIZA_ACTIVOS = ['VIGENTE', 'PENDIENTE_PAGO']
@@ -219,59 +207,27 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     template_name = 'polizas/poliza_form.html'
     success_message = "Póliza creada exitosamente."
 
-    def get_initial(self):
-        """
-        Pre-rellena el campo 'cliente' si se pasa un 'cliente_id' en la URL.
-        """
-        initial = super().get_initial()
-        cliente_id = self.request.GET.get('cliente_id')
-        if cliente_id:
-            try:
-                cliente = Cliente.objects.get(pk=cliente_id, usuario=self.request.user)
-                initial['cliente'] = cliente
-            except Cliente.DoesNotExist:
-                pass
-        return initial
-
     def get_context_data(self, **kwargs):
-        """
-        Añade el formset de asegurados al contexto.
-        """
         context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = "Crear Nueva Póliza"
         if self.request.POST:
             context['asegurados_formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
         else:
-            # Al crear una póliza, siempre mostramos 1 formulario vacío para el titular.
-            formset = AseguradoFormSet(prefix='asegurados')
-            formset.extra = 1
-            context['asegurados_formset'] = formset
-        context['titulo_pagina'] = "Crear Nueva Póliza"
+            context['asegurados_formset'] = AseguradoFormSet(prefix='asegurados')
         return context
 
     def form_valid(self, form):
-        """
-        Procesa el formulario principal y el formset de asegurados.
-        Ambos deben ser válidos para guardar los datos.
-        """
         context = self.get_context_data()
-        asegurados_formset = context['asegurados_formset']
-        
-        if form.is_valid() and asegurados_formset.is_valid():
+        formset = context['asegurados_formset']
+        if form.is_valid() and formset.is_valid():
             with transaction.atomic():
                 form.instance.usuario = self.request.user
                 self.object = form.save()
-                asegurados_formset.instance = self.object
-                asegurados_formset.save()
+                formset.instance = self.object
+                formset.save()
             return super().form_valid(form)
         else:
             return self.form_invalid(form)
-
-    def form_invalid(self, form):
-        """
-        Si algo no es válido, vuelve a renderizar la página con los errores.
-        """
-        messages.error(self.request, "Por favor, corrige los errores en el formulario.")
-        return super().form_invalid(form)
 
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
@@ -283,43 +239,24 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
     success_message = "Póliza actualizada exitosamente."
 
     def get_context_data(self, **kwargs):
-        """
-        Añade el formset de asegurados al contexto.
-        Si la póliza no tiene asegurados, muestra un formulario vacío.
-        """
         context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = "Editar Póliza"
         if self.request.POST:
             context['asegurados_formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
         else:
-            formset = AseguradoFormSet(instance=self.object, prefix='asegurados')
-            # Si es una póliza existente sin asegurados, forzamos un form extra.
-            if not formset.forms:
-                formset.extra = 1
-            context['asegurados_formset'] = formset
-        context['titulo_pagina'] = "Editar Póliza"
+            context['asegurados_formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
         return context
-    
+
     def form_valid(self, form):
-        """
-        Procesa el formulario principal y el formset de asegurados.
-        """
         context = self.get_context_data()
-        asegurados_formset = context['asegurados_formset']
-        
-        if form.is_valid() and asegurados_formset.is_valid():
+        formset = context['asegurados_formset']
+        if form.is_valid() and formset.is_valid():
             with transaction.atomic():
                 self.object = form.save()
-                asegurados_formset.save()
+                formset.save()
             return super().form_valid(form)
         else:
             return self.form_invalid(form)
-
-    def form_invalid(self, form):
-        """
-        Si algo no es válido, vuelve a renderizar la página con los errores.
-        """
-        messages.error(self.request, "Por favor, corrige los errores en el formulario.")
-        return super().form_invalid(form)
 
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})

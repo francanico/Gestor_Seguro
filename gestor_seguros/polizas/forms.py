@@ -24,9 +24,15 @@ class AseguradoraForm(forms.ModelForm):
                 field.widget.attrs['class'] = 'form-control'
 
 
+# polizas/forms.py
+from django import forms
+from django.forms import inlineformset_factory
+from .models import Poliza, Asegurado
+
 class AseguradoForm(forms.ModelForm):
     class Meta:
         model = Asegurado
+        # Todos los campos que el usuario puede editar
         fields = ['nombre_completo', 'cedula', 'fecha_nacimiento', 'parentesco', 'sexo', 'email', 'telefono', 'notas']
         widgets = {
             'fecha_nacimiento': forms.DateInput(attrs={'type': 'date'}),
@@ -35,33 +41,23 @@ class AseguradoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
+        # Hacemos todos los campos opcionales para máxima flexibilidad
+        for field_name, field in self.fields.items():
             field.required = False
-            field.widget.attrs['required'] = False
-            
-            # Aplicamos clases CSS
-            css_class = 'form-control'
-            if isinstance(field.widget, forms.Select):
-                css_class = 'form-select'
-            
-            if field.widget.attrs.get('class'):
-                field.widget.attrs['class'] += f' {css_class}'
-            else:
-                field.widget.attrs['class'] = css_class
+            # Asignamos clases CSS
+            css_class = 'form-select' if isinstance(field.widget, forms.Select) else 'form-control'
+            field.widget.attrs.update({'class': css_class})
 
-# --- CONFIGURACIÓN DEFINITIVA DEL FORMSET "TAMBIEN SE ENCUENTRA EN POLIZA.VIEWS 
-# OJOOOO HAY QUE CAMBIAR EN AMBOS LUGARES---
+# --- Formset Factory (Configuración Simple y Permisiva) ---
 AseguradoFormSet = inlineformset_factory(
     Poliza,
     Asegurado,
     form=AseguradoForm,
-    extra=0,            # 1. No se muestran formularios vacíos por defecto.
-    min_num=0,          # 2. El número mínimo de formularios requeridos es CERO.
-    validate_min=False,   # 3. Se desactiva explícitamente la validación del mínimo.
-    can_delete=True,
+    extra=0,            # No mostrar formularios vacíos al cargar la página
+    can_delete=True,    # Permitir eliminar asegurados existentes
     fk_name='poliza'
-)
 
+)
 class PolizaForm(forms.ModelForm):
     class Meta:
         model = Poliza
