@@ -2,79 +2,53 @@
 {% load widget_tweaks %}
 {% load static %}
 
-{% block title %}{{ titulo_pagina|default:"Formulario de Póliza" }}{% endblock %}
+{% block title %}{{ titulo_pagina }}{% endblock %}
 
 {% block content %}
-
 <div class="page-header">
-    <h2><i class="fas fa-file-signature"></i> {{ titulo_pagina|default:"Formulario de Póliza" }}</h2>
+    <h2><i class="fas fa-file-signature"></i> {{ titulo_pagina }}</h2>
 </div>
 
 <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
+    
+    <!-- Campo oculto para llevar la cuenta de cuántos formularios extra hemos añadido -->
+    <input type="hidden" name="extra_forms" value="{{ formset.extra }}">
 
-    <!-- ============================================= -->
-    <!-- Card 1: Datos Principales de la Póliza      -->
-    <!-- ============================================= -->
+    <!-- Card 1: Datos Principales de la Póliza -->
     <div class="card mb-4">
         <div class="card-header">Información de la Póliza</div>
         <div class="card-body">
             {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>{% endif %}
             <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="{{ form.cliente.id_for_label }}" class="form-label">{{ form.cliente.label }}</label>
-                    {% render_field form.cliente class+="form-select" %}
-                    {% for error in form.cliente.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                </div>
-                <div class="col-md-6">
-                    <label for="{{ form.aseguradora.id_for_label }}" class="form-label">{{ form.aseguradora.label }}</label>
-                    {% render_field form.aseguradora class+="form-select" %}
-                    {% for error in form.aseguradora.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                </div>
-                <div class="col-md-6">
-                    <label for="{{ form.numero_poliza.id_for_label }}" class="form-label">{{ form.numero_poliza.label }}</label>
-                    {% render_field form.numero_poliza class+="form-control" %}
-                    {% for error in form.numero_poliza.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                </div>
-                <div class="col-md-6">
-                    <label for="{{ form.ramo_tipo_seguro.id_for_label }}" class="form-label">{{ form.ramo_tipo_seguro.label }}</label>
-                    {% render_field form.ramo_tipo_seguro class+="form-control" placeholder="Ej: Vida, Auto, Hogar" %}
-                    {% for error in form.ramo_tipo_seguro.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                </div>
-                <div class="col-12">
-                    <label for="{{ form.descripcion_bien_asegurado.id_for_label }}" class="form-label">{{ form.descripcion_bien_asegurado.label }}</label>
-                    {% render_field form.descripcion_bien_asegurado class+="form-control" rows="2" placeholder="Ej: Placa Vehículo, Dirección Inmueble" %}
-                    {% for error in form.descripcion_bien_asegurado.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                </div>
+                <div class="col-md-6"><label class="form-label">{{ form.cliente.label }}</label>{% render_field form.cliente class+="form-select" %}</div>
+                <div class="col-md-6"><label class="form-label">{{ form.aseguradora.label }}</label>{% render_field form.aseguradora class+="form-select" %}</div>
+                <div class="col-md-6"><label class="form-label">{{ form.numero_poliza.label }}</label>{% render_field form.numero_poliza class+="form-control" %}</div>
+                <div class="col-md-6"><label class="form-label">{{ form.ramo_tipo_seguro.label }}</label>{% render_field form.ramo_tipo_seguro class+="form-control" %}</div>
+                <div class="col-12"><label class="form-label">{{ form.descripcion_bien_asegurado.label }}</label>{% render_field form.descripcion_bien_asegurado class+="form-control" rows="2" %}</div>
             </div>
         </div>
     </div>
 
-    <!-- ============================================= -->
-    <!-- Card 2: Vigencia, Pagos y Comisiones        -->
-    <!-- ============================================= -->
+    <!-- Card 2: Vigencia, Pagos y Comisiones -->
     <div class="card mb-4">
         <div class="card-header">Vigencia, Pagos y Comisiones</div>
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_emision.label }}</label>{% render_field form.fecha_emision class+="form-control" %}{% for error in form.fecha_emision.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_inicio_vigencia.label }}</label>{% render_field form.fecha_inicio_vigencia class+="form-control" %}{% for error in form.fecha_inicio_vigencia.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_fin_vigencia.label }}</label>{% render_field form.fecha_fin_vigencia class+="form-control" %}{% for error in form.fecha_fin_vigencia.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
-                
-                <div class="col-md-4"><label class="form-label">{{ form.prima_total_anual.label }}</label>{% render_field form.prima_total_anual class+="form-control" %}{% for error in form.prima_total_anual.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.frecuencia_pago.label }}</label>{% render_field form.frecuencia_pago class+="form-select" %}{% for error in form.frecuencia_pago.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.valor_cuota.label }}</label>{% render_field form.valor_cuota class+="form-control" %}{% for error in form.valor_cuota.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
-
-                <div class="col-md-4"><label class="form-label">{{ form.comision_monto.label }}</label>{% render_field form.comision_monto class+="form-control" %}{% for error in form.comision_monto.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_cobro_comision.label }}</label>{% render_field form.fecha_cobro_comision class+="form-control" %}{% for error in form.fecha_cobro_comision.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.fecha_emision.label }}</label>{% render_field form.fecha_emision class+="form-control" %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.fecha_inicio_vigencia.label }}</label>{% render_field form.fecha_inicio_vigencia class+="form-control" %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.fecha_fin_vigencia.label }}</label>{% render_field form.fecha_fin_vigencia class+="form-control" %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.prima_total_anual.label }}</label>{% render_field form.prima_total_anual class+="form-control" %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.frecuencia_pago.label }}</label>{% render_field form.frecuencia_pago class+="form-select" %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.valor_cuota.label }}</label>{% render_field form.valor_cuota class+="form-control" %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.comision_monto.label }}</label>{% render_field form.comision_monto class+="form-control" %}</div>
+                <div class="col-md-4"><label class="form-label">{{ form.fecha_cobro_comision.label }}</label>{% render_field form.fecha_cobro_comision class+="form-control" %}</div>
                 <div class="col-md-4 d-flex align-items-end"><div class="form-check mb-2">{% render_field form.comision_cobrada class+="form-check-input" %} <label for="{{ form.comision_cobrada.id_for_label }}" class="form-check-label">{{ form.comision_cobrada.label }}</label></div></div>
             </div>
         </div>
     </div>
     
-    <!-- ============================================= -->
-    <!-- Card 3: Otros Detalles y Archivos           -->
-    <!-- ============================================= -->
+    <!-- Card 3: Otros Detalles y Archivos -->
     <div class="card mb-4">
         <div class="card-header">Otros Detalles</div>
         <div class="card-body">
@@ -86,16 +60,9 @@
         </div>
     </div>
     
-    <!-- ============================================= -->
-    <!-- Card 4: Asegurados en la Póliza (Formset)   -->
-    <!-- ============================================= -->
+    <!-- Card 4: Asegurados en la Póliza (Formset) -->
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Asegurados en la Póliza</span>
-            <button type="button" class="btn btn-sm btn-success" id="add-asegurado-form">
-                <i class="fas fa-plus"></i> Añadir Asegurado
-            </button>
-        </div>
+        <div class="card-header">Asegurados en la Póliza</div>
         <div class="card-body">
             {{ formset.management_form }}
             
@@ -104,77 +71,52 @@
             {% endif %}
 
             <div id="asegurado-forms-container">
-                {% for form in formset %}
-                    {% if form.instance.pk %}
-                        {% include 'polizas/_asegurado_form_snippet.html' with form=form %}
-                    {% endif %}
+                {% for asegurado_form in formset %}
+                    <div class="asegurado-form mb-4 p-3 border rounded">
+                        {% include 'polizas/_asegurado_form_snippet.html' with form=asegurado_form %}
+                    </div>
                 {% endfor %}
             </div>
             
-            {% if not formset.forms %}
-            <div id="no-asegurados-message">
-                <p class="text-muted">No hay asegurados registrados. Haz clic en "Añadir Asegurado" para agregar el primero.</p>
-            </div>
-            {% endif %}
-
-            <template id="empty-form-template">
-                {% include 'polizas/_asegurado_form_snippet.html' with form=formset.empty_form %}
-            </template>
+            <!-- Botón para añadir otro formulario (ahora es un submit) -->
+            <button type="submit" name="add_item" value="true" class="btn btn-sm btn-success">
+                <i class="fas fa-plus"></i> Añadir Otro Asegurado
+            </button>
         </div>
     </div>
 
     <!-- Botones de Acción Finales -->
     <div class="mt-4">
-        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Cambios</button>
+        <button type="submit" name="save_changes" value="true" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Cambios</button>
         <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'polizas:lista_polizas' %}{% endif %}" class="btn btn-secondary">
             <i class="fas fa-times"></i> Cancelar
         </a>
     </div>
-
 </form>
 {% endblock %}
 
 {% block extra_js %}
+<!-- Script opcional para dar feedback visual al marcar 'Eliminar' -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const addButton = document.getElementById('add-asegurado-form');
     const container = document.getElementById('asegurado-forms-container');
-    const totalFormsInput = document.querySelector('input[name="asegurados-TOTAL_FORMS"]');
-    const emptyFormTemplate = document.getElementById('empty-form-template');
-    const noAseguradosMessage = document.getElementById('no-asegurados-message');
-
-    if (!addButton || !container || !totalFormsInput || !emptyFormTemplate) {
-        console.error("Error de inicialización: Faltan elementos del formset en el DOM. Revisa los IDs.");
-        return;
+    if (container) {
+        container.addEventListener('click', function(e) {
+            // Este listener solo se encarga del efecto visual, no de la funcionalidad
+            if (e.target && e.target.getAttribute('name') && e.target.getAttribute('name').endsWith('-DELETE')) {
+                const formElement = e.target.closest('.asegurado-form');
+                if (formElement) {
+                    if (e.target.checked) {
+                        formElement.style.opacity = '0.5';
+                        formElement.style.backgroundColor = '#ffebee'; // Un rojo claro
+                    } else {
+                        formElement.style.opacity = '1';
+                        formElement.style.backgroundColor = 'transparent';
+                    }
+                }
+            }
+        });
     }
-
-    addButton.addEventListener('click', function() {
-        if (noAseguradosMessage) {
-            noAseguradosMessage.style.display = 'none';
-        }
-        let formNum = parseInt(totalFormsInput.value);
-        let newFormHtml = emptyFormTemplate.innerHTML.replace(/__prefix__/g, formNum);
-        container.insertAdjacentHTML('beforeend', newFormHtml);
-        totalFormsInput.value = formNum + 1;
-    });
-
-    container.addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('remove-asegurado-form')) {
-            e.target.closest('.asegurado-form').remove();
-            if (container.children.length === 0 && noAseguradosMessage) {
-                noAseguradosMessage.style.display = 'block';
-            }
-        }
-        
-        if (e.target && e.target.getAttribute('name') && e.target.getAttribute('name').endsWith('-DELETE')) {
-            const formElement = e.target.closest('.asegurado-form');
-            if (e.target.checked) {
-                formElement.style.opacity = '0.5';
-            } else {
-                formElement.style.opacity = '1';
-            }
-        }
-    });
 });
 </script>
 {% endblock %}
