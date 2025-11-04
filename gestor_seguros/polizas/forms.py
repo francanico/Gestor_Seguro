@@ -53,7 +53,7 @@ AseguradoFormSet = inlineformset_factory(
     Poliza,
     Asegurado,
     form=AseguradoForm,
-    extra=0,            # No mostrar formularios vacíos al cargar la página
+    extra=1,            # No mostrar formularios vacíos al cargar la página
     can_delete=True,    # Permitir eliminar asegurados existentes
     fk_name='poliza'
 
