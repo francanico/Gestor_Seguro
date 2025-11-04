@@ -31,7 +31,7 @@ class ClienteDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         obj = self.get_object()
         context['polizas_cliente'] = obj.polizas.all().order_by('-fecha_fin_vigencia')
-        context['content_type'] = ContentType.objects.get_for_model(obj) # <-- LÍNEA CLAVE
+        context['content_type'] = ContentType.objects.get_for_model(self.get_object())
         return context
     
     def get_queryset(self):

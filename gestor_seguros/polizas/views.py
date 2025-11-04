@@ -48,12 +48,21 @@ class AseguradoraDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Obtenemos las pólizas asociadas a esta aseguradora y que pertenecen al usuario
-        context['polizas_asociadas'] = self.object.polizas.filter(
+        
+        # Obtenemos el objeto actual (la aseguradora)
+        obj = self.get_object()
+        
+        # Obtenemos las pólizas asociadas
+        context['polizas_asociadas'] = obj.polizas.filter(
             usuario=self.request.user
         ).select_related('cliente').order_by('-fecha_fin_vigencia')
+        
+        # --- LÍNEA CLAVE A AÑADIR/VERIFICAR ---
+        # Pasamos el ContentType de este objeto a la plantilla
+        context['content_type'] = ContentType.objects.get_for_model(obj)
+        
         return context
-
+    
 class AseguradoraCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Aseguradora
     form_class = AseguradoraForm
@@ -192,9 +201,7 @@ class PolizaDetailView(LoginRequiredMixin,OwnerRequiredMixin, DetailView):
 
         
         # ContentType para uso en formularios genéricos
-        obj = self.get_object()
-        context['content_type'] = ContentType.objects.get_for_model(obj)
-        
+        context['content_type'] = ContentType.objects.get_for_model(self.get_object())
         return context
 
     def post(self, request, *args, **kwargs):
@@ -514,6 +521,7 @@ class SiniestroCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # Asegura que solo se puedan crear siniestros para pólizas del usuario
         context['poliza'] = get_object_or_404(Poliza, pk=self.kwargs['poliza_pk'], usuario=self.request.user)
         context['titulo_pagina'] = "Reportar Nuevo Siniestro"
         return context
@@ -523,19 +531,40 @@ class SiniestroCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         form.instance.poliza = poliza
         form.instance.usuario = self.request.user
         return super().form_valid(form)
+    
+    def get_success_url(self):
+        # Redirige al detalle del siniestro recién creado
+        return reverse_lazy('polizas:detalle_siniestro', kwargs={'pk': self.object.pk})
 
 class SiniestroDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
     model = Siniestro
     template_name = 'polizas/siniestro_detail.html'
+    context_object_name = 'siniestro' # Es buena práctica definir el nombre del objeto
     
     def get_queryset(self):
         return super().get_queryset().select_related('poliza', 'poliza__cliente')
+
+    # --- MÉTODO AÑADIDO ---
+    def get_context_data(self, **kwargs):
+        """
+        Añade el 'content_type' al contexto para la sección de documentos.
+        """
+        context = super().get_context_data(**kwargs)
+        
+        # Obtenemos el objeto actual (el siniestro)
+        obj = self.get_object()
+        
+        # Pasamos su ContentType a la plantilla
+        context['content_type'] = ContentType.objects.get_for_model(obj)
+        
+        return context
 
 class SiniestroUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Siniestro
     form_class = SiniestroForm
     template_name = 'polizas/siniestro_form.html'
     success_message = "Siniestro actualizado exitosamente."
+    context_object_name = 'siniestro' # Buena práctica
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -545,10 +574,10 @@ class SiniestroUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessage
 class SiniestroDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     model = Siniestro
     template_name = 'polizas/siniestro_confirm_delete.html'
+    context_object_name = 'siniestro' # Buena práctica
     
     def get_success_url(self):
         messages.success(self.request, "Siniestro eliminado exitosamente.")
-        # Redirige al detalle de la póliza a la que pertenecía el siniestro
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.poliza.pk})
 #---(END VISTAS SINIESTROS)---
 
