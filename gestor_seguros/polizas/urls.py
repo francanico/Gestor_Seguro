@@ -18,7 +18,8 @@ urlpatterns = [
 
     # URLs para Aseguradoras
     path('aseguradoras/', views.AseguradoraListView.as_view(), name='lista_aseguradoras'),
-    path('aseguradoras/nueva/', views.AseguradoraCreateView.as_view(), name='crear_aseguradora'),
+    path('aseguradoras/nueva/', views.AseguradoraCreateView.as_view(), name='crear_aseguradora'), # <-- La línea que da el error
+    path('aseguradoras/<int:pk>/', views.AseguradoraDetailView.as_view(), name='detalle_aseguradora'),
     path('aseguradoras/<int:pk>/editar/', views.AseguradoraUpdateView.as_view(), name='editar_aseguradora'),
     path('aseguradoras/<int:pk>/eliminar/', views.AseguradoraDeleteView.as_view(), name='eliminar_aseguradora'),
 
