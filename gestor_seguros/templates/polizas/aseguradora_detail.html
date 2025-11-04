@@ -7,7 +7,7 @@
 {% block content %}
 
 <div class="page-header">
-    <h2><i class="fas fa-landmark"></i> Detalle de Aseguradora</h2>
+    <h2><i class="fas fa-landmark"></i> Detalle: {{ aseguradora.nombre }}</h2>
     <div>
         <a href="{% url 'polizas:editar_aseguradora' aseguradora.pk %}" class="btn btn-warning"><i class="fas fa-edit"></i> Editar Aseguradora</a>
         <a href="{% url 'polizas:lista_aseguradoras' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver a la Lista</a>
@@ -17,7 +17,7 @@
 <!-- Card de Información de la Aseguradora -->
 <div class="card mb-4">
     <div class="card-header">
-        Información de Contacto: {{ aseguradora.nombre }}
+        Información de Contacto
     </div>
     <div class="card-body">
         <div class="row">
@@ -34,79 +34,80 @@
     </div>
 </div>
 
-<!-- Tabla de Pólizas Asociadas -->
-<div class="table-container">
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="table-dark">
-                <tr>
-                    <th colspan="7" class="text-center">Pólizas Asociadas a {{ aseguradora.nombre }} ({{ polizas_asociadas.count }})</th>
-                </tr>
-                <tr>
-                    <th># Póliza</th>
-                    <th>Cliente</th>
-                    <th>Ramo</th>
-                    <th>Fin Vigencia</th>
-                    <th>Estado Renov.</th>
-                    <th class="text-end">Prima Anual</th>
-                    <th class="text-center">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for poliza in polizas_asociadas %}
-                <tr>
-                    <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
-                    <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
-                    <td>{{ poliza.ramo_tipo_seguro }}</td>
-                    <td>{{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</td>
-                    <td>
-                        <!-- ============================================== -->
-                        <!-- LÓGICA DE ESTADO DE RENOVACIÓN CORREGIDA       -->
-                        <!-- ============================================== -->
-                        {% with estado=poliza.estado_renovacion dias=poliza.dias_para_renovar %}
-                            {% if estado == "Vencida" %}
-                                <span class="badge bg-danger">{{ estado }}</span>
-                            {% elif estado == "Crítico (0-30 días)" %}
-                                <span class="badge bg-warning text-dark">Crítico</span>
-                            {% elif estado == "Próximo (31-90 días)" %}
-                                <span class="badge bg-info text-dark">Próximo</span>
-                            {% elif estado == "Pendiente Activación" %}
-                                <span class="badge bg-primary">{{ estado }}</span>
-                            {% elif estado == "Vigente" %}
-                                <span class="badge bg-success">{{ estado }}</span>
-                            {% else %}
-                                <span class="badge bg-secondary">{{ poliza.get_estado_poliza_display }}</span>
-                            {% endif %}
-                            
-                            {% if dias is not None and estado != "Gestionada" and estado != "Pendiente Activación" %}
-                                {% if dias < 0 %}
-                                    {# Aquí está la corrección: usamos 'slice' #}
-                                    <small class="text-muted d-block mt-1">(hace {{ dias|slice:"1:" }} día{{ dias|slice:"1:"|pluralize }})</small>
+<!-- Tabla de Pólizas Asociadas a esta Aseguradora -->
+<div class="card mb-4">
+    <div class="card-header">
+        Pólizas Asociadas ({{ polizas_asociadas.count }})
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th># Póliza</th>
+                        <th>Cliente Contratante</th>
+                        <th>Ramo</th>
+                        <th>Fin Vigencia</th>
+                        <th>Estado Renov.</th>
+                        <th class="text-end">Prima Anual</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for poliza in polizas_asociadas %}
+                    <tr>
+                        <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
+                        <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
+                        <td>{{ poliza.ramo_tipo_seguro }}</td>
+                        <td>{{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</td>
+                        <td>
+                            <!-- Lógica de Estado de Renovación -->
+                            {% with estado=poliza.estado_renovacion dias=poliza.dias_para_renovar %}
+                                {% if estado == "Vencida" %}
+                                    <span class="badge bg-danger">{{ estado }}</span>
+                                {% elif estado == "Crítico (0-30 días)" %}
+                                    <span class="badge bg-warning text-dark">Crítico</span>
+                                {% elif estado == "Próximo (31-90 días)" %}
+                                    <span class="badge bg-info text-dark">Próximo</span>
+                                {% elif estado == "Pendiente Activación" or estado == "En Trámite" or estado == "Pendiente de Pago" %}
+                                    <span class="badge bg-primary">{{ estado }}</span>
+                                {% elif estado == "Vigente" %}
+                                    <span class="badge bg-success">{{ estado }}</span>
                                 {% else %}
-                                    <small class="text-muted d-block mt-1">({{ dias }} día{{ dias|pluralize }})</small>
+                                    <span class="badge bg-secondary">{{ poliza.get_estado_poliza_display }}</span>
                                 {% endif %}
-                            {% endif %}
-                        {% endwith %}
-                    </td>
-                    <td class="text-end">${{ poliza.prima_total_anual|floatformat:2|intcomma }}</td>
-                    <td class="text-center">
-                        <div class="action-buttons btn-group" role="group">
-                            <a href="{{ poliza.get_absolute_url }}" class="btn btn-info" title="Ver Póliza"><i class="fas fa-eye"></i></a>
-                            <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-warning" title="Editar Póliza"><i class="fas fa-edit"></i></a>
-                        </div>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="text-center text-muted p-4">Esta aseguradora no tiene pólizas registradas en el sistema.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                                
+                                {% if dias is not None and estado != "Gestionada" and estado != "Pendiente Activación" and estado != "En Trámite" and estado != "Pendiente de Pago" %}
+                                    {% if dias < 0 %}
+                                        <small class="text-muted d-block mt-1">(hace {{ dias|slice:"1:" }} día{{ dias|slice:"1:"|pluralize }})</small>
+                                    {% else %}
+                                        <small class="text-muted d-block mt-1">({{ dias }} día{{ dias|pluralize }})</small>
+                                    {% endif %}
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td class="text-end">${{ poliza.prima_total_anual|floatformat:2|intcomma }}</td>
+                        <td class="text-center">
+                            <div class="action-buttons btn-group" role="group">
+                                <a href="{{ poliza.get_absolute_url }}" class="btn btn-info" title="Ver Póliza"><i class="fas fa-eye"></i></a>
+                                <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-warning" title="Editar Póliza"><i class="fas fa-edit"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted p-4">Esta aseguradora no tiene pólizas registradas en el sistema.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
-<!-- Incluimos la sección de documentos -->
-{% include "_documentos_seccion.html" %}
+<!-- Sección de Documentos -->
+{% if content_type %}
+    {% include "_documentos_seccion.html" %}
+{% endif %}
 
 {% endblock %}

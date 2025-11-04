@@ -31,6 +31,9 @@ ESTADOS_POLIZA_ACTIVOS = ['VIGENTE', 'PENDIENTE_PAGO']
 # ==========================================================
 # VISTAS PARA EL CRUD DE ASEGURADORAS (A RESTAURAR)
 # ==========================================================
+# ==========================================================
+# VISTAS PARA EL CRUD DE ASEGURADORAS (CÓDIGO FINAL)
+# ==========================================================
 
 class AseguradoraListView(LoginRequiredMixin, ListView):
     model = Aseguradora
@@ -48,21 +51,11 @@ class AseguradoraDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
-        # Obtenemos el objeto actual (la aseguradora)
         obj = self.get_object()
-        
-        # Obtenemos las pólizas asociadas
-        context['polizas_asociadas'] = obj.polizas.filter(
-            usuario=self.request.user
-        ).select_related('cliente').order_by('-fecha_fin_vigencia')
-        
-        # --- LÍNEA CLAVE A AÑADIR/VERIFICAR ---
-        # Pasamos el ContentType de este objeto a la plantilla
+        context['polizas_asociadas'] = obj.polizas.filter(usuario=self.request.user).select_related('cliente').order_by('-fecha_fin_vigencia')
         context['content_type'] = ContentType.objects.get_for_model(obj)
-        
         return context
-    
+
 class AseguradoraCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Aseguradora
     form_class = AseguradoraForm
@@ -95,6 +88,7 @@ class AseguradoraDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     model = Aseguradora
     template_name = 'polizas/aseguradora_confirm_delete.html'
     success_url = reverse_lazy('polizas:lista_aseguradoras')
+    context_object_name = 'aseguradora'
     
     def form_valid(self, form):
         messages.success(self.request, f"Aseguradora '{self.object.nombre}' eliminada exitosamente.")
