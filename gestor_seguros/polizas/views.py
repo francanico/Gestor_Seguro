@@ -64,8 +64,8 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
             return self.form_invalid(form)
 
     def get_success_url(self):
-        return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})    
-    
+        return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
+
 class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Poliza
     form_class = PolizaForm
