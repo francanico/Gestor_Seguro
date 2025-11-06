@@ -47,7 +47,7 @@
                                 <li><a class="dropdown-item" href="{% url 'cuentas:perfil_usuario' %}"><i class="fas fa-user-cog fa-fw me-2"></i> Mi Perfil</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
-                                    <form method="post" action="{% url 'logout' %}"><button type="submit" class="dropdown-item"><i class="fas fa-sign-out-alt fa-fw me-2"></i> Cerrar Sesión</button></form>
+                                    <form method="post" action="{% url 'logout' %}"> {% csrf_token %} <button type="submit" class="dropdown-item"><i class="fas fa-sign-out-alt fa-fw me-2"></i> Cerrar Sesión</button></form>
                                 </li>
                             </ul>
                         </li>

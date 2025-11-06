@@ -77,6 +77,19 @@ class Poliza(models.Model):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='polizas')
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name="polizas_contratadas", verbose_name="Cliente Contratante/Tomador")
 
+# --- NUEVO CAMPO PARA ENLAZAR RENOVACIONES ---
+    # `self` significa que la relación es con el mismo modelo.
+    # `on_delete=models.SET_NULL` por si la póliza original se borra, no perder la renovación.
+    renovacion_de = models.ForeignKey(
+        'self', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='renovaciones',
+        verbose_name="Es renovación de"
+    )
+
+
     FRECUENCIA_PAGO_CHOICES = [
         ('UNICO', 'Pago Único'), # Volvemos a un nombre más claro
         ('MENSUAL', 'Mensual'),
@@ -244,7 +257,11 @@ class Poliza(models.Model):
         verbose_name = "Póliza"
         verbose_name_plural = "Pólizas"
         ordering = ['-fecha_fin_vigencia', 'cliente']
-        unique_together = ('usuario', 'numero_poliza')
+        # --- RESTRICCIÓN DE UNICIDAD ---
+        # Una póliza es única por la combinación de su número, usuario Y fecha de inicio.
+        # Esto permite tener "123" para 2025 y "123" para 2026.
+        unique_together = ('usuario', 'numero_poliza', 'fecha_inicio_vigencia')
+
 
 class PagoCuota(models.Model):
     ESTADO_PAGO_CHOICES = [

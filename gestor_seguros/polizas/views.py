@@ -324,62 +324,43 @@ class PolizaDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
 def renovar_poliza(request, pk):
     poliza_original = get_object_or_404(Poliza, pk=pk, usuario=request.user)
     
-    # --- LÓGICA DE RENOVACIÓN CORREGIDA ---
-    # ¡CRUCIAL! Crear una COPIA REAL del objeto de la póliza
-    poliza_nueva = copy.copy(poliza_original)
+    # Creamos una nueva instancia de póliza (copia en memoria)
+    poliza_nueva = poliza_original
     poliza_nueva.pk = None
     poliza_nueva.id = None
-    poliza_nueva.usuario = request.user # Aseguramos que el usuario es el mismo
     
-    # Sumamos exactamente un año a las fechas de vigencia
+    # --- LÓGICA DE RENOVACIÓN CORREGIDA ---
+    poliza_nueva.numero_poliza = poliza_original.numero_poliza # <-- MANTENEMOS EL MISMO NÚMERO
+    
+    # Enlazamos la nueva póliza con la original
+    poliza_nueva.renovacion_de = poliza_original
+    
+    # Calculamos las nuevas fechas sumando un año
     if poliza_original.fecha_inicio_vigencia and poliza_original.fecha_fin_vigencia:
-        poliza_nueva.fecha_inicio_vigencia = poliza_original.fecha_inicio_vigencia + relativedelta(years=1)
-        poliza_nueva.fecha_fin_vigencia = poliza_original.fecha_fin_vigencia + relativedelta(years=1)
-    else:
-        # Si no hay fechas de vigencia, podemos establecer unas por defecto
-        poliza_nueva.fecha_inicio_vigencia = timezone.localtime(timezone.now()).date()
-        poliza_nueva.fecha_fin_vigencia = timezone.localtime(timezone.now()).date() + relativedelta(years=1)
+        poliza_nueva.fecha_inicio_vigencia += relativedelta(years=1)
+        poliza_nueva.fecha_fin_vigencia += relativedelta(years=1)
 
-
-    # Reiniciamos los estados para la nueva póliza
-    poliza_nueva.estado_poliza = 'EN_TRAMITE' # Inicia como "En Trámite"
+    # Reiniciamos los estados
+    poliza_nueva.estado_poliza = 'EN_TRAMITE'
     poliza_nueva.comision_cobrada = False
     poliza_nueva.fecha_cobro_comision = None
-    poliza_nueva.fecha_emision = timezone.localtime(timezone.now()).date()
-    # Generar un número de póliza sugerido para la renovación
-    # Nos aseguramos de que sea único añadiendo un timestamp si ya existe
-    base_numero_poliza = f"{poliza_original.numero_poliza}-R"
-    num_suffix = 1
-    while Poliza.objects.filter(usuario=request.user, numero_poliza=base_numero_poliza).exists():
-        base_numero_poliza = f"{poliza_original.numero_poliza}-R{num_suffix}"
-        num_suffix += 1
-    poliza_nueva.numero_poliza = base_numero_poliza
-
-
-    poliza_nueva.save() # Guardamos la nueva póliza
-
-
-    # --- Copiar Asegurados (y Pagos, Siniestros si fuera necesario) ---
-    # Copiamos los asegurados de la póliza original a la nueva.
-    for asegurado_original in poliza_original.asegurados.all():
-        asegurado_nuevo = copy.copy(asegurado_original)
-        asegurado_nuevo.pk = None
-        asegurado_nuevo.id = None
-        asegurado_nuevo.poliza = poliza_nueva # Asignar a la nueva póliza
-        asegurado_nuevo.save()
+    poliza_nueva.fecha_emision = timezone.now().date()
     
-    # IMPORTANTE: Los pagos y siniestros NO deben copiarse en una renovación.
-    # Son eventos específicos de la vigencia de la póliza original.
-
+    poliza_nueva.save() # Guardamos la nueva póliza (versión renovada)
 
     # Marcamos la póliza original como RENOVADA
     poliza_original.estado_poliza = 'RENOVADA'
     poliza_original.save()
 
-    messages.info(request, f"Póliza {poliza_original.numero_poliza} marcada como renovada. "
-                        f"Gestiona los detalles de la nueva póliza de renovación: {poliza_nueva.numero_poliza}.")
+    # Importante: Copiamos los asegurados de la póliza original a la nueva
+    for asegurado in poliza_original.asegurados.all():
+        asegurado.pk = None
+        asegurado.id = None
+        asegurado.poliza = poliza_nueva
+        asegurado.save()
+
+    messages.info(request, f"Póliza {poliza_original.numero_poliza} marcada como renovada. Revisa los detalles de la nueva póliza.")
     
-    # Redirigimos al formulario de EDICIÓN de la NUEVA póliza para confirmar datos
     return redirect('polizas:editar_poliza', pk=poliza_nueva.pk)
 
 # --- Dashboard y Recordatorios ---
