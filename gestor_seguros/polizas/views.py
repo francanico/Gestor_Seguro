@@ -399,7 +399,7 @@ def dashboard_view(request):
     # --- QUERIES BASE OPTIMIZADOS ---
     
     # Usamos prefetch_related para cargar todos los pagos de cuotas en una sola consulta extra
-    prefetch_pagos = Prefetch('pagos_cuotas', queryset=PagoCuota.objects.order_by('-fecha_cuota_correspondiente'))
+    prefetch_pagos = Prefetch('cuotas', queryset=PagoCuota.objects.order_by('fecha_vencimiento_cuota'))
     
     polizas_activas_y_pendientes = Poliza.objects.filter(
         usuario=request.user
@@ -408,7 +408,7 @@ def dashboard_view(request):
     ).select_related(
         'cliente', 'aseguradora'
     ).prefetch_related(
-        prefetch_pagos # <-- APLICAMOS LA PRE-CARGA
+        prefetch_pagos
     )
     # --- CÁLCULOS PARA EL DASHBOARD ---
 
