@@ -213,11 +213,6 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Editar Póliza"
-        
-        # Esta lógica es para la recarga de página al añadir formularios
-        extra_forms = int(self.request.POST.get('extra_forms', 1)) if self.request.POST else 1
-        AseguradoFormSet = inlineformset_factory(Poliza, Asegurado, form=AseguradoForm, extra=extra_forms, can_delete=True)
-
         if 'formset' not in kwargs:
             if self.request.POST:
                 context['formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
@@ -228,10 +223,13 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         form = self.get_form()
-        
-        # --- LÓGICA PARA EL BOTÓN "AÑADIR OTRO" ---
+
         if 'add_item' in request.POST:
-            return self.form_invalid(form) # Re-renderiza la página con un form extra
+            formset = AseguradoFormSet(request.POST, instance=self.object, prefix='asegurados')
+            # --- LÓGICA CORREGIDA ---
+            # Forzamos un formulario extra además de los existentes
+            formset.extra = len(formset.forms) + 0
+            return self.render_to_response(self.get_context_data(form=form, formset=formset))
 
         # --- LÓGICA DE GUARDADO NORMAL ---
         AseguradoFormSet = inlineformset_factory(Poliza, Asegurado, form=AseguradoForm, extra=0, can_delete=True)
@@ -285,11 +283,31 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Crear Nueva Póliza"
-        if self.request.POST:
-            context['formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
-        else:
-            context['formset'] = AseguradoFormSet(prefix='asegurados')
+        if 'formset' not in kwargs:
+            if self.request.POST:
+                context['formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
+            else:
+                context['formset'] = AseguradoFormSet(prefix='asegurados')
         return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = None
+        form = self.get_form()
+        
+        if 'add_item' in request.POST:
+            # Creamos un formset con los datos POST para que se conserven
+            formset = AseguradoFormSet(request.POST, prefix='asegurados')
+            # --- LÓGICA CORREGIDA ---
+            # Forzamos un formulario extra además de los existentes
+            formset.extra = len(formset.forms) + 1
+            return self.render_to_response(self.get_context_data(form=form, formset=formset))
+
+        # Flujo de guardado normal
+        formset = AseguradoFormSet(request.POST, prefix='asegurados')
+        if form.is_valid() and formset.is_valid():
+            return self.form_valid(form, formset)
+        else:
+            return self.form_invalid(form, formset)
 
     def form_valid(self, form):
         context = self.get_context_data()
