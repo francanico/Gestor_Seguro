@@ -58,10 +58,11 @@
             </div>
         </div>
 
-        #-------------------Historial De Renovaciones------------------ #
+#-------------------Historial De Renovaciones------------------ #
 
-<hr>
-<h6>Historial de Renovaciones</h6>
+<div class="card mb-4">
+    <div class="card-header">Historial de Renovaciones</div>
+    <div class="card-body">
 {% if poliza.renovacion_de %}
     <p>Esta póliza es una renovación de: <a href="{{ poliza.renovacion_de.get_absolute_url }}">{{ poliza.renovacion_de.numero_poliza }} (Vigencia: {{ poliza.renovacion_de.fecha_inicio_vigencia|date:"Y" }})</a></p>
 {% endif %}
@@ -76,9 +77,9 @@
 {% if not poliza.renovacion_de and not poliza.renovaciones.all %}
     <p class="text-muted">Esta es la primera vigencia de esta póliza.</p>
 {% endif %}
-        #-------------------------------------------------------------- #
+</div>  
 
-        #-------------------Historial De Siniestros-------------------- #
+#-------------------Historial De Siniestros-------------------- #
 
         <div class="card mb-4">
             <div class="card-header">Historial de Siniestros</div>
@@ -86,7 +87,7 @@
             </div>
         </div>
     </div>
-        #------------------------------------------------------------- #
+#------------------------------------------------------------- #
 
     <!-- Columna Derecha: Pagos y Comisiones -->
     <div class="col-lg-5">
