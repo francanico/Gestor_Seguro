@@ -39,9 +39,12 @@
     </div>
 </div>
 
+<!-- =============================== -->
+<!-- SECCIÓN DE PÓLIZAS ASOCIADAS (CORREGIDA) -->
+<!-- =============================== -->
 <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
     <h3><i class="fas fa-file-invoice"></i> Pólizas Asociadas</h3>
-     <a href="{% url 'polizas:crear_poliza' %}?cliente_id={{ cliente.pk }}" class="btn btn-success"><i class="fas fa-plus"></i> Añadir Póliza para este Cliente</a>
+    <a href="{% url 'polizas:crear_poliza' %}?cliente_id={{ cliente.pk }}" class="btn btn-success"><i class="fas fa-plus"></i> Añadir Póliza para este Cliente</a>
 </div>
 
 <div class="table-container">
@@ -67,7 +70,7 @@
                     <td>{{ poliza.fecha_inicio_vigencia|date:"d/m/Y" }}</td>
                     <td>{{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</td>
                     <td>
-                        <!-- Usamos la misma lógica de estado que en poliza_list.html para consistencia -->
+                        <!-- Lógica de Estado (consistente con otras plantillas) -->
                         {% with estado=poliza.estado_renovacion %}
                             {% if estado == "Vencida" %} <span class="badge bg-danger">{{ estado }}</span>
                             {% elif estado == "Crítico (0-30 días)" %} <span class="badge bg-warning text-dark">Crítico</span>
@@ -79,9 +82,6 @@
                         {% endwith %}
                     </td>
                     <td class="text-center">
-                        <!-- =============================== -->
-                        <!-- BOTÓN DE ELIMINAR AÑADIDO       -->
-                        <!-- =============================== -->
                         <div class="action-buttons btn-group" role="group">
                             <a href="{{ poliza.get_absolute_url }}" class="btn btn-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
                             <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-warning" title="Editar Póliza"><i class="fas fa-edit"></i></a>
@@ -91,15 +91,15 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" class="text-center text-muted p-4">Este cliente no tiene pólizas registradas.</td>
+                    <td colspan="7" class="text-center text-muted p-4">
+                        Este cliente no tiene pólizas registradas.
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-{% else %}
-<div class="alert alert-secondary">Este cliente no tiene pólizas registradas.</div>
-{% endif %}
+</div>
 
 {% include "_documentos_seccion.html" %}
 
