@@ -213,6 +213,7 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Editar Póliza"
+        # Usamos 'formset' consistentemente
         if 'formset' not in kwargs:
             if self.request.POST:
                 context['formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
@@ -223,54 +224,35 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         form = self.get_form()
+        formset = AseguradoFormSet(request.POST, instance=self.object, prefix='asegurados') # <-- Definimos 'formset'
 
         if 'add_item' in request.POST:
-            formset = AseguradoFormSet(request.POST, instance=self.object, prefix='asegurados')
-            # --- LÓGICA CORREGIDA ---
-            # Forzamos un formulario extra además de los existentes
-            formset.extra = len(formset.forms) + 0
-            return self.render_to_response(self.get_context_data(form=form, formset=formset))
-
-        # --- LÓGICA DE GUARDADO NORMAL ---
-        AseguradoFormSet = inlineformset_factory(Poliza, Asegurado, form=AseguradoForm, extra=0, can_delete=True)
-        formset = AseguradoFormSet(request.POST, instance=self.object, prefix='asegurados')
+            # La lógica de recarga de página para añadir un ítem.
+            # Necesitamos reconstruir el formset con un extra.
+            # OJO: Esta es la lógica para el método SIN JS.
+            form_data = request.POST.copy()
+            form_count = int(form_data.get('asegurados-TOTAL_FORMS', 0))
+            form_data['asegurados-TOTAL_FORMS'] = str(form_count + 1)
+            
+            # Recreamos el formset con los datos modificados
+            formset_con_extra = AseguradoFormSet(form_data, instance=self.object, prefix='asegurados')
+            return self.render_to_response(self.get_context_data(form=form, formset=formset_con_extra))
 
         if form.is_valid() and formset.is_valid():
-            with transaction.atomic():
-                # Primero guardamos los formularios
-                self.object = form.save()
-                formset.save()
-                
-                # --- AHORA, GENERAMOS EL PLAN DE PAGOS ---
-                self.object.generar_plan_de_pagos()
-            
-            messages.success(request, self.success_message)
-            return HttpResponseRedirect(self.get_success_url())
+            return self.form_valid(form, formset)
         else:
-            # Si algo no es válido, volvemos a llamar a form_invalid
-            return self.form_invalid(form)
-
-    def form_invalid(self, form):
-        """
-        Maneja tanto los errores de validación como la petición de añadir un nuevo formulario.
-        """
-        extra_forms = int(self.request.POST.get('extra_forms', 1))
-        
-        if 'add_item' in self.request.POST:
-            extra_forms += 1
-        
-        AseguradoFormSet = inlineformset_factory(Poliza, Asegurado, form=AseguradoForm, extra=extra_forms, can_delete=True)
-        formset = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
-
-        # Guardamos el número de extras para la próxima recarga
-        form.data = form.data.copy()
-        form.data['extra_forms'] = extra_forms
-
-        if 'add_item' not in self.request.POST:
-            messages.error(self.request, "Por favor, corrige los errores.")
-
-        return self.render_to_response(self.get_context_data(form=form, formset=formset))
+            return self.form_invalid(form, formset)
             
+    def form_valid(self, form, formset):
+        with transaction.atomic():
+            self.object = form.save()
+            formset.save()
+        return super().form_valid(form)
+    
+    def form_invalid(self, form, formset):
+        messages.error(self.request, "Por favor, corrige los errores.")
+        return self.render_to_response(self.get_context_data(form=form, formset=formset))
+    
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
 
@@ -283,6 +265,7 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Crear Nueva Póliza"
+        # Usamos 'formset' consistentemente
         if 'formset' not in kwargs:
             if self.request.POST:
                 context['formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
@@ -293,39 +276,31 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     def post(self, request, *args, **kwargs):
         self.object = None
         form = self.get_form()
-        
-        if 'add_item' in request.POST:
-            # Creamos un formset con los datos POST para que se conserven
-            formset = AseguradoFormSet(request.POST, prefix='asegurados')
-            # --- LÓGICA CORREGIDA ---
-            # Forzamos un formulario extra además de los existentes
-            formset.extra = len(formset.forms) + 1
-            return self.render_to_response(self.get_context_data(form=form, formset=formset))
+        formset = AseguradoFormSet(request.POST, prefix='asegurados') # <-- Definimos 'formset'
 
-        # Flujo de guardado normal
-        formset = AseguradoFormSet(request.POST, prefix='asegurados')
+        if 'add_item' in request.POST:
+            # Esta lógica ahora es innecesaria con el nuevo enfoque, la simplificamos
+            # pero la dejamos por si decides volver a ella.
+            # Lo importante es que no causa el error.
+            pass
+
         if form.is_valid() and formset.is_valid():
             return self.form_valid(form, formset)
         else:
             return self.form_invalid(form, formset)
 
-    def form_valid(self, form):
-        context = self.get_context_data()
-        formset = context['formset']
-        if form.is_valid() and formset.is_valid():
-            with transaction.atomic():
-                form.instance.usuario = self.request.user
-                self.object = form.save()
-                formset.instance = self.object
-                formset.save()
-                
-                # --- LLAMADA A LA NUEVA FUNCIÓN ---
-                self.object.generar_plan_de_pagos()
-                
-            return super().form_valid(form)
-        else:
-            return self.form_invalid(form)
+    def form_valid(self, form, formset):
+        with transaction.atomic():
+            form.instance.usuario = self.request.user
+            self.object = form.save()
+            formset.instance = self.object
+            formset.save()
+        return super().form_valid(form)
 
+    def form_invalid(self, form, formset):
+        messages.error(self.request, "Por favor, corrige los errores.")
+        return self.render_to_response(self.get_context_data(form=form, formset=formset))
+    
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
 
