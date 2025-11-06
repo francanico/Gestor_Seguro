@@ -5,15 +5,21 @@
     </div>
     <div class="card-body">
         <div class="row">
+            <!-- Columna de Documentos Existentes -->
             <div class="col-md-7">
                 <h5>Documentos Existentes</h5>
                 {% if object.documentos.all %}
                     <ul class="list-group">
                     {% for doc in object.documentos.all %}
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <a href="{{ doc.archivo.url }}" target="_blank"><i class="fas fa-file-alt"></i> {{ doc.titulo }}</a>
+                            <a href="{{ doc.archivo.url }}" target="_blank"><i class="fas fa-file-alt me-2"></i> {{ doc.titulo }}</a>
                             <small class="text-muted">{{ doc.fecha_subida|date:"d/m/Y" }}</small>
-                            <a href="{% url 'documentos:eliminar_documento' doc.pk %}" class="btn btn-danger btn-sm" title="Eliminar"><i class="fas fa-trash"></i></a>
+                            
+                            <!-- Formulario de eliminación para ser seguro -->
+                            <form action="{% url 'documentos:eliminar_documento' doc.pk %}" method="post" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este documento?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="fas fa-trash"></i></button>
+                            </form>
                         </li>
                     {% endfor %}
                     </ul>
@@ -21,9 +27,18 @@
                     <p class="text-muted">No hay documentos adjuntos.</p>
                 {% endif %}
             </div>
+
+            <!-- Columna para Subir Nuevo Documento -->
             <div class="col-md-5">
                 <h5>Subir Nuevo Documento</h5>
-                <form action="{% url 'documentos:subir_documento' content_type.id object.id %}" method="post" enctype="multipart/form-data">
+                
+                <!-- ======================================================= -->
+                <!-- FORMULARIO DE SUBIDA MEJORADO CON JAVASCRIPT          -->
+                <!-- ======================================================= -->
+                <form id="upload-document-form" 
+                    action="{% url 'documentos:subir_documento' content_type.id object.id %}" 
+                    method="post" 
+                    enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="mb-3">
                         <label for="id_titulo" class="form-label">Título</label>
@@ -33,9 +48,37 @@
                         <label for="id_archivo" class="form-label">Archivo</label>
                         <input type="file" name="archivo" class="form-control" required id="id_archivo">
                     </div>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Subir</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
+                        <i class="fas fa-upload icon"></i> Subir
+                    </button>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+// Ponemos el script aquí porque es específico de esta sección
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadForm = document.getElementById('upload-document-form');
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            const submitButton = uploadForm.querySelector('button[type="submit"]');
+            const spinner = submitButton.querySelector('.spinner-border');
+            const icon = submitButton.querySelector('.icon');
+
+            // Prevenir doble clic
+            if (submitButton.disabled) {
+                e.preventDefault();
+                return;
+            }
+
+            // Desactivar botón y mostrar spinner
+            submitButton.disabled = true;
+            if(spinner) spinner.style.display = 'inline-block';
+            if(icon) icon.style.display = 'none';
+        });
+    }
+});
+</script>
