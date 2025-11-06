@@ -322,46 +322,53 @@ class PolizaDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
 # --- VISTA PARA RENOVAR PÓLIZA ---
 @login_required
 def renovar_poliza(request, pk):
+    """
+    Crea una póliza renovada a partir de una existente, manteniendo el mismo número de póliza.
+    """
     poliza_original = get_object_or_404(Poliza, pk=pk, usuario=request.user)
-    
-    # Creamos una nueva instancia de póliza (copia en memoria)
-    poliza_nueva = poliza_original
-    poliza_nueva.pk = None
-    poliza_nueva.id = None
-    
-    # --- LÓGICA DE RENOVACIÓN CORREGIDA ---
-    poliza_nueva.numero_poliza = poliza_original.numero_poliza # <-- MANTENEMOS EL MISMO NÚMERO
-    
-    # Enlazamos la nueva póliza con la original
-    poliza_nueva.renovacion_de = poliza_original
-    
-    # Calculamos las nuevas fechas sumando un año
-    if poliza_original.fecha_inicio_vigencia and poliza_original.fecha_fin_vigencia:
-        poliza_nueva.fecha_inicio_vigencia += relativedelta(years=1)
-        poliza_nueva.fecha_fin_vigencia += relativedelta(years=1)
 
-    # Reiniciamos los estados
-    poliza_nueva.estado_poliza = 'EN_TRAMITE'
-    poliza_nueva.comision_cobrada = False
-    poliza_nueva.fecha_cobro_comision = None
-    poliza_nueva.fecha_emision = timezone.now().date()
+    # ==============================================================================================
+    # LÓGICA DE RENOVACIÓN CORREGIDA
+    # ==============================================================================================
     
-    poliza_nueva.save() # Guardamos la nueva póliza (versión renovada)
-
-    # Marcamos la póliza original como RENOVADA
+    # 1. Primero, MARCAMOS la póliza original como 'RENOVADA' y la guardamos
     poliza_original.estado_poliza = 'RENOVADA'
     poliza_original.save()
-
-    # Importante: Copiamos los asegurados de la póliza original a la nueva
-    for asegurado in poliza_original.asegurados.all():
-        asegurado.pk = None
-        asegurado.id = None
-        asegurado.poliza = poliza_nueva
-        asegurado.save()
-
-    messages.info(request, f"Póliza {poliza_original.numero_poliza} marcada como renovada. Revisa los detalles de la nueva póliza.")
     
-    return redirect('polizas:editar_poliza', pk=poliza_nueva.pk)
+    # 2. Luego, creamos una nueva instancia (copia) de la póliza
+    poliza_nueva = Poliza() # Obtenemos una instancia nueva
+    for field in Poliza._meta.fields: # Copiamos todos los campos
+        if field.name not in ['id', 'pk', 'estado_poliza', 'fecha_creacion', 'fecha_actualizacion', 'renovacion_de', 'usuario']:
+            setattr(poliza_nueva, field.name, getattr(poliza_original, field.name))
+
+    # 3. Configuramos la nueva póliza con los datos de renovación
+    poliza_nueva.pk = None # Forzamos la creación de un nuevo objeto
+    poliza_nueva.id = None
+    poliza_nueva.renovacion_de = poliza_original # Enlazamos a la póliza original
+    poliza_nueva.fecha_inicio_vigencia = poliza_original.fecha_fin_vigencia + relativedelta(days=1)
+    poliza_nueva.fecha_fin_vigencia = poliza_nueva.fecha_fin_vigencia + relativedelta(years=1)
+    poliza_nueva.fecha_emision = timezone.now().date()
+    poliza_nueva.estado_poliza = 'EN_TRAMITE' # Nueva póliza comienza en este estado
+
+    # 4. ¡Borrar pagos asociadas de la poliza duplicada!
+    poliza_nueva.monto_comision_calculado = None
+    poliza_nueva.monto_comision_calculado = 0
+    poliza_nueva.comision_cobrada = False
+    poliza_nueva.fecha_cobro_comision = None
+    poliza_nueva.comision_porcentaje = 0
+    poliza_nueva.proxima_fecha_renovacion_calculada = None
+    poliza_nueva.proxima_fecha_renovacion_calculada = 0
+    
+    # 5. Borrar pagos (Opcional: si se copian los asegurados, aquí también hay que hacerlo)
+    poliza_nueva.pk = None
+    poliza_nueva.id = None
+
+    # 6. Finalmente, guardamos la nueva póliza
+    poliza_nueva.save()
+
+    messages.success(request, f"Póliza No. {poliza_nueva.numero_poliza} renovada exitosamente.")
+
+    return redirect('polizas:editar_poliza', pk=poliza_nueva.pk) # Redirigir al detalle
 
 # --- Dashboard y Recordatorios ---
 @login_required
