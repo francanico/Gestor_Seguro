@@ -323,52 +323,54 @@ class PolizaDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
 @login_required
 def renovar_poliza(request, pk):
     """
-    Crea una póliza renovada a partir de una existente, manteniendo el mismo número de póliza.
+    Crea una póliza renovada a partir de una existente.
     """
     poliza_original = get_object_or_404(Poliza, pk=pk, usuario=request.user)
 
-    # ==============================================================================================
-    # LÓGICA DE RENOVACIÓN CORREGIDA
-    # ==============================================================================================
-    
-    # 1. Primero, MARCAMOS la póliza original como 'RENOVADA' y la guardamos
+    # 1. Marcamos la póliza original como RENOVADA y la guardamos primero.
     poliza_original.estado_poliza = 'RENOVADA'
     poliza_original.save()
+
+    # 2. Creamos una nueva instancia de póliza para la renovación.
+    # No es una copia directa para evitar copiar estados internos.
+    poliza_nueva = Poliza(
+        usuario=poliza_original.usuario,
+        cliente=poliza_original.cliente,
+        aseguradora=poliza_original.aseguradora,
+        numero_poliza=poliza_original.numero_poliza, # Mantenemos el mismo número
+        ramo_tipo_seguro=poliza_original.ramo_tipo_seguro,
+        descripcion_bien_asegurado=poliza_original.descripcion_bien_asegurado,
+        prima_total_anual=poliza_original.prima_total_anual,
+        frecuencia_pago=poliza_original.frecuencia_pago,
+        valor_cuota=poliza_original.valor_cuota,
+        comision_monto=poliza_original.comision_monto,
+        
+        # --- Datos específicos de la renovación ---
+        renovacion_de=poliza_original,
+        fecha_inicio_vigencia=poliza_original.fecha_fin_vigencia + relativedelta(days=1),
+        fecha_fin_vigencia=poliza_original.fecha_fin_vigencia + relativedelta(years=1),
+        fecha_emision=timezone.now().date(),
+        estado_poliza='EN_TRAMITE',
+        comision_cobrada=False,
+    )
     
-    # 2. Luego, creamos una nueva instancia (copia) de la póliza
-    poliza_nueva = Poliza() # Obtenemos una instancia nueva
-    for field in Poliza._meta.fields: # Copiamos todos los campos
-        if field.name not in ['id', 'pk', 'estado_poliza', 'fecha_creacion', 'fecha_actualizacion', 'renovacion_de', 'usuario']:
-            setattr(poliza_nueva, field.name, getattr(poliza_original, field.name))
-
-    # 3. Configuramos la nueva póliza con los datos de renovación
-    poliza_nueva.pk = None # Forzamos la creación de un nuevo objeto
-    poliza_nueva.id = None
-    poliza_nueva.renovacion_de = poliza_original # Enlazamos a la póliza original
-    poliza_nueva.fecha_inicio_vigencia = poliza_original.fecha_fin_vigencia + relativedelta(days=1)
-    poliza_nueva.fecha_fin_vigencia = poliza_nueva.fecha_fin_vigencia + relativedelta(years=1)
-    poliza_nueva.fecha_emision = timezone.now().date()
-    poliza_nueva.estado_poliza = 'EN_TRAMITE' # Nueva póliza comienza en este estado
-
-    # 4. ¡Borrar pagos asociadas de la poliza duplicada!
-    poliza_nueva.monto_comision_calculado = None
-    poliza_nueva.monto_comision_calculado = 0
-    poliza_nueva.comision_cobrada = False
-    poliza_nueva.fecha_cobro_comision = None
-    poliza_nueva.comision_porcentaje = 0
-    poliza_nueva.proxima_fecha_renovacion_calculada = None
-    poliza_nueva.proxima_fecha_renovacion_calculada = 0
-    
-    # 5. Borrar pagos (Opcional: si se copian los asegurados, aquí también hay que hacerlo)
-    poliza_nueva.pk = None
-    poliza_nueva.id = None
-
-    # 6. Finalmente, guardamos la nueva póliza
+    # 3. Guardamos la nueva póliza.
     poliza_nueva.save()
 
-    messages.success(request, f"Póliza No. {poliza_nueva.numero_poliza} renovada exitosamente.")
+    # 4. Copiamos los asegurados de la póliza original a la nueva.
+    for asegurado in poliza_original.asegurados.all():
+        asegurado.pk = None
+        asegurado.id = None
+        asegurado.poliza = poliza_nueva
+        asegurado.save()
 
-    return redirect('polizas:editar_poliza', pk=poliza_nueva.pk) # Redirigir al detalle
+    # 5. Generamos el nuevo plan de pagos para la póliza renovada.
+    poliza_nueva.generar_plan_de_pagos()
+
+    messages.success(request, f"Póliza '{poliza_nueva.numero_poliza}' renovada. Por favor, revisa y guarda los detalles.")
+    
+    # Redirigimos al formulario de EDICIÓN de la nueva póliza.
+    return redirect('polizas:editar_poliza', pk=poliza_nueva.pk)
 
 # --- Dashboard y Recordatorios ---
 @login_required
