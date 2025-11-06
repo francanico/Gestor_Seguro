@@ -23,8 +23,9 @@
 
 <!-- Fila Principal con 2 Columnas -->
 <div class="row">
-    <!-- Columna Izquierda: Información General -->
+    <!-- COLUMNA IZQUIERDA -->
     <div class="col-lg-7">
+        <!-- Card: Información General -->
         <div class="card mb-4">
             <div class="card-header">Información General</div>
             <div class="card-body">
@@ -41,12 +42,11 @@
                         <p><strong>Fin Vigencia:</strong> {{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</p>
                     </div>
                 </div>
-                {% if poliza.descripcion_bien_asegurado %}
-                    <hr><p><strong>Bien Asegurado:</strong> {{ poliza.descripcion_bien_asegurado }}</p>
-                {% endif %}
+                {% if poliza.descripcion_bien_asegurado %}<hr><p><strong>Bien Asegurado:</strong> {{ poliza.descripcion_bien_asegurado|linebreaksbr }}</p>{% endif %}
             </div>
         </div>
 
+        <!-- Card: Asegurados Cubiertos -->
         <div class="card mb-4">
             <div class="card-header">Asegurados Cubiertos</div>
             <div class="card-body">
@@ -58,39 +58,50 @@
             </div>
         </div>
 
-#-------------------Historial De Renovaciones------------------ #
-
-<div class="card mb-4">
-    <div class="card-header">Historial de Renovaciones</div>
-    <div class="card-body">
-{% if poliza.renovacion_de %}
-    <p>Esta póliza es una renovación de: <a href="{{ poliza.renovacion_de.get_absolute_url }}">{{ poliza.renovacion_de.numero_poliza }} (Vigencia: {{ poliza.renovacion_de.fecha_inicio_vigencia|date:"Y" }})</a></p>
-{% endif %}
-{% if poliza.renovaciones.all %}
-    <p>Esta póliza ha sido renovada por:</p>
-    <ul>
-    {% for renovacion in poliza.renovaciones.all %}
-        <li><a href="{{ renovacion.get_absolute_url }}">{{ renovacion.numero_poliza }} (Vigencia: {{ renovacion.fecha_inicio_vigencia|date:"Y" }})</a></li>
-    {% endfor %}
-    </ul>
-{% endif %}
-{% if not poliza.renovacion_de and not poliza.renovaciones.all %}
-    <p class="text-muted">Esta es la primera vigencia de esta póliza.</p>
-{% endif %}
-</div>  
-
-#-------------------Historial De Siniestros-------------------- #
-
+        <!-- Card: Historial de Renovaciones -->
         <div class="card mb-4">
-            <div class="card-header">Historial de Siniestros</div>
+            <div class="card-header">Historial de Renovaciones</div>
             <div class="card-body">
+                {% if poliza.renovacion_de %}
+                    <p>Esta póliza es una renovación de: <a href="{{ poliza.renovacion_de.get_absolute_url }}">{{ poliza.renovacion_de.numero_poliza }} (Vigencia: {{ poliza.renovacion_de.fecha_inicio_vigencia|date:"Y" }})</a></p>
+                {% endif %}
+                {% if poliza.renovaciones.all %}
+                    <p>Esta póliza ha sido renovada por:</p>
+                    <ul class="list-unstyled">
+                    {% for renovacion in poliza.renovaciones.all %}
+                        <li><i class="fas fa-check text-success me-2"></i><a href="{{ renovacion.get_absolute_url }}">{{ renovacion.numero_poliza }} (Vigencia: {{ renovacion.fecha_inicio_vigencia|date:"Y" }})</a></li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if not poliza.renovacion_de and not poliza.renovaciones.all %}
+                    <p class="text-muted">Esta es la primera vigencia de esta póliza.</p>
+                {% endif %}
             </div>
         </div>
-    </div>
-#------------------------------------------------------------- #
 
-    <!-- Columna Derecha: Pagos y Comisiones -->
+        <!-- Card: Historial de Siniestros -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Historial de Siniestros</span>
+                <a href="{% url 'polizas:crear_siniestro' poliza.pk %}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Reportar Siniestro</a>
+            </div>
+            <div class="card-body">
+                {% if poliza.siniestros.all %}
+                    <ul class="list-group list-group-flush">
+                        {% for siniestro in poliza.siniestros.all %}
+                        <li class="list-group-item"><a href="{{ siniestro.get_absolute_url }}">Siniestro del {{ siniestro.fecha_ocurrencia|date:"d/m/Y" }}</a> - Estado: <span class="badge bg-secondary">{{ siniestro.get_estado_siniestro_display }}</span></li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted">No hay siniestros reportados para esta póliza.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div> <!-- FIN DE LA COLUMNA IZQUIERDA -->
+
+    <!-- COLUMNA DERECHA -->
     <div class="col-lg-5">
+        <!-- Card: Valores y Comisiones -->
         <div class="card mb-4">
             <div class="card-header">Valores y Comisiones</div>
             <div class="card-body">
@@ -100,63 +111,48 @@
                 <hr>
                 <p><strong>Monto Comisión:</strong> ${{ poliza.comision_monto|floatformat:2|intcomma }}</p>
                 <p><strong>Comisión Cobrada:</strong> 
-                    {% if poliza.comision_cobrada %}
-                        <span class="text-success"><i class="fas fa-check-circle"></i> Sí</span>
-                    {% else %}
-                        <span class="text-danger"><i class="fas fa-times-circle"></i> No</span>
-                    {% endif %}
+                    {% if poliza.comision_cobrada %}<span class="text-success"><i class="fas fa-check-circle"></i> Sí</span>
+                    {% else %}<span class="text-danger"><i class="fas fa-times-circle"></i> No</span>{% endif %}
                 </p>
             </div>
         </div>
 
-        <!-- ============================================== -->
-        <!-- NUEVA SECCIÓN DE PLAN DE PAGOS                 -->
-        <!-- ============================================== -->
-        <div class="card-body p-0">
-    <ul class="list-group list-group-flush">
-        {% for cuota in poliza.cuotas.all %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-            <div>
-                <span class="fw-bold">{{ cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}</span>
-                <small class="d-block text-muted">${{ cuota.monto_cuota|floatformat:2|intcomma }}</small>
+        <!-- Card: Plan de Pagos -->
+        <div class="card mb-4">
+            <div class="card-header">Plan de Pagos de Cuotas</div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for cuota in poliza.cuotas.all %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-bold">{{ cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}</span>
+                            <small class="d-block text-muted">${{ cuota.monto_cuota|floatformat:2|intcomma }}</small>
+                        </div>
+                        {% if cuota.estado == 'PENDIENTE' %}
+                            <form action="{% url 'polizas:marcar_cuota_pagada' cuota.pk %}" method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-success" title="Marcar como Pagada"><i class="fas fa-check"></i> Pagar</button>
+                            </form>
+                        {% else %}
+                            <div>
+                                <span class="badge bg-success me-2"><i class="fas fa-check-circle"></i> Pagado el {{ cuota.fecha_de_pago_realizado|date:"d/m/Y" }}</span>
+                                <form action="{% url 'polizas:cancelar_pago_cuota' cuota.pk %}" method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Revertir este pago"><i class="fas fa-undo"></i></button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted">El plan de pagos no ha sido generado o no aplica.</li>
+                    {% endfor %}
+                </ul>
             </div>
+        </div>
+    </div> <!-- FIN DE LA COLUMNA DERECHA -->
+</div> <!-- FIN DE LA FILA PRINCIPAL -->
 
-            <!-- ============================================== -->
-            <!-- LÓGICA CONDICIONAL PARA PAGAR/CANCELAR       -->
-            <!-- ============================================== -->
-            {% if cuota.estado == 'PENDIENTE' %}
-                <form action="{% url 'polizas:marcar_cuota_pagada' cuota.pk %}" method="post" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-success" title="Marcar como Pagada">
-                        <i class="fas fa-check"></i> Pagar
-                    </button>
-                </form>
-            {% else %}
-                <div>
-                    <span class="badge bg-success me-2">
-                        <i class="fas fa-check-circle"></i> Pagado el {{ cuota.fecha_de_pago_realizado|date:"d/m/Y" }}
-                    </span>
-                    <form action="{% url 'polizas:cancelar_pago_cuota' cuota.pk %}" method="post" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Revertir este pago">
-                            <i class="fas fa-undo"></i>
-                        </button>
-                    </form>
-                </div>
-            {% endif %}
-        </li>
-        {% empty %}
-        <li class="list-group-item text-muted">El plan de pagos no ha sido generado.</li>
-        {% endfor %}
-    </ul>
-</div>
-        <!-- ============================================== -->
-        <!-- FIN SECCIÓN DE PLAN DE PAGOS                  -->
-        <!-- ============================================== -->
-
-    </div>
-
-<!-- Sección de Documentos -->
+<!-- Sección de Documentos (ocupa todo el ancho) -->
 {% if content_type %}
     {% include "_documentos_seccion.html" %}
 {% endif %}
