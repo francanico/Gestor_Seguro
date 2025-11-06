@@ -89,37 +89,49 @@
         <!-- ============================================== -->
         <!-- NUEVA SECCIÓN DE PLAN DE PAGOS                 -->
         <!-- ============================================== -->
-        <div class="card mb-4">
-            <div class="card-header">Plan de Pagos de Cuotas</div>
-            <div class="card-body p-0">
-                <ul class="list-group list-group-flush">
-                    {% for cuota in poliza.cuotas.all %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="fw-bold">{{ cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}</span>
-                            <small class="d-block text-muted">${{ cuota.monto_cuota|floatformat:2|intcomma }}</small>
-                        </div>
-                        {% if cuota.estado == 'PENDIENTE' %}
-                            <form action="{% url 'polizas:marcar_cuota_pagada' cuota.pk %}" method="post" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-success" title="Marcar como Pagada">
-                                    <i class="fas fa-check"></i> Pagar
-                                </button>
-                            </form>
-                        {% else %}
-                            <span class="badge bg-success">
-                                <i class="fas fa-check-circle"></i> Pagado el {{ cuota.fecha_de_pago_realizado|date:"d/m/Y" }}
-                            </span>
-                        {% endif %}
-                    </li>
-                    {% empty %}
-                    <li class="list-group-item text-muted">El plan de pagos no ha sido generado.</li>
-                    {% endfor %}
-                </ul>
+        <div class="card-body p-0">
+    <ul class="list-group list-group-flush">
+        {% for cuota in poliza.cuotas.all %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <span class="fw-bold">{{ cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}</span>
+                <small class="d-block text-muted">${{ cuota.monto_cuota|floatformat:2|intcomma }}</small>
             </div>
-        </div>
-    </div>
+
+            <!-- ============================================== -->
+            <!-- LÓGICA CONDICIONAL PARA PAGAR/CANCELAR       -->
+            <!-- ============================================== -->
+            {% if cuota.estado == 'PENDIENTE' %}
+                <form action="{% url 'polizas:marcar_cuota_pagada' cuota.pk %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-success" title="Marcar como Pagada">
+                        <i class="fas fa-check"></i> Pagar
+                    </button>
+                </form>
+            {% else %}
+                <div>
+                    <span class="badge bg-success me-2">
+                        <i class="fas fa-check-circle"></i> Pagado el {{ cuota.fecha_de_pago_realizado|date:"d/m/Y" }}
+                    </span>
+                    <form action="{% url 'polizas:cancelar_pago_cuota' cuota.pk %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Revertir este pago">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </form>
+                </div>
+            {% endif %}
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted">El plan de pagos no ha sido generado.</li>
+        {% endfor %}
+    </ul>
 </div>
+        <!-- ============================================== -->
+        <!-- FIN SECCIÓN DE PLAN DE PAGOS                  -->
+        <!-- ============================================== -->
+
+    </div>
 
 <!-- Sección de Documentos -->
 {% if content_type %}

@@ -576,9 +576,27 @@ class SiniestroDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.poliza.pk})
 #---(END VISTAS SINIESTROS)---
 
-#<--------- ELIMINAR PAGO CUOTA POR ERROR --------->
+#<--------- CANCELAR PAGO CUOTA POR ERROR --------->
 @login_required
-def eliminar_pago_cuota(request, pk):
+def cancelar_pago_cuota(request, pk_cuota):
+    """
+    Revierte una cuota del estado 'PAGADO' al estado 'PENDIENTE'.
+    """
+    # Buscamos la cuota, asegurándonos de que pertenece al usuario.
+    cuota = get_object_or_404(PagoCuota, pk=pk_cuota, poliza__usuario=request.user)
+
+    if request.method == 'POST':
+        if cuota.estado == 'PAGADO':
+            cuota.estado = 'PENDIENTE'
+            cuota.fecha_de_pago_realizado = None # Limpiamos la fecha del pago
+            cuota.notas_pago = f"Pago revertido por el usuario el {timezone.now().strftime('%d/%m/%Y')}. {cuota.notas_pago or ''}" # Opcional: añade una nota
+            cuota.save()
+            messages.success(request, "El pago ha sido revertido a pendiente exitosamente.")
+        else:
+            messages.warning(request, "Esta cuota no estaba marcada como pagada.")
+    
+    # Redirigimos de vuelta a la página de detalle de la póliza.
+    return redirect(cuota.poliza.get_absolute_url())
     try:
         # Intentamos obtener el objeto que cumpla ambas condiciones
         pago = PagoCuota.objects.get(pk=pk, poliza__usuario=request.user)
@@ -600,8 +618,8 @@ def eliminar_pago_cuota(request, pk):
     # Si es una petición GET, mostramos la página de confirmación normal
     return render(request, 'polizas/pago_cuota_confirm_delete.html', {'pago': pago})
 
-#<--------- END ELIMINAR PAGO CUOTA POR ERROR --------->
-
+#<--------- END CANCELAR PAGO CUOTA POR ERROR --------->
+@login_required
 def obtener_tasa_bcv_api(request):
     CACHE_KEY = 'tasa_bcv_usd'
     tasa_str = cache.get(CACHE_KEY)
