@@ -57,6 +57,7 @@ AseguradoFormSet = inlineformset_factory(
     can_delete=True,
     fk_name='poliza'
 )
+
 class PolizaForm(forms.ModelForm):
     class Meta:
         model = Poliza
@@ -110,24 +111,23 @@ class PolizaForm(forms.ModelForm):
 class PagoCuotaForm(forms.ModelForm):
     class Meta:
         model = PagoCuota
-        fields = ['fecha_pago', 'monto_pagado', 'fecha_cuota_correspondiente', 'notas']
+        # --- CAMPOS CORREGIDOS PARA COINCIDIR CON EL MODELO ---
+        fields = ['fecha_de_pago_realizado', 'notas_pago']
+        
         widgets = {
-            'fecha_pago': forms.DateInput(attrs={'type': 'date'}),
-            'fecha_cuota_correspondiente': forms.DateInput(attrs={'type': 'date'}),
-            'monto_pagado': forms.NumberInput(attrs={'placeholder': 'Ej: 56.43'}),
-            'notas': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Pago recibido por transferencia...'}),
+            'fecha_de_pago_realizado': forms.DateInput(attrs={'type': 'date'}),
+            'notas_pago': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Ej: Pago por transferencia...'}),
         }
+
         labels = {
-            'fecha_pago': 'Fecha en que se realizó el pago',
-            'monto_pagado': 'Monto Pagado',
-            'fecha_cuota_correspondiente': 'Cuota correspondiente a la fecha',
-            'notas': 'Notas del pago',
+            'fecha_de_pago_realizado': 'Fecha en que se realizó el pago',
+            'notas_pago': 'Notas del pago',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control'
+        # Hacemos la fecha de pago obligatoria
+        self.fields['fecha_de_pago_realizado'].required = True
 
 #---(END PAGO CUOTA FORM)---
 

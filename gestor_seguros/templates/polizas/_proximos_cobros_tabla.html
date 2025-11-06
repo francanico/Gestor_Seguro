@@ -1,54 +1,32 @@
-<!-- templates/polizas/_proximos_cobros_tabla.html -->
 {% load humanize %}
-
 {% if cobros_pendientes_30_dias %}
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead>
                 <tr>
-                    <th>Próx. Cobro (Días)</th>
+                    <th>Vencimiento (Días)</th>
                     <th># Póliza</th>
                     <th>Cliente</th>
-                    <th class="text-end">Valor Cuota</th>
+                    <th class="text-end">Monto Cuota</th>
                     <th class="text-center">Acciones</th>
                 </tr>
             </thead>
             <tbody>
-                {% for poliza in cobros_pendientes_30_dias %}
-                <tr class="{% if poliza.dias_para_proximo_cobro == 0 %}table-warning{% endif %}">
-                    <!-- ... -->
-                    <td class="fw-bold">
-                        {{ poliza.proxima_fecha_cobro|date:"d/m/Y" }}
-                        {% with dias=poliza.dias_para_proximo_cobro %}
-                            {% if dias < 0 %}
-                                <span class="badge bg-danger ms-1">Vencido hace {{ dias|slice:"1:" }} día{{ dias|slice:"1:"|pluralize }}</span>
-                            {% elif dias == 0 %}
-                                <span class="badge bg-warning text-dark ms-1">Hoy</span>
-                            {% else %}
-                                <span class="badge bg-info text-dark ms-1">{{ dias }} día{{ dias|pluralize }}</span>
-                            {% endif %}
-                        {% endwith %}
+                {% for cuota in cobros_pendientes_30_dias %}
+                <tr>
+                    <td>
+                        {{ cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}
+                        <!-- ... (lógica de badge para los días) ... -->
                     </td>
-                    <!-- ... -->
-                    <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
-                    <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
-                    <td class="text-end">
-                        {% if poliza.frecuencia_pago != 'ANUAL' and poliza.valor_cuota %}
-                            ${{ poliza.valor_cuota|floatformat:2|intcomma }}
-                        {% else %}
-                            ${{ poliza.prima_total_anual|floatformat:2|intcomma }}
-                        {% endif %}
-                    </td>
+                    <td><a href="{{ cuota.poliza.get_absolute_url }}">{{ cuota.poliza.numero_poliza }}</a></td>
+                    <td><a href="{{ cuota.poliza.cliente.get_absolute_url }}">{{ cuota.poliza.cliente.nombre_completo }}</a></td>
+                    <td class="text-end">${{ cuota.monto_cuota|intcomma }}</td>
                     <td class="text-center">
-                        <div class="btn-group" role="group">
-                            <form action="{% url 'polizas:registrar_pago_rapido' poliza.pk %}" method="post" class="d-inline">
-                                {% csrf_token %}
-                                <input type="hidden" name="fecha_cuota" value="{{ poliza.proxima_fecha_cobro|date:'Y-m-d' }}">
-                                <button type="submit" class="btn btn-sm btn-success" title="Marcar como Pagada"><i class="fas fa-check"></i></button>
-                            </form>
-                            <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-sm btn-warning" title="Editar Póliza"><i class="fas fa-edit"></i></a>
-                            <a href="{{ poliza.get_absolute_url }}" class="btn btn-sm btn-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
-                        </div>
+                        <form action="{% url 'polizas:marcar_cuota_pagada' cuota.pk %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-success" title="Marcar como Pagada"><i class="fas fa-check"></i></button>
+                        </form>
+                        <!-- ... (otros botones como ver, editar póliza) ... -->
                     </td>
                 </tr>
                 {% endfor %}
@@ -56,5 +34,5 @@
         </table>
     </div>
 {% else %}
-    <p class="text-muted p-3">No hay cobros de cuotas programados para los próximos 30 días.</p>
+    <p class="text-muted p-3 mb-0">No hay cobros de cuotas en este rango.</p>
 {% endif %}

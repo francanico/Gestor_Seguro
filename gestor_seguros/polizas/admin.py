@@ -6,21 +6,28 @@ from .models import Poliza, Aseguradora,PagoCuota
 # --- REGISTRA EL NUEVO MODELO DE PAGOS ---
 @admin.register(PagoCuota)
 class PagoCuotaAdmin(admin.ModelAdmin):
-    list_display = ('poliza', 'fecha_cuota_correspondiente', 'monto_pagado', 'fecha_pago')
-    list_filter = ('fecha_pago', 'poliza__aseguradora')
+    # Usamos los nombres de campo NUEVOS
+    list_display = ('poliza', 'fecha_vencimiento_cuota', 'monto_cuota', 'estado', 'fecha_de_pago_realizado')
+    list_filter = ('estado', 'fecha_vencimiento_cuota', 'poliza__aseguradora')
     search_fields = ('poliza__numero_poliza', 'poliza__cliente__nombre_completo')
-    autocomplete_fields = ['poliza'] # Mejora la selección de la póliza
+    list_editable = ('estado', 'fecha_de_pago_realizado') # Permite editar estos campos desde la lista
+    autocomplete_fields = ['poliza']
 
 # --- OPCIONAL: MOSTRAR PAGOS EN LA VISTA DE LA PÓLIZA ---
-# Esto te permite ver los pagos directamente desde la página de edición de una póliza
-
 class PagoCuotaInline(admin.TabularInline):
     model = PagoCuota
-    extra = 0 # No mostrar formularios vacíos para añadir, solo los existentes
-    readonly_fields = ('fecha_pago', 'monto_pagado', 'fecha_cuota_correspondiente') # Hacerlos de solo lectura aquí
-    ordering = ['-fecha_cuota_correspondiente'] #Ordena por fecha de cuota descendente
-    can_delete = False # Evitar borrar pagos desde aquí
-
+    extra = 0 # No mostrar formularios vacíos para añadir
+    
+    # Usamos los nombres de campo NUEVOS
+    readonly_fields = ('fecha_vencimiento_cuota', 'monto_cuota', 'estado', 'fecha_de_pago_realizado')
+    
+    # Mostramos estos campos en el inline
+    fields = ('fecha_vencimiento_cuota', 'monto_cuota', 'estado', 'fecha_de_pago_realizado')
+    
+    can_delete = False # No permitir borrar cuotas desde aquí
+    
+    def has_add_permission(self, request, obj=None):
+        return False # No permitir añadir cuotas manualmente desde el admin
 
 @admin.register(Aseguradora)
 class AseguradoraAdmin(admin.ModelAdmin):

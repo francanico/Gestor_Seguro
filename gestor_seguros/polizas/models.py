@@ -122,7 +122,8 @@ class Poliza(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     documentos = GenericRelation(Documento)
-
+    
+    # --- PROPIEDADES PARA RENOVACIÓN ---
 
     @property
     def dias_para_renovar(self):
@@ -201,61 +202,37 @@ class Poliza(models.Model):
         return None # Si la frecuencia no coincide
 
     # --- PROPIEDAD PARA LA PRÓXIMA FECHA DE COBRO ---
-    
+
     @property
-    def proxima_fecha_cobro(self):
-        # Casos base donde no hay "próximo cobro periódico"
-        if not self.fecha_inicio_vigencia or self.frecuencia_pago in ['UNICO', 'ANUAL']:
-            hoy = timezone.now().date()
-            # Si es pago único/anual y no se ha pagado, el cobro es la fecha de inicio
-            if hoy <= self.fecha_fin_vigencia and not self.pagos_cuotas.exists():
-                return self.fecha_inicio_vigencia
-            return None
-
-        # --- Lógica Avanzada para Cuotas Periódicas ---
-        periodos = {
-            'MENSUAL': relativedelta(months=1),
-            'TRIMESTRAL': relativedelta(months=3),
-            'CUATRIMESTRAL': relativedelta(months=4),
-            'SEMESTRAL': relativedelta(months=6),
-        }
-        periodo = periodos.get(self.frecuencia_pago)
-        if not periodo: return None
-
-        # 1. Obtenemos la última fecha de cuota que fue pagada.
-        # Si no hay pagos, la base es la fecha de inicio de la póliza.
-        ultimo_pago = self.pagos_cuotas.order_by('-fecha_cuota_correspondiente').first()
-        fecha_base_ultimo_pago = ultimo_pago.fecha_cuota_correspondiente if ultimo_pago else None
-
-        # La primera cuota teórica es siempre la fecha de inicio de vigencia.
-        primera_cuota_teorica = self.fecha_inicio_vigencia
-
-        # Si no hay pagos, la próxima cuota es la primera.
-        if not fecha_base_ultimo_pago:
-            # Comprobamos que la primera cuota no exceda el fin de vigencia
-            if self.fecha_fin_vigencia and primera_cuota_teorica > self.fecha_fin_vigencia:
-                return None
-            return primera_cuota_teorica
-        
-        # Si ya hay pagos, calculamos la siguiente cuota teórica a partir del último pago.
-        siguiente_cuota_teorica = fecha_base_ultimo_pago + periodo
-        
-        # Verificamos que esta siguiente cuota no se pase del fin de la vigencia.
-        # El <= es importante para incluir la cuota que cae justo en la fecha de fin.
-        if self.fecha_fin_vigencia and siguiente_cuota_teorica <= self.fecha_fin_vigencia:
-            return siguiente_cuota_teorica
-        
-        # Si la siguiente cuota se pasa, significa que ya no hay más cuotas que pagar.
-        return None
-
+    def proxima_cuota_pendiente(self):
+        return self.cuotas.filter(estado='PENDIENTE').order_by('fecha_vencimiento_cuota').first()
 
     @property
     def dias_para_proximo_cobro(self):
-        if self.proxima_fecha_cobro:
-            hoy = timezone.now().date()
-            delta = self.proxima_fecha_cobro - hoy
-            return delta.days
+        proxima_cuota = self.proxima_cuota_pendiente
+        if proxima_cuota:
+            return (proxima_cuota.fecha_vencimiento_cuota - timezone.now().date()).days
         return None
+    
+    def generar_plan_de_pagos(self):
+        self.cuotas.all().delete()
+        if not self.fecha_inicio_vigencia or not self.frecuencia_pago: return
+
+        periodos = {
+            'MENSUAL': (relativedelta(months=1), 12), 'TRIMESTRAL': (relativedelta(months=3), 4),
+            'CUATRIMESTRAL': (relativedelta(months=4), 3), 'SEMESTRAL': (relativedelta(months=6), 2),
+            'ANUAL': (relativedelta(years=1), 1), 'UNICO': (relativedelta(years=1), 1),
+        }
+        if self.frecuencia_pago not in periodos: return
+
+        periodo, num_cuotas = periodos[self.frecuencia_pago]
+        monto_por_cuota = self.valor_cuota if self.valor_cuota and self.valor_cuota > 0 else (self.prima_total_anual / num_cuotas)
+        fecha_actual_cuota = self.fecha_inicio_vigencia
+
+        for _ in range(num_cuotas):
+            if self.fecha_fin_vigencia and fecha_actual_cuota > self.fecha_fin_vigencia: break
+            PagoCuota.objects.create(poliza=self, fecha_vencimiento_cuota=fecha_actual_cuota, monto_cuota=monto_por_cuota)
+            fecha_actual_cuota += periodo
 
     def __str__(self):
         return f"Póliza {self.numero_poliza} - {self.cliente.nombre_completo} ({self.ramo_tipo_seguro})"
@@ -270,19 +247,29 @@ class Poliza(models.Model):
         unique_together = ('usuario', 'numero_poliza')
 
 class PagoCuota(models.Model):
-    poliza = models.ForeignKey(Poliza, on_delete=models.CASCADE, related_name='pagos_cuotas')
-    fecha_pago = models.DateField(default=timezone.now, verbose_name="Fecha en que se realizó el pago")
-    monto_pagado = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Monto Pagado")
-    fecha_cuota_correspondiente = models.DateField(verbose_name="Cuota correspondiente a la fecha")
-    notas = models.TextField(blank=True, null=True, verbose_name="Notas del pago")
+    ESTADO_PAGO_CHOICES = [
+        ('PENDIENTE', 'Pendiente'),
+        ('PAGADO', 'Pagado'),
+        ('VENCIDO', 'Vencido'), # Opcional, para lógica futura
+    ]
+
+    poliza = models.ForeignKey(Poliza, on_delete=models.CASCADE, related_name='cuotas')
+    
+    fecha_vencimiento_cuota = models.DateField(verbose_name="Fecha de Vencimiento de la Cuota")
+    monto_cuota = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Monto de la Cuota")
+    estado = models.CharField(max_length=10, choices=ESTADO_PAGO_CHOICES, default='PENDIENTE')
+
+    # Campos para registrar el pago EFECTIVO
+    fecha_de_pago_realizado = models.DateField(null=True, blank=True, verbose_name="Fecha en que se pagó")
+    notas_pago = models.TextField(blank=True, null=True, verbose_name="Notas del pago")
 
     def __str__(self):
-        return f"Pago de ${self.monto_pagado} para póliza {self.poliza.numero_poliza} el {self.fecha_pago}"
+        return f"Cuota de {self.poliza.numero_poliza} con vencimiento {self.fecha_vencimiento_cuota}"
 
     class Meta:
-        verbose_name = "Pago de Cuota"
-        verbose_name_plural = "Pagos de Cuotas"
-        ordering = ['-fecha_cuota_correspondiente']
+        verbose_name = "Cuota de Póliza"
+        verbose_name_plural = "Cuotas de Póliza"
+        ordering = ['fecha_vencimiento_cuota']
 
 class Siniestro(models.Model):
     ESTADO_CHOICES = [
@@ -322,3 +309,4 @@ class Siniestro(models.Model):
         verbose_name_plural = "Siniestros"
         ordering = ['-fecha_ocurrencia']
 
+# ---  FIN DE MODELOS PARA PÓLIZAS DE SEGUROS  ---

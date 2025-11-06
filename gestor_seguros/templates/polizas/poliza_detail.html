@@ -1,235 +1,132 @@
 {% extends "base.html" %}
-{% load static %}
 {% load humanize %}
-{% load widget_tweaks %}
+{% load static %}
 
-
-{% block title %}Póliza {{ poliza.numero_poliza }} - Gestor de Pólizas{% endblock %}
+{% block title %}Detalle de Póliza: {{ poliza.numero_poliza }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+
+<!-- Cabecera de la Página con Acciones -->
+<div class="page-header">
     <h2>
         <i class="fas fa-file-invoice-dollar"></i> Detalle de Póliza: {{ poliza.numero_poliza }}
-        <span class="badge fs-6 ms-2
-            {% if poliza.estado_renovacion == 'Vencida' %}bg-danger
-            {% elif poliza.estado_renovacion == 'Próxima a vencer' %}bg-warning text-dark
-            {% elif poliza.estado_renovacion == 'Vigente' %}bg-success
-            {% else %}bg-secondary
-            {% endif %}">
-            {{ poliza.estado_renovacion }}
-            {% if poliza.dias_para_renovar is not None and poliza.dias_para_renovar >= 0 %}
-                ({{ poliza.dias_para_renovar }} días)
-            {% elif poliza.dias_para_renovar is not None and poliza.dias_para_renovar < 0 %}
-                (Venció hace {{ poliza.dias_para_renovar }} días)
-            {% endif %}
-        </span>
+        <span class="badge fs-6 ms-2 bg-success">{{ poliza.get_estado_poliza_display }}</span>
     </h2>
     <div>
         {% if poliza.estado_poliza not in "RENOVADA,CANCELADA" %}
-        <a href="{% url 'polizas:renovar_poliza' poliza.pk %}" class="btn btn-success"><i class="fas fa-sync-alt"></i> Renovar Póliza</a>
+            <a href="{% url 'polizas:renovar_poliza' poliza.pk %}" class="btn btn-success"><i class="fas fa-sync-alt"></i> Renovar</a>
         {% endif %}
-        <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-warning"><i class="fas fa-edit"></i> Editar Póliza</a>
-        <a href="{% url 'polizas:lista_polizas' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver a la Lista</a>
+        <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-warning"><i class="fas fa-edit"></i> Editar</a>
+        <a href="{% url 'polizas:lista_polizas' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
     </div>
 </div>
 
-<div class="card mb-4">
-    <div class="card-header">Información General de la Póliza</div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <p><strong>Número de Póliza:</strong> {{ poliza.numero_poliza }}</p>
-                <p><strong>Cliente Contratante/Tomador:</strong> <a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></p>
-                <!-- ... (Aseguradora, Ramo, etc.) ... -->
+<!-- Fila Principal con 2 Columnas -->
+<div class="row">
+    <!-- Columna Izquierda: Información General -->
+    <div class="col-lg-7">
+        <div class="card mb-4">
+            <div class="card-header">Información General</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Número de Póliza:</strong> {{ poliza.numero_poliza }}</p>
+                        <p><strong>Cliente Contratante:</strong> <a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></p>
+                        <p><strong>Aseguradora:</strong> <a href="{{ poliza.aseguradora.get_absolute_url }}">{{ poliza.aseguradora.nombre }}</a></p>
+                        <p><strong>Ramo:</strong> {{ poliza.ramo_tipo_seguro }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Fecha Emisión:</strong> {{ poliza.fecha_emision|date:"d/m/Y" }}</p>
+                        <p><strong>Inicio Vigencia:</strong> {{ poliza.fecha_inicio_vigencia|date:"d/m/Y" }}</p>
+                        <p><strong>Fin Vigencia:</strong> {{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</p>
+                    </div>
+                </div>
+                {% if poliza.descripcion_bien_asegurado %}
+                    <hr><p><strong>Bien Asegurado:</strong> {{ poliza.descripcion_bien_asegurado }}</p>
+                {% endif %}
             </div>
-            <div class="col-md-6">
-                <!-- ... (Fechas) ... -->
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">Asegurados Cubiertos</div>
+            <div class="card-body">
+                {% for asegurado in poliza.asegurados.all %}
+                    <p><strong>{{ asegurado.get_parentesco_display }}:</strong> {{ asegurado.nombre_completo }}</p>
+                {% empty %}
+                    <p class="text-muted">No hay asegurados adicionales registrados.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">Historial de Siniestros</div>
+            <div class="card-body">
+                <!-- ... (código de siniestros sin cambios) ... -->
             </div>
         </div>
     </div>
-</div>
 
-<!-- ============================================== -->
-<!-- Card 2  Asegurados Cubiertos          -->
-<!-- ============================================== -->
-<div class="card mb-4">
-    <div class="card-header">Asegurados Cubiertos en la Póliza</div>
-    <div class="card-body">
-        {% if poliza.asegurados.all %}
-            <ul class="list-group list-group-flush">
-                {% for asegurado in poliza.asegurados.all %}
-                    <li class="list-group-item">
-                        <strong>{{ asegurado.nombre_completo }}</strong>
-                        <small class="text-muted">- {{ asegurado.get_parentesco_display }}</small>
-                        <small class="d-block text-muted">Nacimiento: {{ asegurado.fecha_nacimiento|date:"d/m/Y"|default:"N/A" }}</small>
-                    </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="text-muted">No hay asegurados registrados para esta póliza.</p>
-        {% endif %}
-    </div>
-</div>
-<!-- ============================================== -->
-<!-- Card 3: Valores y Pagos -->
-<!-- ============================================== -->
-<div class="card mb-4">
-    <div class="card-header">
-        Valores y Pagos
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
+    <!-- Columna Derecha: Pagos y Comisiones -->
+    <div class="col-lg-5">
+        <div class="card mb-4">
+            <div class="card-header">Valores y Comisiones</div>
+            <div class="card-body">
                 <p><strong>Prima Total Anual:</strong> ${{ poliza.prima_total_anual|floatformat:2|intcomma }}</p>
                 <p><strong>Frecuencia de Pago:</strong> {{ poliza.get_frecuencia_pago_display }}</p>
-                <p><strong>Valor Cuota (si aplica):</strong> ${{ poliza.valor_cuota|floatformat:2|intcomma|default:"N/A" }}</p>
-                {% if poliza.proxima_fecha_cobro %}
-                <p><strong>Próximo Cobro Estimado:</strong> <strong class="text-info">{{ poliza.proxima_fecha_cobro|date:"d/m/Y" }}</strong></p>
-                {% endif %}
-            </div>
-            <div class="col-md-6">
+                {% if poliza.valor_cuota %}<p><strong>Valor Cuota:</strong> ${{ poliza.valor_cuota|floatformat:2|intcomma }}</p>{% endif %}
+                <hr>
                 <p><strong>Monto Comisión:</strong> ${{ poliza.comision_monto|floatformat:2|intcomma }}</p>
-                <p><strong>Comisión Cobrada:</strong>
-            {% if poliza.comision_cobrada %}
-                <span class="text-success"><i class="fas fa-check-circle"></i> Sí</span> ({{ poliza.fecha_cobro_comision|date:"d/m/Y"|default:"Fecha no especificada" }})
-            {% else %}
-            <span class="text-danger"><i class="fas fa-times-circle"></i> No</span>
-        {% endif %}
-    </p>
-</div>
-        </div>
-    </div>
-</div>
-
-<!-- NUEVA SECCIÓN PARA GESTIÓN DE PAGOS DE CUOTAS -->
-<!-- ============================================== -->
-<!-- ... -->
-<div class="row">
-    <!-- Columna para registrar nuevo pago -->
-    <div class="col-md-5">
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-cash-register"></i> Registrar Nuevo Pago de Cuota
+                <p><strong>Comisión Cobrada:</strong> 
+                    {% if poliza.comision_cobrada %}
+                        <span class="text-success"><i class="fas fa-check-circle"></i> Sí</span>
+                    {% else %}
+                        <span class="text-danger"><i class="fas fa-times-circle"></i> No</span>
+                    {% endif %}
+                </p>
             </div>
-            <div class="card-body">
-    {% if pago_form %}
-        <form method="POST">
-            {% csrf_token %}
-            {% for field in pago_form %}
-                <div class="mb-3">
-                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                    {% render_field field class+="form-control" %}
-                    {% for error in field.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- NUEVA SECCIÓN DE PLAN DE PAGOS                 -->
+        <!-- ============================================== -->
+        <div class="card mb-4">
+            <div class="card-header">Plan de Pagos de Cuotas</div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for cuota in poliza.cuotas.all %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-bold">{{ cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}</span>
+                            <small class="d-block text-muted">${{ cuota.monto_cuota|floatformat:2|intcomma }}</small>
+                        </div>
+                        {% if cuota.estado == 'PENDIENTE' %}
+                            <form action="{% url 'polizas:marcar_cuota_pagada' cuota.pk %}" method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-success" title="Marcar como Pagada">
+                                    <i class="fas fa-check"></i> Pagar
+                                </button>
+                            </form>
+                        {% else %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle"></i> Pagado el {{ cuota.fecha_de_pago_realizado|date:"d/m/Y" }}
+                            </span>
+                        {% endif %}
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted">El plan de pagos no ha sido generado.</li>
                     {% endfor %}
-                </div>
-            {% endfor %}
-            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Pago</button>
-        </form>
-    {% else %}
-        <div class="alert alert-success text-center">
-            <i class="fas fa-check-circle fa-2x mb-2"></i>
-            <p class="mb-0"><strong>¡Excelente!</strong> Todas las cuotas de esta póliza han sido pagadas.</p>
-        </div>
-    {% endif %}
-</div>
-            <div class="card-body">
-                {% if pago_form %}
-                    <form method="POST">
-                        {% csrf_token %}
-                        <!-- ... (contenido del formulario) ... -->
-                    </form>
-                {% else %}
-                    <div class="alert alert-success text-center">
-                        <i class="fas fa-check-circle fa-2x mb-2"></i>
-                        <p class="mb-0"><strong>¡Excelente!</strong> Todas las cuotas de esta póliza han sido pagadas.</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    
-    
-    <!-- Columna para ver historial de pagos -->
-    <div class="col-md-7">
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-history"></i> Historial de Pagos
-            </div>
-            <div class="card-body">
-                {% if pagos_realizados %}
-                    <ul class="list-group list-group-flush">
-                        {% for pago in pagos_realizados %}
-                        <li class="list-group-item">
-                            Se pagó <strong>${{ pago.monto_pagado|intcomma }}</strong> el {{ pago.fecha_pago|date:"d/m/Y" }}
-                            <small class="text-muted">(correspondiente a la cuota del {{ pago.fecha_cuota_correspondiente|date:"d/m/Y" }})</small>
-                            <a href="{% url 'polizas:eliminar_pago_cuota' pago.pk %}" class="btn btn-sm btn-outline-danger" title="Eliminar este pago">
-                            <i class="fas fa-trash"></i>
-                            </a>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="text-muted">Aún no se han registrado pagos para esta póliza.</p>
-                {% endif %}
+                </ul>
             </div>
         </div>
     </div>
 </div>
 
-        # Historial de Siniestros
-<!-- ============================================== -->
-
-<div class="card mt-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="fas fa-car-crash"></i> Historial de Siniestros</span>
-        <a href="{% url 'polizas:crear_siniestro' poliza.pk %}" class="btn btn-primary btn-sm">
-            <i class="fas fa-plus"></i> Reportar Siniestro
-        </a>
-    </div>
-    <div class="card-body">
-        {% if siniestros_asociados %}
-            <ul class="list-group list-group-flush">
-                {% for siniestro in siniestros_asociados %}
-                <li class="list-group-item">
-                    <a href="{{ siniestro.get_absolute_url }}">Siniestro del {{ siniestro.fecha_ocurrencia|date:"d/m/Y" }}</a>
-                    - Estado: <span class="badge bg-secondary">{{ siniestro.get_estado_siniestro_display }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="text-muted">No hay siniestros reportados para esta póliza.</p>
-        {% endif %}
-    </div>
-</div>
-
-<!-- ============================================== -->
-
-{% if poliza.archivo_poliza %}
-<div class="card mb-4">
-    <div class="card-header">
-        Documentos Adjuntos
-    </div>
-    <div class="card-body">
-        <p><a href="{{ poliza.archivo_poliza.url }}" target="_blank" class="btn btn-outline-primary"><i class="fas fa-file-pdf"></i> Ver Archivo de Póliza</a></p>
-    </div>
-</div>
-{% endif %}
-
-{% if poliza.notas_poliza %}
-<div class="card mb-4">
-    <div class="card-header">
-        Notas Adicionales
-    </div>
-    <div class="card-body">
-        {{ poliza.notas_poliza|linebreaksbr }}
-    </div>
-</div>
+<!-- Sección de Documentos -->
+{% if content_type %}
+    {% include "_documentos_seccion.html" %}
 {% endif %}
 
 <hr>
 <small class="text-muted">Registrada: {{ poliza.fecha_creacion|date:"d/m/Y H:i" }} | Última actualización: {{ poliza.fecha_actualizacion|date:"d/m/Y H:i" }}</small>
-
-{% include "_documentos_seccion.html" %}
 
 {% endblock %}

@@ -29,9 +29,6 @@ from .mixins import OwnerRequiredMixin
 ESTADOS_POLIZA_ACTIVOS = ['VIGENTE', 'PENDIENTE_PAGO']
 
 # ==========================================================
-# VISTAS PARA EL CRUD DE ASEGURADORAS (A RESTAURAR)
-# ==========================================================
-# ==========================================================
 # VISTAS PARA EL CRUD DE ASEGURADORAS (CÓDIGO FINAL)
 # ==========================================================
 
@@ -151,124 +148,131 @@ class PolizaListView(LoginRequiredMixin, ListView):
         #     del self.request.session['titulo_lista_polizas']
         return context
 
-class PolizaDetailView(LoginRequiredMixin,OwnerRequiredMixin, DetailView):
+class PolizaDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
     model = Poliza
     template_name = 'polizas/poliza_detail.html'
     context_object_name = 'poliza'
 
+    def get_queryset(self):
+        """
+        Optimiza la carga de datos relacionados para evitar múltiples consultas a la BD.
+        """
+        return super().get_queryset().select_related(
+            'cliente', 'aseguradora'
+        ).prefetch_related(
+            'asegurados', 'cuotas', 'siniestros', 'documentos'
+        )
+
     def get_context_data(self, **kwargs):
+        """
+        Prepara todo el contexto necesario para la plantilla de detalle.
+        """
         context = super().get_context_data(**kwargs)
         poliza = self.get_object()
-
-        proxima_cuota = poliza.proxima_fecha_cobro
-        # Solo mostramos el formulario si hay una próxima cuota pendiente
-        if proxima_cuota:
-
-            initial_data = {
-                'fecha_pago': timezone.now().date(),
-                'monto_pagado': poliza.valor_cuota if poliza.valor_cuota else poliza.prima_total_anual,
-                'fecha_cuota_correspondiente': proxima_cuota
-            }
-            context['pago_form'] = PagoCuotaForm(initial=initial_data)
-            
-            pago_form = PagoCuotaForm(initial={
-                'monto_pagado': poliza.valor_cuota or poliza.prima_total_anual,
-                'fecha_cuota_correspondiente': proxima_cuota
-            })
-            context['pago_form'] = pago_form
+            # maneja la lista de cuotas directamente.
         
-        context['pagos_realizados'] = poliza.pagos_cuotas.all()
-
-
-        # Formulario para registrar un nuevo pago
-        pago_form = PagoCuotaForm(initial={
-            'monto_pagado': poliza.valor_cuota or poliza.prima_total_anual,
-            'fecha_cuota_correspondiente': poliza.proxima_fecha_cobro
-        })
-        context['pago_form'] = pago_form
+        # Pasamos el ContentType para la sección de documentos.
+        context['content_type'] = ContentType.objects.get_for_model(poliza)
         
-        # Lista de pagos existentes
-        context['pagos_realizados'] = poliza.pagos_cuotas.all()
-
-            # Lista de siniestros asociados
-        context['siniestros_asociados'] = self.object.siniestros.all()
-
-        
-        # ContentType para uso en formularios genéricos
-        context['content_type'] = ContentType.objects.get_for_model(self.get_object())
         return context
 
     def post(self, request, *args, **kwargs):
+        """
+        Maneja la acción de "Marcar como Pagada" para una cuota específica.
+        """
         poliza = self.get_object()
-        form = PagoCuotaForm(request.POST)
-
-
-        if not poliza.proxima_fecha_cobro:
-            messages.error(request, 'No se pueden registrar más pagos. Todas las cuotas de esta póliza ya han sido cubiertas.')
-            return redirect(poliza.get_absolute_url())
-
-        form = PagoCuotaForm(request.POST)
-
-        if form.is_valid():
-            nuevo_pago = form.save(commit=False)
-            nuevo_pago.poliza = poliza
-            nuevo_pago.save()
-            messages.success(request, '¡Pago de cuota registrado exitosamente!')
-            return redirect(poliza.get_absolute_url())
-        else:
-            # Si el formulario no es válido, volvemos a renderizar la página con los errores
-            context = self.get_context_data()
-            context['pago_form'] = form # Pasamos el formulario con errores
-            messages.error(request, 'Hubo un error al registrar el pago. Por favor, revisa los datos.')
-            return self.render_to_response(context)
+        
+        # El formulario en la plantilla envía el 'pk' de la cuota que se quiere pagar.
+        cuota_pk_a_pagar = request.POST.get('cuota_pk')
+        
+        if cuota_pk_a_pagar:
+            try:
+                # Buscamos la cuota, asegurándonos que pertenece a esta póliza y a este usuario
+                cuota = PagoCuota.objects.get(pk=cuota_pk_a_pagar, poliza=poliza, poliza__usuario=request.user)
+                
+                if cuota.estado == 'PENDIENTE':
+                    cuota.estado = 'PAGADO'
+                    cuota.fecha_de_pago_realizado = timezone.now().date()
+                    cuota.save()
+                    messages.success(request, f"La cuota con vencimiento el {cuota.fecha_vencimiento_cuota.strftime('%d/%m/%Y')} ha sido marcada como pagada.")
+                else:
+                    messages.warning(request, "Esta cuota ya había sido marcada como pagada.")
+                    
+            except PagoCuota.DoesNotExist:
+                messages.error(request, "La cuota que intentas pagar no es válida.")
+        
+        # Redirigimos siempre de vuelta a la página de detalle de la póliza.
+        return redirect(poliza.get_absolute_url())
 
 class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Poliza
     form_class = PolizaForm
     template_name = 'polizas/poliza_form.html'
     success_message = "Póliza actualizada exitosamente."
-
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Editar Póliza"
+        
+        # Esta lógica es para la recarga de página al añadir formularios
+        extra_forms = int(self.request.POST.get('extra_forms', 1)) if self.request.POST else 1
+        AseguradoFormSet = inlineformset_factory(Poliza, Asegurado, form=AseguradoForm, extra=extra_forms, can_delete=True)
+
         if 'formset' not in kwargs:
             if self.request.POST:
                 context['formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
             else:
                 context['formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
         return context
-
+    
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         form = self.get_form()
-        formset = AseguradoFormSet(request.POST, instance=self.object, prefix='asegurados')
-
-        # --- LÓGICA CORREGIDA PARA EL BOTÓN "AÑADIR OTRO" ---
+        
+        # --- LÓGICA PARA EL BOTÓN "AÑADIR OTRO" ---
         if 'add_item' in request.POST:
-            # Creamos una nueva instancia del formset con un formulario extra
-            # pero NO la validamos ni la guardamos.
-            # `extra` no se puede cambiar dinámicamente así, pero el truco del management form funciona.
-            form_data = request.POST.copy()
-            form_count = int(form_data.get('asegurados-TOTAL_FORMS', 0))
-            form_data['asegurados-TOTAL_FORMS'] = form_count + 1
-            
-            # Pasamos los datos modificados para que se conserven los valores escritos
-            new_formset = AseguradoFormSet(form_data, instance=self.object, prefix='asegurados')
-            
-            # Devolvemos una respuesta HTTP renderizando la plantilla con los formularios actualizados
-            return self.render_to_response(self.get_context_data(form=form, formset=new_formset))
+            return self.form_invalid(form) # Re-renderiza la página con un form extra
 
         # --- LÓGICA DE GUARDADO NORMAL ---
+        AseguradoFormSet = inlineformset_factory(Poliza, Asegurado, form=AseguradoForm, extra=0, can_delete=True)
+        formset = AseguradoFormSet(request.POST, instance=self.object, prefix='asegurados')
+
         if form.is_valid() and formset.is_valid():
             with transaction.atomic():
-                form.save()
+                # Primero guardamos los formularios
+                self.object = form.save()
                 formset.save()
+                
+                # --- AHORA, GENERAMOS EL PLAN DE PAGOS ---
+                self.object.generar_plan_de_pagos()
+            
             messages.success(request, self.success_message)
             return HttpResponseRedirect(self.get_success_url())
         else:
-            # Devolvemos una respuesta HTTP renderizando la plantilla con los errores
-            return self.render_to_response(self.get_context_data(form=form, formset=formset))
+            # Si algo no es válido, volvemos a llamar a form_invalid
+            return self.form_invalid(form)
 
+    def form_invalid(self, form):
+        """
+        Maneja tanto los errores de validación como la petición de añadir un nuevo formulario.
+        """
+        extra_forms = int(self.request.POST.get('extra_forms', 1))
+        
+        if 'add_item' in self.request.POST:
+            extra_forms += 1
+        
+        AseguradoFormSet = inlineformset_factory(Poliza, Asegurado, form=AseguradoForm, extra=extra_forms, can_delete=True)
+        formset = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
+
+        # Guardamos el número de extras para la próxima recarga
+        form.data = form.data.copy()
+        form.data['extra_forms'] = extra_forms
+
+        if 'add_item' not in self.request.POST:
+            messages.error(self.request, "Por favor, corrige los errores.")
+
+        return self.render_to_response(self.get_context_data(form=form, formset=formset))
+            
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
 
@@ -290,12 +294,16 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     def form_valid(self, form):
         context = self.get_context_data()
         formset = context['formset']
-        if formset.is_valid():
+        if form.is_valid() and formset.is_valid():
             with transaction.atomic():
                 form.instance.usuario = self.request.user
                 self.object = form.save()
                 formset.instance = self.object
                 formset.save()
+                
+                # --- LLAMADA A LA NUEVA FUNCIÓN ---
+                self.object.generar_plan_de_pagos()
+                
             return super().form_valid(form)
         else:
             return self.form_invalid(form)
@@ -413,18 +421,15 @@ def dashboard_view(request):
     # --- LÓGICA PARA PRÓXIMOS COBROS (AHORA MUCHO MÁS RÁPIDA) ---
     cobros_pendientes_30_dias = []
     cobros_vencidos = []
+
+# --- LÓGICA PARA COBROS ---
+    cuotas_pendientes = PagoCuota.objects.filter(
+        poliza__usuario=request.user,
+        estado='PENDIENTE'
+    ).select_related('poliza', 'poliza__cliente')
     
-    # Ya no es necesario usar list() aquí, podemos iterar directamente sobre el queryset
-    for poliza in polizas_activas_y_pendientes.exclude(frecuencia_pago__in=['UNICO', 'ANUAL']):
-        # Esta llamada ahora es casi instantánea, porque los pagos ya están en memoria.
-        # No se realiza una nueva consulta a la BD.
-        prox_cobro = poliza.proxima_fecha_cobro
-        if prox_cobro:
-            dias = (prox_cobro - hoy).days
-            if dias < 0:
-                cobros_vencidos.append(poliza)
-            elif 0 <= dias <= 30:
-                cobros_pendientes_30_dias.append(poliza)
+    cobros_vencidos = cuotas_pendientes.filter(fecha_vencimiento_cuota__lt=hoy).order_by('fecha_vencimiento_cuota')
+    cobros_pendientes_30_dias = cuotas_pendientes.filter(fecha_vencimiento_cuota__range=(hoy, hoy + timedelta(days=30))).order_by('fecha_vencimiento_cuota')
 
     # C. Comisiones
     comisiones_pendientes = Poliza.objects.filter(usuario=request.user, comision_cobrada=False, comision_monto__gt=0).select_related('cliente').order_by('fecha_fin_vigencia')
@@ -442,6 +447,7 @@ def dashboard_view(request):
         fecha_nacimiento__isnull=False,
         fecha_nacimiento__month=mes_actual
     ).order_by('fecha_nacimiento__day')
+
 
     # --- KPIs Y DATOS JS ---
     total_clientes = Cliente.objects.filter(usuario=request.user).count()
@@ -477,34 +483,29 @@ def dashboard_view(request):
 
 # ---  VISTA DE ACCIÓN RÁPIDA PARA REGISTRAR PAGO ---
 @login_required
-def registrar_pago_rapido(request, pk):
-    # Solo permitimos peticiones POST para esta acción por seguridad
+def registrar_pago_rapido(request, pk_cuota): # 'pk' ahora es de la cuota
     if request.method == 'POST':
-        poliza = get_object_or_404(Poliza, pk=pk, usuario=request.user)
-        
-        # Obtenemos la fecha de la cuota desde los datos del formulario que enviaremos
-        fecha_cuota_str = request.POST.get('fecha_cuota')
-        
-        if fecha_cuota_str:
-            fecha_cuota = parse_date(fecha_cuota_str)
-            
-            # Verificamos que no estemos registrando un pago duplicado para esa cuota
-            if not PagoCuota.objects.filter(poliza=poliza, fecha_cuota_correspondiente=fecha_cuota).exists():
-                PagoCuota.objects.create(
-                    poliza=poliza,
-                    fecha_pago=timezone.now().date(),
-                    monto_pagado=poliza.valor_cuota or poliza.prima_total_anual,
-                    fecha_cuota_correspondiente=fecha_cuota,
-                    notas="Pago rápido registrado desde el dashboard."
-                )
-                messages.success(request, f"Pago para la póliza {poliza.numero_poliza} registrado exitosamente.")
-            else:
-                messages.warning(request, f"El pago para esa cuota de la póliza {poliza.numero_poliza} ya había sido registrado.")
-        else:
-            messages.error(request, "No se proporcionó la fecha de la cuota para registrar el pago.")
-            
-    # Redirigimos siempre al dashboard
+        cuota = get_object_or_404(PagoCuota, pk=pk_cuota, poliza__usuario=request.user)
+        cuota.estado = 'PAGADO'
+        cuota.fecha_de_pago_realizado = timezone.now().date()
+        cuota.save()
+        messages.success(request, "Cuota marcada como pagada.")
     return redirect('dashboard')
+
+@login_required
+def marcar_cuota_pagada(request, pk_cuota):
+    cuota = get_object_or_404(PagoCuota, pk=pk_cuota, poliza__usuario=request.user)
+    if request.method == 'POST':
+        cuota.estado = 'PAGADO'
+        cuota.fecha_de_pago_realizado = timezone.now().date()
+        cuota.save()
+        
+        # --- LÍNEA CORREGIDA ---
+        # Usamos el método .strftime() para formatear la fecha
+        fecha_formateada = cuota.fecha_vencimiento_cuota.strftime('%d/%m/%Y')
+        messages.success(request, f"Cuota del {fecha_formateada} marcada como pagada.")
+        
+    return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
 
 #---(VISTAS SINIESTROS)---
 class SiniestroCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
