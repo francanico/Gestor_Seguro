@@ -16,7 +16,15 @@
     <div class="card mb-4">
         <div class="card-header">Información de la Póliza</div>
         <div class="card-body">
-            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>{% endif %}
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    <ul class="mb-0">
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
             <div class="row g-3">
                 <div class="col-md-6"><label class="form-label">{{ form.cliente.label }}</label>{% render_field form.cliente class+="form-select" %}</div>
                 <div class="col-md-6"><label class="form-label">{{ form.aseguradora.label }}</label>{% render_field form.aseguradora class+="form-select" %}</div>
@@ -60,9 +68,19 @@
     <!-- Card 4: Asegurados en la Póliza (Formset) -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Asegurados en la Póliza</span>
-            <button type="button" class="btn btn-sm btn-success" id="add-asegurado-form"><i class="fas fa-plus"></i> Añadir Asegurado</button>
-        </div>
+                {% for form in asegurados_formset %}
+                    <div class="row g-3 align-items-center mb-3 border-bottom pb-3">
+                        {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                        <div class="col-md-5"><label>{{ form.nombre_asegurado.label }}</label>{% render_field form.nombre_asegurado class+="form-control" %}</div>
+                        <div class="col-md-5"><label>{{ form.tipo_documento.label }}</label>{% render_field form.tipo_documento class+="form-select" %}</div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            {% if asegurados_formset.can_delete %}
+                                <div class="form-check pt-4">{% render_field form.DELETE class+="form-check-input" %} <label for="{{ form.DELETE.id_for_label }}" class="form-check-label text-danger">Eliminar</label></div>
+                            {% endif %}
+                        </div>
+                        <div class="col-12"><label>{{ form.notas_asegurado.label }}</label>{% render_field form.notas_asegurado class+="form-control" %}</div>
+                    </div>
+                {% endfor %}
         <div class="card-body">
             {{ asegurados_formset.management_form }}
             {% if asegurados_formset.non_form_errors %}<div class="alert alert-danger">{{ asegurados_formset.non_form_errors }}</div>{% endif %}
@@ -89,14 +107,14 @@
             <div class="row g-3 align-items-center mb-3 border-bottom pb-3">
                 {% for hidden in cuota_form.hidden_fields %}{{ hidden }}{% endfor %}
                 <div class="col-md-3"><label>{{ cuota_form.fecha_vencimiento_cuota.label }}</label>{% render_field cuota_form.fecha_vencimiento_cuota %}</div>
-                <div class="col-md-2"><label>{{ cuota_form.monto_cuota.label }}</label>{% render_field cuota_form.monto_cuota %}</div>
+        <a href="{% if object and object.get_absolute_url %}{{ object.get_absolute_url }}{% else %}{% url 'polizas:lista_polizas' %}{% endif %}" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
                 <div class="col-md-2"><label>{{ cuota_form.estado.label }}</label>{% render_field cuota_form.estado %}</div>
                 <div class="col-md-3"><label>{{ cuota_form.fecha_de_pago_realizado.label }}</label>{% render_field cuota_form.fecha_de_pago_realizado %}</div>
                 <div class="col-md-2">
                     {% if cuotas_formset.can_delete %}
                         <div class="form-check pt-4">{% render_field cuota_form.DELETE class+="form-check-input" %} <label for="{{ cuota_form.DELETE.id_for_label }}" class="form-check-label text-danger">Eliminar</label></div>
                     {% endif %}
-                </div>
+    {% include 'polizas/_asegurado_form_snippet.html' with form=asegurados_formset.empty_form only %}
                 <div class="col-12"><label>{{ cuota_form.notas_pago.label }}</label>{% render_field cuota_form.notas_pago %}</div>
             </div>
             {% endfor %}
@@ -117,8 +135,4 @@
     {% include 'polizas/_asegurado_form_snippet.html' with form=asegurados_formset.empty_form %}
 </template>
 
-{% endblock %}
-
-{% block extra_js %}
-<script src="{% static 'js/poliza_form.js' %}"></script>
 {% endblock %}

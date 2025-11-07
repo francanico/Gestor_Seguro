@@ -220,10 +220,10 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         
         if self.request.POST:
             context['asegurados_formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
-            # En 'create', no pasamos el formset de cuotas porque aún no existen.
+            # No se necesita el formset de cuotas en la vista de creación, ya que las cuotas se generan automáticamente después de guardar la póliza.
         else:
             context['asegurados_formset'] = AseguradoFormSet(prefix='asegurados')
-            # Pasamos un formset vacío para que la plantilla no falle
+            # Pasamos un formset vacío para asegurarnos de que la plantilla no falle.
         
         return context
 
