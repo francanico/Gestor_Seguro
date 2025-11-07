@@ -390,14 +390,16 @@ def cancelar_renovacion(request, pk):
             # Eliminamos la póliza de renovación que se creó por error
             poliza_renovada.delete()
             
-            # Revertimos el estado de la póliza original
-            # Podríamos guardarnos el estado anterior, pero por ahora la ponemos como Vigente
+            # Revertimos el estado de la póliza original a 'VIGENTE'
             poliza_original.estado_poliza = 'VIGENTE'
             poliza_original.save()
             
             messages.success(request, f"La renovación de la póliza '{poliza_original.numero_poliza}' ha sido cancelada.")
         else:
-            messages.warning(request, "No se encontró una póliza de renovación para cancelar.")
+            messages.warning(request, "No se encontró una póliza de renovación para cancelar, pero se ha revertido el estado de la póliza original.")
+            # Aunque no haya renovación que borrar, igual revertimos el estado
+            poliza_original.estado_poliza = 'VIGENTE'
+            poliza_original.save()
             
         return redirect(poliza_original.get_absolute_url())
 
