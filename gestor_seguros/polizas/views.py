@@ -23,6 +23,7 @@ from bs4 import BeautifulSoup
 from django.core.cache import cache
 from decimal import Decimal,InvalidOperation
 from .mixins import OwnerRequiredMixin
+from django.views import View
 
 
 # Constantes para estados de póliza activos
@@ -200,51 +201,48 @@ class PolizaDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
         
         return redirect(poliza.get_absolute_url())
 
-class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMixin, UpdateView):
-    model = Poliza
-    form_class = PolizaForm
+class PolizaUpdateView(LoginRequiredMixin, View):
     template_name = 'polizas/poliza_form.html'
-    success_message = "Póliza actualizada exitosamente."
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['titulo_pagina'] = "Editar Póliza"
-        if 'formset' not in kwargs:
-            if self.request.POST:
-                context['formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
-            else:
-                context['formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
-        return context
-    
-    def post(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        form = self.get_form()
-        formset = AseguradoFormSet(request.POST, instance=self.object, prefix='asegurados')
 
-        if form.is_valid() and formset.is_valid():
-            # La llamada es correcta
-            return self.form_valid(form, formset)
-        else:
-            return self.form_invalid(form, formset)
-            
-    # --- CORRECCIÓN EN LA DEFINICIÓN DEL MÉTODO ---
-    def form_valid(self, form, formset):
-        with transaction.atomic():
-            self.object = form.save()
-            formset.save()
-            self.object.generar_plan_de_pagos() # Generar plan de pagos
+    def get(self, request, *args, **kwargs):
+        poliza = get_object_or_404(Poliza, pk=kwargs['pk'], usuario=request.user)
+        form = PolizaForm(instance=poliza, user=request.user)
+        formset = AseguradoFormSet(instance=poliza, prefix='asegurados')
         
-        # Llamamos al método original de la clase padre solo con el 'form'
-        return super().form_valid(form)
-    
-    def form_invalid(self, form, formset=None):
-        if formset is None:
-            formset = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
-        messages.error(self.request, "Por favor, corrige los errores.")
-        return self.render_to_response(self.get_context_data(form=form, formset=formset))
-    
-    def get_success_url(self):
-        return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
+        context = {
+            'form': form,
+            'formset': formset,
+            'object': poliza,
+            'titulo_pagina': 'Editar Póliza'
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        poliza = get_object_or_404(Poliza, pk=kwargs['pk'], usuario=request.user)
+        form = PolizaForm(request.POST, request.FILES, instance=poliza, user=request.user)
+        
+        # Lógica para añadir un nuevo formulario de asegurado
+        if 'add_item' in request.POST:
+            form_data = request.POST.copy()
+            form_count = int(form_data.get('asegurados-TOTAL_FORMS', 0))
+            form_data['asegurados-TOTAL_FORMS'] = form_count + 1
+            formset = AseguradoFormSet(form_data, instance=poliza, prefix='asegurados')
+            context = {'form': form, 'formset': formset, 'object': poliza, 'titulo_pagina': 'Editar Póliza'}
+            return render(request, self.template_name, context)
+
+        # Lógica para guardar
+        formset = AseguradoFormSet(request.POST, instance=poliza, prefix='asegurados')
+        if form.is_valid() and formset.is_valid():
+            with transaction.atomic():
+                form.save()
+                formset.save()
+                poliza.generar_plan_de_pagos()
+            messages.success(request, "Póliza actualizada exitosamente.")
+            return redirect('polizas:detalle_poliza', pk=poliza.pk)
+        else:
+            messages.error(request, "Por favor, corrige los errores.")
+            context = {'form': form, 'formset': formset, 'object': poliza, 'titulo_pagina': 'Editar Póliza'}
+            return render(request, self.template_name, context)
 
 class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Poliza
