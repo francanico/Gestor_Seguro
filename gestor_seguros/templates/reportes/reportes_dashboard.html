@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load static %} 
 
 {% block title %}Reportes de Agencia{% endblock %}
 
@@ -7,7 +8,7 @@
 <div class="page-header">
     <h2><i class="fas fa-chart-pie"></i> Reportes de Agencia</h2>
     <a href="{% url 'reportes:exportar_polizas_csv' %}?fecha_inicio={{ request.GET.fecha_inicio|default:'' }}&fecha_fin={{ request.GET.fecha_fin|default:'' }}" 
-       class="btn btn-success">
+    class="btn btn-success">
         <i class="fas fa-file-csv"></i> Exportar a CSV
     </a>
 </div>
@@ -60,9 +61,10 @@
 
 <!-- Fila de Gráficos -->
 <div class="row">
-    <div class="col-lg-7">
+    <!-- Gráfico de Producción por Mes -->
+    <div class="col-lg-12 col-xl-6">
         <div class="card mb-4">
-            <div class="card-header"><i class="fas fa-chart-bar me-1"></i> Producción (Primas Emitidas) por Mes</div>
+            <div class="card-header"><i class="fas fa-chart-bar me-1"></i> Producción por Mes</div>
             <div class="card-body">
                 {% if produccion_por_mes %}
                     <canvas id="produccionChart" style="min-height: 250px;"></canvas>
@@ -72,25 +74,38 @@
             </div>
         </div>
     </div>
-    <div class="col-lg-5">
+    <!-- Gráfico de Cartera por Ramo -->
+    <div class="col-lg-6 col-xl-3">
         <div class="card mb-4">
-            <div class="card-header"><i class="fas fa-chart-pie me-1"></i> Distribución de Cartera por Ramo</div>
+            <div class="card-header"><i class="fas fa-chart-pie me-1"></i> Cartera por Ramo</div>
             <div class="card-body">
                 {% if cartera_por_ramo %}
                     <canvas id="carteraChart" style="min-height: 250px;"></canvas>
                 {% else %}
-                    <p class="text-muted text-center pt-5 pb-5">No hay datos de cartera para mostrar.</p>
+                    <p class="text-muted text-center pt-5 pb-5">No hay datos de cartera.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- PRODUCCIÓN POR ASEGURADORA -->
+
+    <div class="col-lg-6 col-xl-3">
+        <div class="card mb-4">
+            <div class="card-header"><i class="fas fa-building me-1"></i> Cartera por Aseguradora</div>
+            <div class="card-body">
+                {% if produccion_por_aseguradora %}
+                    <canvas id="aseguradoraChart" style="min-height: 250px;"></canvas>
+                {% else %}
+                    <p class="text-muted text-center pt-5 pb-5">No hay datos por aseguradora.</p>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-{{ produccion_por_mes|json_script:"produccion-data" }}
-{{ cartera_por_ramo|json_script:"cartera-data" }}
-
 {% block extra_js %}
-{% load static %} 
+
 
 <!-- Primero, cargamos la librería Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

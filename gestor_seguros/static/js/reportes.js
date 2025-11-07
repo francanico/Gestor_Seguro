@@ -83,5 +83,48 @@
         } catch (e) {
             console.error('Error al procesar el gráfico de cartera:', e);
         }
+
+        // NUEVO CÓDIGO PARA EL GRÁFICO DE ASEGURADORAS
+        // ====================================================
+        try {
+            const aseguradoraDataEl = document.getElementById('aseguradora-data');
+            if (aseguradoraDataEl) {
+                const aseguradoraData = JSON.parse(aseguradoraDataEl.textContent);
+                console.log("Datos por Aseguradora:", aseguradoraData);
+
+                if (aseguradoraData.length > 0) {
+                    const aseguradoraCtx = document.getElementById('aseguradoraChart');
+                    const aseguradoraLabels = aseguradoraData.map(item => item.aseguradora__nombre);
+                    const aseguradoraValues = aseguradoraData.map(item => item.total_prima);
+
+                    new Chart(aseguradoraCtx, {
+                        type: 'pie', // Usamos un gráfico de pie, que es bueno para esto
+                        data: {
+                            labels: aseguradoraLabels,
+                            datasets: [{
+                                label: 'Producción por Aseguradora',
+                                data: aseguradoraValues,
+                                backgroundColor: [
+                                    '#0d6efd', '#6610f2', '#6f42c1', 
+                                    '#d63384', '#dc3545', '#fd7e14', '#ffc107'
+                                ],
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        } catch (e) {
+            console.error('Error al renderizar el gráfico por aseguradora:', e);
+        }
+
     });
 })();

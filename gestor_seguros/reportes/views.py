@@ -41,6 +41,14 @@ def reportes_dashboard(request):
     cartera_por_ramo = list(Poliza.objects.filter(usuario=user).values('ramo_tipo_seguro').annotate(
         cantidad=Count('id')
     ).order_by('-cantidad'))
+    
+    # 3.1 Prima por aseguradora (para gráfico de dona) 
+    produccion_por_aseguradora = list(
+        polizas_query_periodo.filter(aseguradora__isnull=False)
+        .values('aseguradora__nombre')
+        .annotate(total_prima=Sum('prima_total_anual'))
+        .order_by('-total_prima')
+    )
 
     # 4. KPIs
     agregados_kpi = polizas_query_periodo.aggregate(
@@ -57,6 +65,7 @@ def reportes_dashboard(request):
         'fecha_inicio': fecha_inicio_str,
         'fecha_fin': fecha_fin_str,
         'titulo_pagina': 'Reportes de Agencia',
+        'produccion_por_aseguradora': produccion_por_aseguradora,
     }
     return render(request, 'reportes/reportes_dashboard.html', context)
 
