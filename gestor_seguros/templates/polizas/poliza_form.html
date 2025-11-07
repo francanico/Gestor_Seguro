@@ -56,11 +56,30 @@
     <div class="card mb-4">
         <div class="card-header">Otros Detalles</div>
         <div class="card-body">
-             <div class="row g-3">
+            <div class="row g-3">
                 <div class="col-md-6"><label class="form-label">{{ form.estado_poliza.label }}</label>{% render_field form.estado_poliza class+="form-select" %}</div>
-                <div class="col-md-6"><label class="form-label">{{ form.archivo_poliza.label }}</label>{% render_field form.archivo_poliza class+="form-control" %}</div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.archivo_poliza.label }}</label>
+                    <div class="custom-file-widget">
+                        {% if form.instance.archivo_poliza %}
+                            <div class="file-info">
+                                <span>Archivo Actual:</span>
+                                <a href="{{ form.instance.archivo_poliza.url }}" target="_blank">
+                                    <i class="fas fa-file-pdf"></i> {{ form.instance.archivo_poliza.name|truncatechars:30 }}
+                                </a>
+                                <!-- Este es el checkbox original, lo vamos a ocultar con CSS -->
+                                <div class="form-check form-check-inline ms-2" id="clear-checkbox-wrapper">
+                                    {{ form.archivo_poliza.clear_checkbox }} 
+                                    <label for="{{ form.archivo_poliza.clear_checkbox_id }}">Eliminar archivo al guardar</label>
+                                </div>
+                            </div>
+                        {% endif %}
+                        <!-- Este es el input para seleccionar un nuevo archivo -->
+                        {% render_field form.archivo_poliza class+="form-control" %}
+                    </div>
+                </div>
                 <div class="col-12"><label class="form-label">{{ form.notas_poliza.label }}</label>{% render_field form.notas_poliza class+="form-control" rows="3" %}</div>
-             </div>
+            </div>
         </div>
     </div>
     
@@ -97,23 +116,26 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Script opcional para dar feedback visual al marcar 'Eliminar' -->
+<script src="{% static 'js/poliza_form.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('asegurado-forms-container');
-    if (container) {
-        container.addEventListener('click', function(e) {
-            if (e.target && e.target.getAttribute('name') && e.target.getAttribute('name').endsWith('-DELETE')) {
-                const formElement = e.target.closest('.asegurado-form');
-                if (formElement) {
-                    if (e.target.checked) {
-                        formElement.style.opacity = '0.5';
-                    } else {
-                        formElement.style.opacity = '1';
-                    }
-                }
-            }
-        });
+    // --- LÓGICA PARA EL WIDGET DE ARCHIVO ---
+    const clearCheckboxWrapper = document.getElementById('clear-checkbox-wrapper');
+    if (clearCheckboxWrapper) {
+        const checkbox = clearCheckboxWrapper.querySelector('input[type="checkbox"]');
+        
+        // Creamos nuestro propio "label" que actúa como botón
+        const fakeButton = document.createElement('label');
+        fakeButton.setAttribute('for', checkbox.id);
+        
+        // Reemplazamos el label original con nuestro "botón"
+        const originalLabel = clearCheckboxWrapper.querySelector('label');
+        if(originalLabel) {
+            clearCheckboxWrapper.replaceChild(fakeButton, originalLabel);
+        }
+
+        // Hacemos que al hacer clic en nuestro pseudo-botón, se marque/desmarque el checkbox
+        // (Esto es manejado por el 'for' del label, pero lo dejamos por si acaso)
     }
 });
 </script>

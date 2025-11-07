@@ -289,13 +289,22 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         else:
             return self.form_invalid(form, formset)
 
-    def form_valid(self, form, formset):
-        with transaction.atomic():
-            form.instance.usuario = self.request.user
-            self.object = form.save()
-            formset.instance = self.object
-            formset.save()
-        return super().form_valid(form)
+    def form_valid(self, form):
+        context = self.get_context_data()
+        formset = context['formset']
+        
+        if form.is_valid() and formset.is_valid():
+            with transaction.atomic():
+                form.instance.usuario = self.request.user
+                self.object = form.save()
+                formset.instance = self.object
+                formset.save()
+                
+                self.object.generar_plan_de_pagos()
+                
+            return super().form_valid(form)
+        else:
+            return self.form_invalid(form)
 
     def form_invalid(self, form, formset):
         messages.error(self.request, "Por favor, corrige los errores.")

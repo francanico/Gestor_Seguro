@@ -169,3 +169,56 @@ main.main-content-area { padding-bottom: 3rem; }
     font-size: 1.5rem;
     margin-bottom: 1rem;
 }
+
+/* --- Widget de Subida de Archivo Personalizado --- */
+.custom-file-widget .file-info {
+    font-size: 0.85rem;
+    background-color: #f8f9fa;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.custom-file-widget .file-info a {
+    font-weight: 500;
+    color: var(--primary-color);
+}
+.custom-file-widget .file-info i {
+    margin-right: 0.25rem;
+}
+
+/* Ocultamos el widget feo de Django (texto y checkbox) */
+#clear-checkbox-wrapper label {
+    display: none; /* Oculta la etiqueta "Eliminar archivo al guardar" */
+}
+
+/* Creamos nuestro propio "botón" de eliminar */
+#clear-checkbox-wrapper input[type="checkbox"] {
+    display: none; /* Ocultamos el checkbox real */
+}
+
+#clear-checkbox-wrapper::before {
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    content: "\f1f8"; /* Ícono de papelera */
+    display: inline-block;
+    padding: 0.3rem 0.5rem;
+    background-color: #fee2e2;
+    color: #dc2626;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+#clear-checkbox-wrapper:hover::before {
+    background-color: #dc2626;
+    color: white;
+}
+
+/* Cuando el checkbox está marcado (por JS), cambiamos el estilo del "botón" */
+#clear-checkbox-wrapper input[type="checkbox"]:checked + label::before {
+    background-color: #dc2626;
+    color: white;
+    content: "\f2ed"; /* Ícono de papelera tachada */
+}
