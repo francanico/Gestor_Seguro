@@ -322,22 +322,23 @@ class PolizaDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
 # --- VISTA PARA RENOVAR PÓLIZA ---
 @login_required
 def renovar_poliza(request, pk):
-    """
-    Crea una póliza renovada a partir de una existente.
-    """
     poliza_original = get_object_or_404(Poliza, pk=pk, usuario=request.user)
 
     # 1. Marcamos la póliza original como RENOVADA y la guardamos primero.
     poliza_original.estado_poliza = 'RENOVADA'
     poliza_original.save()
 
-    # 2. Creamos una nueva instancia de póliza para la renovación.
-    # No es una copia directa para evitar copiar estados internos.
+    # --- LÓGICA DE RENOVACIÓN CORREGIDA ---
+    
+    # 2. Calculamos los nuevos valores ANTES de crear el objeto.
+    nuevo_ano_vigencia = (poliza_original.fecha_fin_vigencia + relativedelta(days=1)).year
+    nuevo_numero_poliza = f"{poliza_original.numero_poliza}-{nuevo_ano_vigencia}"
+
+    # 3. Creamos la nueva instancia de póliza pasando todos los argumentos.
     poliza_nueva = Poliza(
         usuario=poliza_original.usuario,
         cliente=poliza_original.cliente,
         aseguradora=poliza_original.aseguradora,
-        numero_poliza=poliza_original.numero_poliza, # Mantenemos el mismo número
         ramo_tipo_seguro=poliza_original.ramo_tipo_seguro,
         descripcion_bien_asegurado=poliza_original.descripcion_bien_asegurado,
         prima_total_anual=poliza_original.prima_total_anual,
@@ -345,7 +346,8 @@ def renovar_poliza(request, pk):
         valor_cuota=poliza_original.valor_cuota,
         comision_monto=poliza_original.comision_monto,
         
-        # --- Datos específicos de la renovación ---
+        # Valores específicos de la renovación
+        numero_poliza=nuevo_numero_poliza, # <-- Usamos la variable correcta
         renovacion_de=poliza_original,
         fecha_inicio_vigencia=poliza_original.fecha_fin_vigencia + relativedelta(days=1),
         fecha_fin_vigencia=poliza_original.fecha_fin_vigencia + relativedelta(years=1),
@@ -354,24 +356,23 @@ def renovar_poliza(request, pk):
         comision_cobrada=False,
     )
     
-    # 3. Guardamos la nueva póliza.
+    # 4. Guardamos la nueva póliza.
     poliza_nueva.save()
 
-    # 4. Copiamos los asegurados de la póliza original a la nueva.
+    # 5. Copiamos los asegurados de la póliza original a la nueva.
     for asegurado in poliza_original.asegurados.all():
-        asegurado.pk = None
+        asegurado.pk = None # Anula el ID para crear una nueva instancia
         asegurado.id = None
         asegurado.poliza = poliza_nueva
         asegurado.save()
 
-    # 5. Generamos el nuevo plan de pagos para la póliza renovada.
+    # 6. Generamos el nuevo plan de pagos para la póliza renovada.
     poliza_nueva.generar_plan_de_pagos()
 
-    messages.success(request, f"Póliza '{poliza_nueva.numero_poliza}' renovada. Por favor, revisa y guarda los detalles.")
+    messages.success(request, f"Póliza '{poliza_original.numero_poliza}' renovada como '{poliza_nueva.numero_poliza}'.")
     
     # Redirigimos al formulario de EDICIÓN de la nueva póliza.
     return redirect('polizas:editar_poliza', pk=poliza_nueva.pk)
-
 # --- Dashboard y Recordatorios ---
 @login_required
 def dashboard_view(request):
