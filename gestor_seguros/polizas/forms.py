@@ -53,13 +53,11 @@ AseguradoFormSet = inlineformset_factory(
 class PolizaForm(forms.ModelForm):
     class Meta:
         model = Poliza
-        fields = [
-            'cliente', 'aseguradora', 'numero_poliza', 'ramo_tipo_seguro',
-            'descripcion_bien_asegurado', 'fecha_emision', 'fecha_inicio_vigencia',
-            'fecha_fin_vigencia', 'prima_total_anual', 'frecuencia_pago',
-            'valor_cuota', 'comision_monto', 'comision_cobrada',
-            'fecha_cobro_comision', 'estado_poliza', 'notas_poliza', 'archivo_poliza'
-        ]
+        fields = ['cliente', 'aseguradora', 'numero_poliza', 'ramo_tipo_seguro',
+                'descripcion_bien_asegurado', 'fecha_emision', 'fecha_inicio_vigencia',
+                'fecha_fin_vigencia', 'prima_total_anual', 'frecuencia_pago',
+                'valor_cuota', 'comision_monto', 'comision_cobrada',
+                'fecha_cobro_comision', 'estado_poliza', 'notas_poliza', 'archivo_poliza']
         widgets = {
             'fecha_emision': forms.DateInput(attrs={'type': 'date'}),
             'fecha_inicio_vigencia': forms.DateInput(attrs={'type': 'date'}),
@@ -68,6 +66,13 @@ class PolizaForm(forms.ModelForm):
             'notas_poliza': forms.Textarea(attrs={'rows': 3}),
             'descripcion_bien_asegurado': forms.Textarea(attrs={'rows': 2}),
         }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if user:
+            self.fields['cliente'].queryset = Cliente.objects.filter(usuario=user).order_by('nombre_completo')
+            self.fields['aseguradora'].queryset = Aseguradora.objects.filter(usuario=user).order_by('nombre')
     
     def clean(self):
         cleaned_data = super().clean()
@@ -129,3 +134,18 @@ class SiniestroForm(forms.ModelForm):
             field.widget.attrs['class'] = 'form-control'
 #---(END SINIESTRO FORM)---
 
+class CuotaForm(forms.ModelForm):
+    class Meta:
+        model = PagoCuota
+        fields = ['fecha_vencimiento_cuota', 'monto_cuota', 'estado', 'fecha_de_pago_realizado', 'notas_pago']
+        widgets = {
+            'fecha_vencimiento_cuota': forms.DateInput(attrs={'type': 'date'}),
+            'fecha_de_pago_realizado': forms.DateInput(attrs={'type': 'date'}),
+            'notas_pago': forms.Textarea(attrs={'rows': 1}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            css_class = 'form-select' if isinstance(field.widget, forms.Select) else 'form-control form-control-sm'
+            field.widget.attrs.update({'class': css_class})

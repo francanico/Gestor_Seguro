@@ -211,34 +211,40 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     success_message = "Póliza creada exitosamente."
 
     def get_context_data(self, **kwargs):
-        """
-        Asegura que tanto 'form' como 'formset' estén siempre en el contexto.
-        """
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Crear Nueva Póliza"
-        if 'formset' not in context: # Prevenir sobreescritura si form_invalid ya lo añadió
-            if self.request.POST:
-                context['formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
-            else:
-                context['formset'] = AseguradoFormSet(prefix='asegurados')
+        if self.request.POST:
+            context['asegurados_formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
+            # Para 'create', no necesitamos el cuotas_formset en el POST inicial
+        else:
+            context['asegurados_formset'] = AseguradoFormSet(prefix='asegurados')
+            # No pasamos el cuotas_formset en el GET, ya que no hay cuotas que mostrar
         return context
 
     def form_valid(self, form):
         context = self.get_context_data()
-        formset = context['formset']
+        asegurados_formset = context['asegurados_formset']
         
-        if formset.is_valid():
+        # El formset de cuotas no se valida aquí, se genera después de guardar
+        if form.is_valid() and asegurados_formset.is_valid():
             with transaction.atomic():
                 form.instance.usuario = self.request.user
+                
+                # Guardamos la póliza primero para obtener un ID
                 self.object = form.save()
-                formset.instance = self.object
-                formset.save()
+                
+                # Ahora que self.object existe, podemos asociar y guardar el formset de asegurados
+                asegurados_formset.instance = self.object
+                asegurados_formset.save()
+                
+                # --- LÓGICA CLAVE ---
+                # Generamos el plan de pagos DESPUÉS de que la póliza principal y los asegurados estén guardados
                 self.object.generar_plan_de_pagos()
+                
             return super().form_valid(form)
         else:
-            # Si el formset no es válido, pasamos ambos formularios (con errores) al contexto.
-            return self.render_to_response(self.get_context_data(form=form, formset=formset))
-            
+            return self.form_invalid(form)
+
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
 
@@ -249,33 +255,38 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
     success_message = "Póliza actualizada exitosamente."
 
     def get_context_data(self, **kwargs):
-        """
-        Asegura que tanto 'form' como 'formset' estén siempre en el contexto.
-        """
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Editar Póliza"
-        if 'formset' not in context:
-            if self.request.POST:
-                context['formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
-            else:
-                context['formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
-        return context
+        if self.request.POST:
+            context['asegurados_formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
+        else:
+            context['asegurados_formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
     
+        return context
+
     def form_valid(self, form):
         context = self.get_context_data()
-        formset = context['formset']
+        asegurados_formset = context['asegurados_formset']
+        cuotas_formset = context['cuotas_formset']
         
-        if formset.is_valid():
+        has_changed_fields = any(field in form.changed_data for field in ['prima_total_anual', 'valor_cuota', 'frecuencia_pago', 'fecha_inicio_vigencia'])
+        
+        if form.is_valid() and asegurados_formset.is_valid() and cuotas_formset.is_valid():
             with transaction.atomic():
                 self.object = form.save()
-                formset.save()
-                self.object.generar_plan_de_pagos()
+                asegurados_formset.save()
+                
+                if not cuotas_formset.has_changed() and has_changed_fields:
+                    self.object.generar_plan_de_pagos()
+                else:
+                    cuotas_formset.save()
             return super().form_valid(form)
         else:
-            return self.render_to_response(self.get_context_data(form=form, formset=formset))
+            return self.form_invalid(form)
 
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
+
 
 class PolizaDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     model = Poliza
