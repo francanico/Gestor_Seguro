@@ -23,6 +23,10 @@ from bs4 import BeautifulSoup
 from django.core.cache import cache
 from decimal import Decimal,InvalidOperation
 from .mixins import OwnerRequiredMixin
+from django.utils.decorators import method_decorator
+
+
+
 
 
 # Constantes para estados de póliza activos
@@ -204,29 +208,37 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Poliza
     form_class = PolizaForm
     template_name = 'polizas/poliza_form.html'
-    
+    success_message = "Póliza creada exitosamente."
+
     def get_context_data(self, **kwargs):
+        """
+        Asegura que tanto 'form' como 'formset' estén siempre en el contexto.
+        """
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Crear Nueva Póliza"
-        if self.request.POST:
-            context['formset'] = AseguradoFormSet(self.request.POST)
-        else:
-            context['formset'] = AseguradoFormSet()
+        if 'formset' not in context: # Prevenir sobreescritura si form_invalid ya lo añadió
+            if self.request.POST:
+                context['formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
+            else:
+                context['formset'] = AseguradoFormSet(prefix='asegurados')
         return context
 
     def form_valid(self, form):
         context = self.get_context_data()
         formset = context['formset']
+        
         if formset.is_valid():
-            form.instance.usuario = self.request.user
-            self.object = form.save()
-            formset.instance = self.object
-            formset.save()
-            self.object.generar_plan_de_pagos()
+            with transaction.atomic():
+                form.instance.usuario = self.request.user
+                self.object = form.save()
+                formset.instance = self.object
+                formset.save()
+                self.object.generar_plan_de_pagos()
             return super().form_valid(form)
         else:
-            return self.form_invalid(form)
-
+            # Si el formset no es válido, pasamos ambos formularios (con errores) al contexto.
+            return self.render_to_response(self.get_context_data(form=form, formset=formset))
+            
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
 
@@ -234,26 +246,33 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
     model = Poliza
     form_class = PolizaForm
     template_name = 'polizas/poliza_form.html'
+    success_message = "Póliza actualizada exitosamente."
 
     def get_context_data(self, **kwargs):
+        """
+        Asegura que tanto 'form' como 'formset' estén siempre en el contexto.
+        """
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Editar Póliza"
-        if self.request.POST:
-            context['formset'] = AseguradoFormSet(self.request.POST, instance=self.object)
-        else:
-            context['formset'] = AseguradoFormSet(instance=self.object)
+        if 'formset' not in context:
+            if self.request.POST:
+                context['formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
+            else:
+                context['formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
         return context
-
+    
     def form_valid(self, form):
         context = self.get_context_data()
         formset = context['formset']
+        
         if formset.is_valid():
-            self.object = form.save()
-            formset.save()
-            self.object.generar_plan_de_pagos()
+            with transaction.atomic():
+                self.object = form.save()
+                formset.save()
+                self.object.generar_plan_de_pagos()
             return super().form_valid(form)
         else:
-            return self.form_invalid(form)
+            return self.render_to_response(self.get_context_data(form=form, formset=formset))
 
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
