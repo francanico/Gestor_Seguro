@@ -181,7 +181,7 @@ class PolizaDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
         
         # Diferenciamos qué formulario se está enviando
         if 'marcar_pagada' in request.POST:
-            cuota_pk = request.POST.get('cuota_pk')
+            cuota_pk = request.POST.get('marcar_pagada')
             cuota = get_object_or_404(PagoCuota, pk=cuota_pk, poliza=poliza)
             cuota.estado = 'PAGADO'
             cuota.fecha_de_pago_realizado = timezone.now().date()
@@ -189,7 +189,7 @@ class PolizaDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
             messages.success(request, 'Cuota marcada como pagada.')
         
         elif 'cancelar_pago' in request.POST:
-            cuota_pk = request.POST.get('cuota_pk')
+            cuota_pk = request.POST.get('cancelar_pago')
             cuota = get_object_or_404(PagoCuota, pk=cuota_pk, poliza=poliza)
             cuota.estado = 'PENDIENTE'
             cuota.fecha_de_pago_realizado = None
