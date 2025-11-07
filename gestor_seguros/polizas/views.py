@@ -330,8 +330,8 @@ def renovar_poliza(request, pk):
 
     # --- LÓGICA DE RENOVACIÓN CORREGIDA ---
     
-    # 2. Calculamos los nuevos valores ANTES de crear el objeto.
-    nuevo_ano_vigencia = (poliza_original.fecha_fin_vigencia + relativedelta(days=1)).year
+    # 2. Calculamos los nuevos valores.
+    nuevo_ano_vigencia = poliza_original.fecha_fin_vigencia.year
     nuevo_numero_poliza = f"{poliza_original.numero_poliza}-{nuevo_ano_vigencia}"
 
     # 3. Creamos la nueva instancia de póliza pasando todos los argumentos.
@@ -349,7 +349,7 @@ def renovar_poliza(request, pk):
         # Valores específicos de la renovación
         numero_poliza=nuevo_numero_poliza, # <-- Usamos la variable correcta
         renovacion_de=poliza_original,
-        fecha_inicio_vigencia=poliza_original.fecha_fin_vigencia + relativedelta(days=1),
+        fecha_inicio_vigencia=poliza_original.fecha_fin_vigencia,
         fecha_fin_vigencia=poliza_original.fecha_fin_vigencia + relativedelta(years=1),
         fecha_emision=timezone.now().date(),
         estado_poliza='EN_TRAMITE',
