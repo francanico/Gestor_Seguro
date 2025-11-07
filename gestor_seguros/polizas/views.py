@@ -13,7 +13,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db import transaction
 from .models import Poliza, Aseguradora,PagoCuota,Siniestro,Asegurado 
-from .forms import PolizaForm, AseguradoraForm,PagoCuotaForm,SiniestroForm,AseguradoForm,AseguradoFormSet 
+from .forms import PolizaForm, AseguradoraForm,PagoCuotaForm,SiniestroForm,AseguradoForm,AseguradoFormSet,CuotaFormSet
 from clientes.models import Cliente # Para el selector de clientes
 from django.db.models import F,Prefetch
 from django.forms import inlineformset_factory
@@ -164,44 +164,46 @@ class PolizaDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
         )
 
     def get_context_data(self, **kwargs):
-        """
-        Prepara todo el contexto necesario para la plantilla de detalle.
-        """
         context = super().get_context_data(**kwargs)
         poliza = self.get_object()
-            # maneja la lista de cuotas directamente.
         
-        # Pasamos el ContentType para la sección de documentos.
+        # --- PASAMOS EL FORMSET DE CUOTAS PARA EDICIÓN ---
+        if self.request.POST:
+            context['cuotas_formset'] = CuotaFormSet(self.request.POST, instance=poliza, prefix='cuotas')
+        else:
+            context['cuotas_formset'] = CuotaFormSet(instance=poliza, prefix='cuotas')
+
         context['content_type'] = ContentType.objects.get_for_model(poliza)
-        
         return context
 
     def post(self, request, *args, **kwargs):
-        """
-        Maneja la acción de "Marcar como Pagada" para una cuota específica.
-        """
         poliza = self.get_object()
         
-        # El formulario en la plantilla envía el 'pk' de la cuota que se quiere pagar.
-        cuota_pk_a_pagar = request.POST.get('cuota_pk')
+        # Diferenciamos qué formulario se está enviando
+        if 'marcar_pagada' in request.POST:
+            cuota_pk = request.POST.get('cuota_pk')
+            cuota = get_object_or_404(PagoCuota, pk=cuota_pk, poliza=poliza)
+            cuota.estado = 'PAGADO'
+            cuota.fecha_de_pago_realizado = timezone.now().date()
+            cuota.save()
+            messages.success(request, 'Cuota marcada como pagada.')
         
-        if cuota_pk_a_pagar:
-            try:
-                # Buscamos la cuota, asegurándonos que pertenece a esta póliza y a este usuario
-                cuota = PagoCuota.objects.get(pk=cuota_pk_a_pagar, poliza=poliza, poliza__usuario=request.user)
-                
-                if cuota.estado == 'PENDIENTE':
-                    cuota.estado = 'PAGADO'
-                    cuota.fecha_de_pago_realizado = timezone.now().date()
-                    cuota.save()
-                    messages.success(request, f"La cuota con vencimiento el {cuota.fecha_vencimiento_cuota.strftime('%d/%m/%Y')} ha sido marcada como pagada.")
-                else:
-                    messages.warning(request, "Esta cuota ya había sido marcada como pagada.")
-                    
-            except PagoCuota.DoesNotExist:
-                messages.error(request, "La cuota que intentas pagar no es válida.")
+        elif 'cancelar_pago' in request.POST:
+            cuota_pk = request.POST.get('cuota_pk')
+            cuota = get_object_or_404(PagoCuota, pk=cuota_pk, poliza=poliza)
+            cuota.estado = 'PENDIENTE'
+            cuota.fecha_de_pago_realizado = None
+            cuota.save()
+            messages.success(request, 'Pago de cuota revertido.')
+
+        elif 'guardar_plan_pagos' in request.POST:
+            formset = CuotaFormSet(request.POST, instance=poliza, prefix='cuotas')
+            if formset.is_valid():
+                formset.save()
+                messages.success(request, 'Plan de pagos actualizado exitosamente.')
+            else:
+                messages.error(request, 'Hubo un error al actualizar el plan de pagos.')
         
-        # Redirigimos siempre de vuelta a la página de detalle de la póliza.
         return redirect(poliza.get_absolute_url())
 
 class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -435,14 +437,34 @@ def dashboard_view(request):
     cobros_pendientes_30_dias = []
     cobros_vencidos = []
 
-# --- LÓGICA PARA COBROS ---
-    cuotas_pendientes = PagoCuota.objects.filter(
-        poliza__usuario=request.user,
-        estado='PENDIENTE'
-    ).select_related('poliza', 'poliza__cliente')
-    
-    cobros_vencidos = cuotas_pendientes.filter(fecha_vencimiento_cuota__lt=hoy).order_by('fecha_vencimiento_cuota')
-    cobros_pendientes_30_dias = cuotas_pendientes.filter(fecha_vencimiento_cuota__range=(hoy, hoy + timedelta(days=30))).order_by('fecha_vencimiento_cuota')
+    # Iteramos sobre las pólizas activas, no sobre las cuotas.
+    # Usamos prefetch_related para cargar eficientemente la primera cuota pendiente de cada póliza.
+    polizas_con_cuotas = polizas_activas_y_pendientes.exclude(
+        frecuencia_pago__in=['UNICO', 'ANUAL']
+    ).prefetch_related(
+        Prefetch(
+            'cuotas',
+            queryset=PagoCuota.objects.filter(estado='PENDIENTE').order_by('fecha_vencimiento_cuota'),
+            to_attr='proximas_cuotas_pendientes' # Guardamos el resultado en un nuevo atributo
+        )
+    )
+
+    for poliza in polizas_con_cuotas:
+        # Verificamos si la pre-carga encontró alguna cuota pendiente
+        if hasattr(poliza, 'proximas_cuotas_pendientes') and poliza.proximas_cuotas_pendientes:
+            # La primera en la lista es la próxima a pagar
+            proxima_cuota = poliza.proximas_cuotas_pendientes[0]
+            dias = (proxima_cuota.fecha_vencimiento_cuota - hoy).days
+            
+            # Clasificamos la póliza según su próxima cuota
+            if dias < 0:
+                cobros_vencidos.append(proxima_cuota) # Añadimos el objeto cuota
+            elif 0 <= dias <= 30:
+                cobros_pendientes_30_dias.append(proxima_cuota) # Añadimos el objeto cuota
+
+    # Ordenamos las listas de cuotas
+    cobros_pendientes_30_dias.sort(key=lambda c: c.fecha_vencimiento_cuota)
+    cobros_vencidos.sort(key=lambda c: c.fecha_vencimiento_cuota)
 
     # C. Comisiones
     comisiones_pendientes = Poliza.objects.filter(usuario=request.user, comision_cobrada=False, comision_monto__gt=0).select_related('cliente').order_by('fecha_fin_vigencia')

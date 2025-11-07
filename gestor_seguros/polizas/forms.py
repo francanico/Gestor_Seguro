@@ -2,8 +2,7 @@
 from django import forms
 from django.forms import inlineformset_factory,BaseInlineFormSet
 from .models import Poliza, Aseguradora, Cliente,PagoCuota,Siniestro,Asegurado
-from django.core.exceptions import ValidationError # <-- IMPORTAR
-
+from django.core.exceptions import ValidationError 
 
 
 class AseguradoraForm(forms.ModelForm):
@@ -22,12 +21,6 @@ class AseguradoraForm(forms.ModelForm):
                 field.widget.attrs['class'] += ' form-control'
             else:
                 field.widget.attrs['class'] = 'form-control'
-
-
-# polizas/forms.py
-from django import forms
-from django.forms import inlineformset_factory
-from .models import Poliza, Asegurado
 
 class AseguradoForm(forms.ModelForm):
     class Meta:
@@ -108,26 +101,49 @@ class PolizaForm(forms.ModelForm):
 
 #---(PAGO CUOTA FORM)---
 
-class PagoCuotaForm(forms.ModelForm):
+# --- FORMULARIO PARA EDITAR UNA CUOTA (DENTRO DE UN FORMSET) ---
+class CuotaForm(forms.ModelForm):
     class Meta:
         model = PagoCuota
-        # --- CAMPOS CORREGIDOS PARA COINCIDIR CON EL MODELO ---
-        fields = ['fecha_de_pago_realizado', 'notas_pago']
-        
+        fields = ['fecha_vencimiento_cuota', 'monto_cuota', 'estado', 'fecha_de_pago_realizado', 'notas_pago']
         widgets = {
+            'fecha_vencimiento_cuota': forms.DateInput(attrs={'type': 'date'}),
             'fecha_de_pago_realizado': forms.DateInput(attrs={'type': 'date'}),
-            'notas_pago': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Ej: Pago por transferencia...'}),
+            'notas_pago': forms.Textarea(attrs={'rows': 1}),
         }
 
-        labels = {
-            'fecha_de_pago_realizado': 'Fecha en que se realizó el pago',
-            'notas_pago': 'Notas del pago',
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            css_class = 'form-select' if isinstance(field.widget, forms.Select) else 'form-control form-control-sm'
+            field.widget.attrs.update({'class': css_class})
+
+# --- FORMULARIO PARA MARCAR UNA CUOTA COMO PAGADA (ACCIÓN RÁPIDA) ---
+class RegistrarPagoForm(forms.ModelForm):
+    class Meta:
+        model = PagoCuota
+        # Solo los campos que el usuario llena al pagar
+        fields = ['fecha_de_pago_realizado', 'notas_pago']
+        widgets = {
+            'fecha_de_pago_realizado': forms.DateInput(attrs={'type': 'date'}),
+            'notas_pago': forms.Textarea(attrs={'rows': 2}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Hacemos la fecha de pago obligatoria
         self.fields['fecha_de_pago_realizado'].required = True
+
+# --- FORMSET PARA EDITAR EL PLAN DE PAGOS COMPLETO ---
+CuotaFormSet = inlineformset_factory(
+    Poliza,
+    PagoCuota,
+    form=CuotaForm,
+    extra=0,
+    can_delete=True,
+    fk_name='poliza'
+)
+
 
 #---(END PAGO CUOTA FORM)---
 
