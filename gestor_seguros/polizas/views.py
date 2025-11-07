@@ -373,6 +373,38 @@ def renovar_poliza(request, pk):
     
     # Redirigimos al formulario de EDICIÓN de la nueva póliza.
     return redirect('polizas:editar_poliza', pk=poliza_nueva.pk)
+
+@login_required
+def cancelar_renovacion(request, pk):
+    """
+    Busca la renovación de una póliza, la elimina, y revierte la
+    póliza original a su estado anterior.
+    """
+    poliza_original = get_object_or_404(Poliza, pk=pk, usuario=request.user)
+
+    # Buscamos la póliza que fue creada como renovación de esta
+    poliza_renovada = Poliza.objects.filter(renovacion_de=poliza_original, usuario=request.user).first()
+
+    if request.method == 'POST':
+        if poliza_renovada:
+            # Eliminamos la póliza de renovación que se creó por error
+            poliza_renovada.delete()
+            
+            # Revertimos el estado de la póliza original
+            # Podríamos guardarnos el estado anterior, pero por ahora la ponemos como Vigente
+            poliza_original.estado_poliza = 'VIGENTE'
+            poliza_original.save()
+            
+            messages.success(request, f"La renovación de la póliza '{poliza_original.numero_poliza}' ha sido cancelada.")
+        else:
+            messages.warning(request, "No se encontró una póliza de renovación para cancelar.")
+            
+        return redirect(poliza_original.get_absolute_url())
+
+    return render(request, 'polizas/cancelar_renovacion_confirm.html', {
+        'poliza_original': poliza_original,
+        'poliza_renovada': poliza_renovada
+    })
 # --- Dashboard y Recordatorios ---
 @login_required
 def dashboard_view(request):
