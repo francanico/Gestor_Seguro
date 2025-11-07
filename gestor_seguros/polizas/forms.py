@@ -70,11 +70,6 @@ class PolizaForm(forms.ModelForm):
             'notas_poliza': forms.Textarea(attrs={'rows': 3}),
             'descripcion_bien_asegurado': forms.Textarea(attrs={'rows': 2}),
         }
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            css_class = 'form-select' if isinstance(field.widget, forms.Select) else 'form-control'
-            field.widget.attrs.update({'class': css_class})
     
     def clean(self):
         cleaned_data = super().clean()
