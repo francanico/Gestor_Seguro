@@ -1,8 +1,9 @@
 # polizas/forms.py
 from django import forms
-from django.forms import inlineformset_factory,BaseInlineFormSet
+from django.forms import inlineformset_factory
 from .models import Poliza, Aseguradora, Cliente,PagoCuota,Siniestro,Asegurado
 from django.core.exceptions import ValidationError 
+from clientes.models import Cliente
 
 
 class AseguradoraForm(forms.ModelForm):
@@ -59,8 +60,7 @@ class PolizaForm(forms.ModelForm):
             'descripcion_bien_asegurado', 'fecha_emision', 'fecha_inicio_vigencia',
             'fecha_fin_vigencia', 'prima_total_anual', 'frecuencia_pago',
             'valor_cuota', 'comision_monto', 'comision_cobrada',
-            'fecha_cobro_comision', 'estado_poliza', 'notas_poliza',
-            'archivo_poliza',
+            'fecha_cobro_comision', 'estado_poliza', 'notas_poliza', 'archivo_poliza'
         ]
         widgets = {
             'fecha_emision': forms.DateInput(attrs={'type': 'date'}),
@@ -72,13 +72,13 @@ class PolizaForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        # 1. Sacamos el argumento 'user' de kwargs ANTES de hacer nada más.
+        # 1. Sacamos 'user' de kwargs ANTES de llamar a super()
         user = kwargs.pop('user', None)
         
-        # 2. Llamamos al __init__ del padre con los kwargs ya "limpios".
+        # 2. Llamamos al __init__ del padre con los kwargs ya "limpios"
         super().__init__(*args, **kwargs)
         
-        # 3. Ahora usamos la variable 'user' para filtrar los querysets.
+        # 3. Usamos 'user' para filtrar los querysets
         if user:
             self.fields['cliente'].queryset = Cliente.objects.filter(usuario=user).order_by('nombre_completo')
             self.fields['aseguradora'].queryset = Aseguradora.objects.filter(usuario=user).order_by('nombre')
