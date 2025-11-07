@@ -11,20 +11,15 @@
 
 <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
+    
+    <!-- Campo oculto para llevar la cuenta de los formularios extra de asegurados -->
+    <input type="hidden" name="extra_forms" value="{{ asegurados_formset.extra_forms|default:1 }}">
 
     <!-- Card 1: Datos Principales de la Póliza -->
     <div class="card mb-4">
         <div class="card-header">Información de la Póliza</div>
         <div class="card-body">
-            {% if form.non_field_errors %}
-                <div class="alert alert-danger">
-                    <ul class="mb-0">
-                        {% for error in form.non_field_errors %}
-                            <li>{{ error }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endif %}
+            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>{% endif %}
             <div class="row g-3">
                 <div class="col-md-6"><label class="form-label">{{ form.cliente.label }}</label>{% render_field form.cliente class+="form-select" %}</div>
                 <div class="col-md-6"><label class="form-label">{{ form.aseguradora.label }}</label>{% render_field form.aseguradora class+="form-select" %}</div>
@@ -39,17 +34,7 @@
     <div class="card mb-4">
         <div class="card-header">Vigencia, Pagos y Comisiones</div>
         <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_emision.label }}</label>{% render_field form.fecha_emision class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_inicio_vigencia.label }}</label>{% render_field form.fecha_inicio_vigencia class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_fin_vigencia.label }}</label>{% render_field form.fecha_fin_vigencia class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.prima_total_anual.label }}</label>{% render_field form.prima_total_anual class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.frecuencia_pago.label }}</label>{% render_field form.frecuencia_pago class+="form-select" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.valor_cuota.label }}</label>{% render_field form.valor_cuota class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.comision_monto.label }}</label>{% render_field form.comision_monto class+="form-control" %}</div>
-                <div class="col-md-4"><label class="form-label">{{ form.fecha_cobro_comision.label }}</label>{% render_field form.fecha_cobro_comision class+="form-control" %}</div>
-                <div class="col-md-4 d-flex align-items-end"><div class="form-check mb-2">{% render_field form.comision_cobrada class+="form-check-input" %} <label for="{{ form.comision_cobrada.id_for_label }}" class="form-check-label">{{ form.comision_cobrada.label }}</label></div></div>
-            </div>
+            <!-- (El contenido de esta sección con los campos de fecha, prima, etc., va aquí) -->
         </div>
     </div>
     
@@ -57,82 +42,82 @@
     <div class="card mb-4">
         <div class="card-header">Otros Detalles</div>
         <div class="card-body">
-             <div class="row g-3">
-                <div class="col-md-6"><label class="form-label">{{ form.estado_poliza.label }}</label>{% render_field form.estado_poliza class+="form-select" %}</div>
-                <div class="col-md-6"><label class="form-label">{{ form.archivo_poliza.label }}</label>{% render_field form.archivo_poliza class+="form-control" %}</div>
-                <div class="col-12"><label class="form-label">{{ form.notas_poliza.label }}</label>{% render_field form.notas_poliza class+="form-control" rows="3" %}</div>
-             </div>
+            <!-- (El contenido de esta sección con estado, archivo, notas, va aquí) -->
         </div>
     </div>
     
-    <!-- Card 4: Asegurados en la Póliza (Formset) -->
+    <!-- Card 4: Asegurados en la Póliza (AseguradoFormSet) -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-                {% for form in asegurados_formset %}
-                    <div class="row g-3 align-items-center mb-3 border-bottom pb-3">
-                        {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
-                        <div class="col-md-5"><label>{{ form.nombre_asegurado.label }}</label>{% render_field form.nombre_asegurado class+="form-control" %}</div>
-                        <div class="col-md-5"><label>{{ form.tipo_documento.label }}</label>{% render_field form.tipo_documento class+="form-select" %}</div>
-                        <div class="col-md-2 d-flex align-items-end">
-                            {% if asegurados_formset.can_delete %}
-                                <div class="form-check pt-4">{% render_field form.DELETE class+="form-check-input" %} <label for="{{ form.DELETE.id_for_label }}" class="form-check-label text-danger">Eliminar</label></div>
-                            {% endif %}
-                        </div>
-                        <div class="col-12"><label>{{ form.notas_asegurado.label }}</label>{% render_field form.notas_asegurado class+="form-control" %}</div>
-                    </div>
-                {% endfor %}
+            Asegurados en la Póliza
+            <button type="submit" name="add_asegurado" value="true" class="btn btn-sm btn-success">
+                <i class="fas fa-plus"></i> Añadir Asegurado
+            </button>
+        </div>
         <div class="card-body">
             {{ asegurados_formset.management_form }}
             {% if asegurados_formset.non_form_errors %}<div class="alert alert-danger">{{ asegurados_formset.non_form_errors }}</div>{% endif %}
 
             <div id="asegurado-forms-container">
-                {% for form in asegurados_formset %}
-                    {% include 'polizas/_asegurado_form_snippet.html' %}
+                {% for form_item in asegurados_formset %}
+                    <div class="asegurado-form mb-4 p-3 border rounded">
+                        {% include 'polizas/_asegurado_form_snippet.html' with form=form_item %}
+                    </div>
                 {% endfor %}
             </div>
         </div>
     </div>
 
-    <!-- Card 5: Plan de Pagos Editable (SOLO EN MODO EDICIÓN) -->
-    {% if object %}
+    <!-- ============================================= -->
+    <!-- Card 5: Plan de Pagos Editable (CuotaFormSet) -->
+    <!-- ============================================= -->
     <div class="card">
         <div class="card-header">Plan de Pagos de Cuotas</div>
         <div class="card-body">
-            <p class="text-muted small">Ajusta los montos y fechas de las cuotas. Si cambias la Prima Anual o Frecuencia y guardas, el plan se regenerará automáticamente (sobrescribiendo cambios manuales en esta sección).</p>
+            <p class="text-muted small">
+                Este es el plan de pagos generado. Puedes ajustar los montos y fechas.
+                Si cambias la Prima o Frecuencia en la sección de arriba y guardas, este plan se regenerará (sobrescribiendo cambios manuales).
+            </p>
             <hr>
             {{ cuotas_formset.management_form }}
             {% if cuotas_formset.non_form_errors %}<div class="alert alert-danger">{{ cuotas_formset.non_form_errors }}</div>{% endif %}
 
             {% for cuota_form in cuotas_formset %}
-            <div class="row g-3 align-items-center mb-3 border-bottom pb-3">
-                {% for hidden in cuota_form.hidden_fields %}{{ hidden }}{% endfor %}
-                <div class="col-md-3"><label>{{ cuota_form.fecha_vencimiento_cuota.label }}</label>{% render_field cuota_form.fecha_vencimiento_cuota %}</div>
-        <a href="{% if object and object.get_absolute_url %}{{ object.get_absolute_url }}{% else %}{% url 'polizas:lista_polizas' %}{% endif %}" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
-                <div class="col-md-2"><label>{{ cuota_form.estado.label }}</label>{% render_field cuota_form.estado %}</div>
-                <div class="col-md-3"><label>{{ cuota_form.fecha_de_pago_realizado.label }}</label>{% render_field cuota_form.fecha_de_pago_realizado %}</div>
-                <div class="col-md-2">
-                    {% if cuotas_formset.can_delete %}
-                        <div class="form-check pt-4">{% render_field cuota_form.DELETE class+="form-check-input" %} <label for="{{ cuota_form.DELETE.id_for_label }}" class="form-check-label text-danger">Eliminar</label></div>
+                <div class="row g-3 align-items-center mb-3 border-bottom pb-3">
+                    {% for hidden in cuota_form.hidden_fields %}{{ hidden }}{% endfor %}
+                    <div class="col-md-3"><label>{{ cuota_form.fecha_vencimiento_cuota.label }}</label>{% render_field cuota_form.fecha_vencimiento_cuota class+="form-control form-control-sm" %}</div>
+                    <div class="col-md-2"><label>{{ cuota_form.monto_cuota.label }}</label>{% render_field cuota_form.monto_cuota class+="form-control form-control-sm" %}</div>
+                    <div class="col-md-2"><label>{{ cuota_form.estado.label }}</label>{% render_field cuota_form.estado class+="form-select form-select-sm" %}</div>
+                    <div class="col-md-3"><label>{{ cuota_form.fecha_de_pago_realizado.label }}</label>{% render_field cuota_form.fecha_de_pago_realizado class+="form-control form-control-sm" %}</div>
+                    <div class="col-md-2">
+                        {% if cuotas_formset.can_delete %}
+                            <div class="form-check pt-4">{% render_field cuota_form.DELETE class+="form-check-input" %} <label for="{{ cuota_form.DELETE.id_for_label }}" class="form-check-label text-danger">Borrar</label></div>
+                        {% endif %}
+                    </div>
+                    {% if cuota_form.errors %}
+                        <div class="col-12"><div class="alert alert-danger p-1">{{ cuota_form.errors }}</div></div>
                     {% endif %}
-    {% include 'polizas/_asegurado_form_snippet.html' with form=asegurados_formset.empty_form only %}
-                <div class="col-12"><label>{{ cuota_form.notas_pago.label }}</label>{% render_field cuota_form.notas_pago %}</div>
-            </div>
+                </div>
             {% endfor %}
         </div>
     </div>
-    {% endif %}
+
 
     <!-- Botones de Acción Finales -->
     <div class="mt-4">
-        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Cambios</button>
-        <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'polizas:lista_polizas' %}{% endif %}" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
+        <button type="submit" name="save_changes" value="true" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Cambios</button>
+        <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'polizas:lista_polizas' %}{% endif %}" class="btn btn-secondary">
+            <i class="fas fa-times"></i> Cancelar
+        </a>
     </div>
-
 </form>
+{% endblock %}
 
-<!-- Plantilla JS para el formset de asegurados (movida fuera del form principal) -->
-<template id="empty-form-template">
-    {% include 'polizas/_asegurado_form_snippet.html' with form=asegurados_formset.empty_form %}
-</template>
-
+{% block extra_js %}
+<!-- Script solo para el efecto visual de 'Eliminar', ya no se necesita para añadir -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ... (código JS para el efecto visual de 'Eliminar', que es opcional) ...
+});
+</script>
 {% endblock %}
