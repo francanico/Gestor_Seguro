@@ -102,7 +102,6 @@ class PolizaForm(forms.ModelForm):
 #---(PAGO CUOTA FORM)---
 
 # --- FORMULARIO PARA EDITAR UNA CUOTA (DENTRO DE UN FORMSET) ---
-class CuotaForm(forms.ModelForm):
     class Meta:
         model = PagoCuota
         fields = ['fecha_vencimiento_cuota', 'monto_cuota', 'estado', 'fecha_de_pago_realizado', 'notas_pago']
@@ -133,17 +132,6 @@ class RegistrarPagoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Hacemos la fecha de pago obligatoria
         self.fields['fecha_de_pago_realizado'].required = True
-
-# --- FORMSET PARA EDITAR EL PLAN DE PAGOS COMPLETO ---
-CuotaFormSet = inlineformset_factory(
-    Poliza,
-    PagoCuota,
-    form=CuotaForm,
-    extra=0,
-    can_delete=True,
-    fk_name='poliza'
-)
-
 
 #---(END PAGO CUOTA FORM)---
 

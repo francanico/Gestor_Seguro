@@ -154,9 +154,6 @@ class PolizaDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
     context_object_name = 'poliza'
 
     def get_queryset(self):
-        """
-        Optimiza la carga de datos relacionados para evitar múltiples consultas a la BD.
-        """
         return super().get_queryset().select_related(
             'cliente', 'aseguradora'
         ).prefetch_related(
@@ -164,45 +161,42 @@ class PolizaDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
         )
 
     def get_context_data(self, **kwargs):
+        """
+        Prepara el contexto. Ya no necesita pasar el formset de cuotas.
+        """
         context = super().get_context_data(**kwargs)
         poliza = self.get_object()
-        
-        # --- PASAMOS EL FORMSET DE CUOTAS PARA EDICIÓN ---
-        if self.request.POST:
-            context['cuotas_formset'] = CuotaFormSet(self.request.POST, instance=poliza, prefix='cuotas')
-        else:
-            context['cuotas_formset'] = CuotaFormSet(instance=poliza, prefix='cuotas')
-
         context['content_type'] = ContentType.objects.get_for_model(poliza)
         return context
 
     def post(self, request, *args, **kwargs):
+        """
+        Maneja solo las acciones de 'Pagar' y 'Cancelar Pago'.
+        Ya no maneja 'guardar_plan_pagos'.
+        """
         poliza = self.get_object()
         
-        # Diferenciamos qué formulario se está enviando
         if 'marcar_pagada' in request.POST:
             cuota_pk = request.POST.get('marcar_pagada')
-            cuota = get_object_or_404(PagoCuota, pk=cuota_pk, poliza=poliza)
-            cuota.estado = 'PAGADO'
-            cuota.fecha_de_pago_realizado = timezone.now().date()
-            cuota.save()
-            messages.success(request, 'Cuota marcada como pagada.')
+            cuota = get_object_or_404(PagoCuota, pk=cuota_pk, poliza=poliza, poliza__usuario=request.user)
+            if cuota.estado == 'PENDIENTE':
+                cuota.estado = 'PAGADO'
+                cuota.fecha_de_pago_realizado = timezone.now().date()
+                cuota.save()
+                messages.success(request, 'Cuota marcada como pagada.')
+            else:
+                messages.warning(request, 'Esta cuota ya estaba pagada.')
         
         elif 'cancelar_pago' in request.POST:
             cuota_pk = request.POST.get('cancelar_pago')
-            cuota = get_object_or_404(PagoCuota, pk=cuota_pk, poliza=poliza)
-            cuota.estado = 'PENDIENTE'
-            cuota.fecha_de_pago_realizado = None
-            cuota.save()
-            messages.success(request, 'Pago de cuota revertido.')
-
-        elif 'guardar_plan_pagos' in request.POST:
-            formset = CuotaFormSet(request.POST, instance=poliza, prefix='cuotas')
-            if formset.is_valid():
-                formset.save()
-                messages.success(request, 'Plan de pagos actualizado exitosamente.')
+            cuota = get_object_or_404(PagoCuota, pk=cuota_pk, poliza=poliza, poliza__usuario=request.user)
+            if cuota.estado == 'PAGADO':
+                cuota.estado = 'PENDIENTE'
+                cuota.fecha_de_pago_realizado = None
+                cuota.save()
+                messages.success(request, 'El pago de la cuota ha sido revertido.')
             else:
-                messages.error(request, 'Hubo un error al actualizar el plan de pagos.')
+                messages.warning(request, 'Esta cuota no estaba marcada como pagada.')
         
         return redirect(poliza.get_absolute_url())
 
