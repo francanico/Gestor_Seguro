@@ -8,16 +8,17 @@
 
 <!-- Cabecera de la Página con Acciones -->
 <div class="page-header">
-    <h2>
-        <i class="fas fa-file-invoice-dollar"></i> Detalle de Póliza: {{ poliza.numero_poliza }}
-        <span class="badge fs-6 ms-2 bg-success">{{ poliza.get_estado_poliza_display }}</span>
-    </h2>
+    <h2>...</h2>
     <div>
-        {% if poliza.estado_poliza not in "RENOVADA,CANCELADA" %}
+        {# --- LÓGICA DE BOTONES ACTUALIZADA --- #}
+        {% if poliza.estado_poliza == 'RENOVADA' %}
+            <a href="{% url 'polizas:cancelar_renovacion' poliza.pk %}" class="btn btn-warning"><i class="fas fa-undo"></i> Cancelar Renovación</a>
+        {% elif poliza.estado_poliza != 'CANCELADA' %}
             <a href="{% url 'polizas:renovar_poliza' poliza.pk %}" class="btn btn-success"><i class="fas fa-sync-alt"></i> Renovar</a>
         {% endif %}
-        <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-warning"><i class="fas fa-edit"></i> Editar</a>
-        <a href="{% url 'polizas:lista_polizas' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
+        
+        <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-outline-secondary"><i class="fas fa-edit"></i> Editar</a>
+        <a href="{% url 'polizas:lista_polizas' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
     </div>
 </div>
 

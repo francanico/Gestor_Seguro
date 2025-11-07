@@ -11,6 +11,7 @@ urlpatterns = [
     path('<int:pk>/editar/', views.PolizaUpdateView.as_view(), name='editar_poliza'),
     path('<int:pk>/eliminar/', views.PolizaDeleteView.as_view(), name='eliminar_poliza'),
     path('<int:pk>/renovar/', views.renovar_poliza, name='renovar_poliza'),
+    path('<int:pk>/cancelar-renovacion/', views.cancelar_renovacion, name='cancelar_renovacion'),
     path('cuota/<int:pk_cuota>/pagar/', views.marcar_cuota_pagada, name='marcar_cuota_pagada'),
     path('cuota/<int:pk_cuota>/cancelar/', views.cancelar_pago_cuota, name='cancelar_pago_cuota'),
     path('api/tasa-bcv/', views.obtener_tasa_bcv_api, name='api_tasa_bcv'),

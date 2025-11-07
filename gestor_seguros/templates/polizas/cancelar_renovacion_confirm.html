@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Cancelar Renovación{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-warning text-dark">
+        <i class="fas fa-exclamation-triangle"></i> Confirmar Cancelación de Renovación
+    </div>
+    <div class="card-body">
+        <h4 class="card-title">¿Estás seguro?</h4>
+        {% if poliza_renovada %}
+            <p>Estás a punto de cancelar la renovación de la póliza <strong>{{ poliza_original.numero_poliza }}</strong>.</p>
+            <p>Esto hará lo siguiente:</p>
+            <ul>
+                <li>Se eliminará permanentemente la póliza de renovación (<strong>{{ poliza_renovada.numero_poliza }}</strong>).</li>
+                <li>La póliza original volverá a su estado <strong>Vigente</strong>.</li>
+            </ul>
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-warning">Sí, Cancelar Renovación</button>
+                <a href="{{ poliza_original.get_absolute_url }}" class="btn btn-secondary">No, volver</a>
+            </form>
+        {% else %}
+            <p class="text-danger">No se encontró una póliza de renovación asociada a <strong>{{ poliza_original.numero_poliza }}</strong> para cancelar.</p>
+            <a href="{{ poliza_original.get_absolute_url }}" class="btn btn-secondary">Volver</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
