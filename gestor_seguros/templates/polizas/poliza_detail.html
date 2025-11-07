@@ -119,37 +119,56 @@
         </div>
 
         <!-- Card: Plan de Pagos -->
-        <div class="card mb-4">
-            <div class="card-header">Plan de Pagos de Cuotas</div>
-            <div class="card-body p-0">
-                <ul class="list-group list-group-flush">
-                    {% for cuota in poliza.cuotas.all %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="fw-bold">{{ cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}</span>
-                            <small class="d-block text-muted">${{ cuota.monto_cuota|floatformat:2|intcomma }}</small>
-                        </div>
-                        {% if cuota.estado == 'PENDIENTE' %}
-                            <form action="{% url 'polizas:marcar_cuota_pagada' cuota.pk %}" method="post" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-success" title="Marcar como Pagada"><i class="fas fa-check"></i> Pagar</button>
-                            </form>
-                        {% else %}
-                            <div>
-                                <span class="badge bg-success me-2"><i class="fas fa-check-circle"></i> Pagado el {{ cuota.fecha_de_pago_realizado|date:"d/m/Y" }}</span>
-                                <form action="{% url 'polizas:cancelar_pago_cuota' cuota.pk %}" method="post" class="d-inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Revertir este pago"><i class="fas fa-undo"></i></button>
-                                </form>
-                            </div>
-                        {% endif %}
-                    </li>
-                    {% empty %}
-                    <li class="list-group-item text-muted">El plan de pagos no ha sido generado o no aplica.</li>
-                    {% endfor %}
-                </ul>
+        <div class="card-body p-0">
+    <ul class="list-group list-group-flush">
+        {% for cuota in poliza.cuotas.all %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <span class="fw-bold">{{ cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}</span>
+                <small class="d-block text-muted">${{ cuota.monto_cuota|floatformat:2|intcomma }}</small>
             </div>
-        </div>
+
+            <!-- ======================================================== -->
+            <!-- LÓGICA CONDICIONAL PARA MOSTRAR BOTONES DE ACCIÓN      -->
+            <!-- ======================================================== -->
+
+            {# Si la cuota está PENDIENTE Y la póliza general está ACTIVA #}
+            {% if cuota.estado == 'PENDIENTE' and poliza.estado_poliza in 'VIGENTE,PENDIENTE_PAGO,EN_TRAMITE' %}
+                <form action="{% url 'polizas:marcar_cuota_pagada' cuota.pk %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-success" title="Marcar como Pagada">
+                        <i class="fas fa-check"></i> Pagar
+                    </button>
+                </form>
+            
+            {# Si la cuota está PAGADA #}
+            {% elif cuota.estado == 'PAGADO' %}
+                <div>
+                    <span class="badge bg-success me-2">
+                        <i class="fas fa-check-circle"></i> Pagado el {{ cuota.fecha_de_pago_realizado|date:"d/m/Y" }}
+                    </span>
+                    {# Solo mostramos el botón de cancelar si la póliza general aún está activa #}
+                    {% if poliza.estado_poliza in 'VIGENTE,PENDIENTE_PAGO,EN_TRAMITE' %}
+                    <form action="{% url 'polizas:cancelar_pago_cuota' cuota.pk %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Revertir este pago">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            
+            {# Si la cuota está PENDIENTE pero la póliza ya está RENOVADA o CANCELADA #}
+            {% else %}
+                <span class="badge bg-secondary">No Aplica</span>
+            {% endif %}
+
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted">El plan de pagos no ha sido generado.</li>
+        {% endfor %}
+    </ul>
+</div>
     </div> <!-- FIN DE LA COLUMNA DERECHA -->
 </div> <!-- FIN DE LA FILA PRINCIPAL -->
 
