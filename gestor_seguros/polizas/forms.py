@@ -72,31 +72,23 @@ class PolizaForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        # 1. "Capturamos" el argumento 'user' y lo eliminamos de kwargs
+        # 1. Sacamos el argumento 'user' de kwargs ANTES de hacer nada más.
         user = kwargs.pop('user', None)
         
-        # 2. Ahora llamamos al __init__ del padre con los kwargs ya "limpios"
+        # 2. Llamamos al __init__ del padre con los kwargs ya "limpios".
         super().__init__(*args, **kwargs)
-
-        # 3. Si el usuario fue pasado, filtramos los querysets
+        
+        # 3. Ahora usamos la variable 'user' para filtrar los querysets.
         if user:
             self.fields['cliente'].queryset = Cliente.objects.filter(usuario=user).order_by('nombre_completo')
             self.fields['aseguradora'].queryset = Aseguradora.objects.filter(usuario=user).order_by('nombre')
-        
-        # 4. # Desactivamos la validación HTML5 del navegador
-        for field in self.fields.values():
-            field.widget.attrs['required'] = False
 
     def clean(self):
         cleaned_data = super().clean()
         fecha_inicio = cleaned_data.get("fecha_inicio_vigencia")
         fecha_fin = cleaned_data.get("fecha_fin_vigencia")
-
-        if fecha_inicio and fecha_fin:
-            if fecha_fin < fecha_inicio:
-                raise ValidationError(
-                    "La fecha de fin de vigencia no puede ser anterior a la fecha de inicio."
-                )
+        if fecha_inicio and fecha_fin and fecha_fin < fecha_inicio:
+            raise ValidationError("La fecha de fin de vigencia no puede ser anterior a la fecha de inicio.")
         return cleaned_data
 
 #---(PAGO CUOTA FORM)---
