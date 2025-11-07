@@ -243,6 +243,9 @@ class PolizaUpdateView(LoginRequiredMixin, View):
             messages.error(request, "Por favor, corrige los errores.")
             context = {'form': form, 'formset': formset, 'object': poliza, 'titulo_pagina': 'Editar Póliza'}
             return render(request, self.template_name, context)
+        
+    def get_success_url(self):
+        return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})    
 
 class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Poliza
