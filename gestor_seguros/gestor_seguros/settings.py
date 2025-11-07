@@ -93,35 +93,7 @@ WSGI_APPLICATION = 'gestor_seguros.wsgi.application'
 DATABASES = {
     'default':dj_database_url.config(default= os.getenv('DATABASE_URL')),
 }   
-# --- SECCIÓN DE BASE DE DATOS ---
 
-# Intentar obtener la URL de la base de datos de producción (Railway)
-db_from_env = os.getenv('DATABASE_URL')
-
-if db_from_env:
-    # Opción REMOTA (PRODUCCIÓN/RAILWAY)
-    print("Usando Base de Datos Remota (PostgreSQL)")
-    
-    # Usamos dj_database_url para parsear la URL de Railway
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=db_from_env,
-            conn_max_age=600  # Opcional
-        )
-    }
-
-else:
-    # Opción LOCAL (DESARROLLO/SQLite)
-    # ESTA SECCIÓN SE EJECUTA SI NO SE ENCUENTRA DATABASE_URL en el entorno local
-    print("Usando Base de Datos Local (SQLite)")
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
-    
-# -----------------------------------
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
