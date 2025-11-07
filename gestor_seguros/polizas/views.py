@@ -204,99 +204,28 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Poliza
     form_class = PolizaForm
     template_name = 'polizas/poliza_form.html'
-    success_message = "Póliza creada exitosamente."
-
-    def get_form(self, form_class=None):
-        """
-        Sobrescribimos get_form para filtrar los desplegables.
-        """
-        form = super().get_form(form_class)
-        # Filtramos los campos para que solo muestren opciones del usuario actual
-        form.fields['cliente'].queryset = Cliente.objects.filter(usuario=self.request.user)
-        form.fields['aseguradora'].queryset = Aseguradora.objects.filter(usuario=self.request.user)
-        return form
-
-    # ... (get_context_data, form_valid, etc. se mantienen igual que la versión estándar
-    #      que te di para las Vistas Basadas en Clases, sin 'post' sobrescrito)
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Crear Nueva Póliza"
         if self.request.POST:
-            context['formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
+            context['formset'] = AseguradoFormSet(self.request.POST)
         else:
-            context['formset'] = AseguradoFormSet(prefix='asegurados')
+            context['formset'] = AseguradoFormSet()
         return context
 
     def form_valid(self, form):
         context = self.get_context_data()
         formset = context['formset']
         if formset.is_valid():
-            with transaction.atomic():
-                form.instance.usuario = self.request.user
-                self.object = form.save()
-                formset.instance = self.object
-                formset.save()
-                self.object.generar_plan_de_pagos()
+            form.instance.usuario = self.request.user
+            self.object = form.save()
+            formset.instance = self.object
+            formset.save()
+            self.object.generar_plan_de_pagos()
             return super().form_valid(form)
         else:
             return self.form_invalid(form)
-
-    def get_success_url(self):
-        return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
-
-    template_name = 'polizas/poliza_form.html'
-
-    def get(self, request, *args, **kwargs):
-        form = PolizaForm(user=request.user)
-        formset = AseguradoFormSet(prefix='asegurados')
-        
-        # Lógica para pre-rellenar el cliente desde la URL
-        cliente_id = request.GET.get('cliente_id')
-        if cliente_id:
-            try:
-                cliente = Cliente.objects.get(pk=cliente_id, usuario=request.user)
-                form.fields['cliente'].initial = cliente
-            except Cliente.DoesNotExist:
-                pass
-        
-        context = {
-            'form': form,
-            'formset': formset,
-            'titulo_pagina': 'Crear Nueva Póliza'
-        }
-        return render(request, self.template_name, context)
-
-    def post(self, request, *args, **kwargs):
-        form = PolizaForm(request.POST, request.FILES, user=request.user)
-        formset = AseguradoFormSet(request.POST, prefix='asegurados')
-        
-        # Lógica para el botón "Añadir Otro Asegurado"
-        if 'add_item' in request.POST:
-            form_data = request.POST.copy()
-            form_count = int(form_data.get('asegurados-TOTAL_FORMS', 0))
-            form_data['asegurados-TOTAL_FORMS'] = form_count + 1
-            formset_con_extra = AseguradoFormSet(form_data, prefix='asegurados')
-            context = {'form': form, 'formset': formset_con_extra, 'titulo_pagina': 'Crear Nueva Póliza'}
-            return render(request, self.template_name, context)
-
-        # Lógica de guardado normal
-        if form.is_valid() and formset.is_valid():
-            with transaction.atomic():
-                poliza = form.save(commit=False)
-                poliza.usuario = request.user
-                poliza.save()
-                
-                formset.instance = poliza
-                formset.save()
-                
-                poliza.generar_plan_de_pagos()
-            
-            messages.success(request, "Póliza creada exitosamente.")
-            return redirect('polizas:detalle_poliza', pk=poliza.pk)
-        else:
-            messages.error(request, "Por favor, corrige los errores.")
-            context = {'form': form, 'formset': formset, 'titulo_pagina': 'Crear Nueva Póliza'}
-            return render(request, self.template_name, context)
 
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
@@ -305,35 +234,23 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
     model = Poliza
     form_class = PolizaForm
     template_name = 'polizas/poliza_form.html'
-    success_message = "Póliza actualizada exitosamente."
-    
-    def get_form(self, form_class=None):
-        """
-        Sobrescribimos get_form para filtrar los desplegables.
-        """
-        form = super().get_form(form_class)
-        form.fields['cliente'].queryset = Cliente.objects.filter(usuario=self.request.user)
-        form.fields['aseguradora'].queryset = Aseguradora.objects.filter(usuario=self.request.user)
-        return form
 
-    # ... (get_context_data, form_valid, etc. se mantienen igual que la versión estándar)
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Editar Póliza"
         if self.request.POST:
-            context['formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
+            context['formset'] = AseguradoFormSet(self.request.POST, instance=self.object)
         else:
-            context['formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
+            context['formset'] = AseguradoFormSet(instance=self.object)
         return context
-    
+
     def form_valid(self, form):
         context = self.get_context_data()
         formset = context['formset']
         if formset.is_valid():
-            with transaction.atomic():
-                self.object = form.save()
-                formset.save()
-                self.object.generar_plan_de_pagos()
+            self.object = form.save()
+            formset.save()
+            self.object.generar_plan_de_pagos()
             return super().form_valid(form)
         else:
             return self.form_invalid(form)
