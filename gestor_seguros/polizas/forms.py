@@ -33,12 +33,10 @@ class AseguradoForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        # Este __init__ es simple, no maneja 'user', solo pone los campos como no requeridos.
         super().__init__(*args, **kwargs)
-        # Hacemos todos los campos opcionales para evitar validaciones no deseadas
         for field in self.fields.values():
             field.required = False
-            css_class = 'form-select' if isinstance(field.widget, forms.Select) else 'form-control'
-            field.widget.attrs.update({'class': css_class})
 
 # --- Formset Factory (Configuración para Lógica de Servidor) ---
 AseguradoFormSet = inlineformset_factory(
@@ -55,13 +53,29 @@ AseguradoFormSet = inlineformset_factory(
 class PolizaForm(forms.ModelForm):
     class Meta:
         model = Poliza
-        exclude = ('usuario', 'renovacion_de') # Excluimos campos que se manejan automáticamente
+        fields = [
+            'cliente', 'aseguradora', 'numero_poliza', 'ramo_tipo_seguro',
+            'descripcion_bien_asegurado', 'fecha_emision', 'fecha_inicio_vigencia',
+            'fecha_fin_vigencia', 'prima_total_anual', 'frecuencia_pago',
+            'valor_cuota', 'comision_monto', 'comision_cobrada',
+            'fecha_cobro_comision', 'estado_poliza', 'notas_poliza', 'archivo_poliza'
+        ]
         widgets = {
             'fecha_emision': forms.DateInput(attrs={'type': 'date'}),
             'fecha_inicio_vigencia': forms.DateInput(attrs={'type': 'date'}),
             'fecha_fin_vigencia': forms.DateInput(attrs={'type': 'date'}),
             'fecha_cobro_comision': forms.DateInput(attrs={'type': 'date'}),
+            'notas_poliza': forms.Textarea(attrs={'rows': 3}),
+            'descripcion_bien_asegurado': forms.Textarea(attrs={'rows': 2}),
         }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        fecha_inicio = cleaned_data.get("fecha_inicio_vigencia")
+        fecha_fin = cleaned_data.get("fecha_fin_vigencia")
+        if fecha_inicio and fecha_fin and fecha_fin < fecha_inicio:
+            raise ValidationError("La fecha de fin de vigencia no puede ser anterior a la fecha de inicio.")
+        return cleaned_data
 
 #---(PAGO CUOTA FORM)---
 

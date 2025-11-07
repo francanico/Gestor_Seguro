@@ -23,7 +23,6 @@ from bs4 import BeautifulSoup
 from django.core.cache import cache
 from decimal import Decimal,InvalidOperation
 from .mixins import OwnerRequiredMixin
-from django.views import View
 
 
 # Constantes para estados de póliza activos
