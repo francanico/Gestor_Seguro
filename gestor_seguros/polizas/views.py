@@ -13,7 +13,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db import transaction
 from .models import Poliza, Aseguradora,PagoCuota,Siniestro,Asegurado 
-from .forms import PolizaForm, AseguradoraForm,PagoCuotaForm,SiniestroForm,AseguradoForm,AseguradoFormSet,CuotaFormSet
+from .forms import PolizaForm, AseguradoraForm,SiniestroForm,AseguradoForm,AseguradoFormSet, CuotaForm, CuotaFormSet, RegistrarPagoForm
 from clientes.models import Cliente # Para el selector de clientes
 from django.db.models import F,Prefetch
 from django.forms import inlineformset_factory
