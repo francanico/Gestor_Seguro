@@ -213,7 +213,6 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Editar Póliza"
-        # Usamos 'formset' consistentemente
         if 'formset' not in kwargs:
             if self.request.POST:
                 context['formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
@@ -224,32 +223,27 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         form = self.get_form()
-        formset = AseguradoFormSet(request.POST, instance=self.object, prefix='asegurados') # <-- Definimos 'formset'
-
-        if 'add_item' in request.POST:
-            # La lógica de recarga de página para añadir un ítem.
-            # Necesitamos reconstruir el formset con un extra.
-            # OJO: Esta es la lógica para el método SIN JS.
-            form_data = request.POST.copy()
-            form_count = int(form_data.get('asegurados-TOTAL_FORMS', 0))
-            form_data['asegurados-TOTAL_FORMS'] = str(form_count + 1)
-            
-            # Recreamos el formset con los datos modificados
-            formset_con_extra = AseguradoFormSet(form_data, instance=self.object, prefix='asegurados')
-            return self.render_to_response(self.get_context_data(form=form, formset=formset_con_extra))
+        formset = AseguradoFormSet(request.POST, instance=self.object, prefix='asegurados')
 
         if form.is_valid() and formset.is_valid():
+            # La llamada es correcta
             return self.form_valid(form, formset)
         else:
             return self.form_invalid(form, formset)
             
+    # --- CORRECCIÓN EN LA DEFINICIÓN DEL MÉTODO ---
     def form_valid(self, form, formset):
         with transaction.atomic():
             self.object = form.save()
             formset.save()
+            self.object.generar_plan_de_pagos() # Generar plan de pagos
+        
+        # Llamamos al método original de la clase padre solo con el 'form'
         return super().form_valid(form)
     
-    def form_invalid(self, form, formset):
+    def form_invalid(self, form, formset=None):
+        if formset is None:
+            formset = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
         messages.error(self.request, "Por favor, corrige los errores.")
         return self.render_to_response(self.get_context_data(form=form, formset=formset))
     
@@ -265,7 +259,6 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Crear Nueva Póliza"
-        # Usamos 'formset' consistentemente
         if 'formset' not in kwargs:
             if self.request.POST:
                 context['formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
@@ -276,37 +269,30 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     def post(self, request, *args, **kwargs):
         self.object = None
         form = self.get_form()
-        formset = AseguradoFormSet(request.POST, prefix='asegurados') # <-- Definimos 'formset'
-
-        if 'add_item' in request.POST:
-            # Esta lógica ahora es innecesaria con el nuevo enfoque, la simplificamos
-            # pero la dejamos por si decides volver a ella.
-            # Lo importante es que no causa el error.
-            pass
+        formset = AseguradoFormSet(request.POST, prefix='asegurados')
 
         if form.is_valid() and formset.is_valid():
+            # La llamada es correcta (pasa self, form, formset)
             return self.form_valid(form, formset)
         else:
             return self.form_invalid(form, formset)
 
-    def form_valid(self, form):
-        context = self.get_context_data()
-        formset = context['formset']
+    # --- CORRECCIÓN EN LA DEFINICIÓN DEL MÉTODO ---
+    # Ahora acepta el argumento 'formset' que le pasamos desde 'post'
+    def form_valid(self, form, formset):
+        with transaction.atomic():
+            form.instance.usuario = self.request.user
+            self.object = form.save()
+            formset.instance = self.object
+            formset.save()
+            self.object.generar_plan_de_pagos() # Generar plan de pagos
         
-        if form.is_valid() and formset.is_valid():
-            with transaction.atomic():
-                form.instance.usuario = self.request.user
-                self.object = form.save()
-                formset.instance = self.object
-                formset.save()
-                
-                self.object.generar_plan_de_pagos()
-                
-            return super().form_valid(form)
-        else:
-            return self.form_invalid(form)
+        # Llamamos al método original de la clase padre solo con el 'form'
+        return super().form_valid(form)
 
-    def form_invalid(self, form, formset):
+    def form_invalid(self, form, formset=None):
+        if formset is None:
+            formset = AseguradoFormSet(self.request.POST, prefix='asegurados')
         messages.error(self.request, "Por favor, corrige los errores.")
         return self.render_to_response(self.get_context_data(form=form, formset=formset))
     

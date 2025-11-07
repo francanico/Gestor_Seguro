@@ -77,7 +77,7 @@ class Poliza(models.Model):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='polizas')
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name="polizas_contratadas", verbose_name="Cliente Contratante/Tomador")
 
-# --- NUEVO CAMPO PARA ENLAZAR RENOVACIONES ---
+# --- CAMPO PARA ENLAZAR RENOVACIONES ---
     # `self` significa que la relación es con el mismo modelo.
     # `on_delete=models.SET_NULL` por si la póliza original se borra, no perder la renovación.
     renovacion_de = models.ForeignKey(
@@ -228,23 +228,52 @@ class Poliza(models.Model):
         return None
     
     def generar_plan_de_pagos(self):
+        # Primero, borramos cualquier plan de pagos anterior para esta póliza
         self.cuotas.all().delete()
-        if not self.fecha_inicio_vigencia or not self.frecuencia_pago: return
+
+        if not self.fecha_inicio_vigencia or not self.frecuencia_pago:
+            print(f"DEBUG: No se genera plan para Póliza {self.pk}. Faltan fechas o frecuencia.")
+            return
 
         periodos = {
             'MENSUAL': (relativedelta(months=1), 12), 'TRIMESTRAL': (relativedelta(months=3), 4),
             'CUATRIMESTRAL': (relativedelta(months=4), 3), 'SEMESTRAL': (relativedelta(months=6), 2),
             'ANUAL': (relativedelta(years=1), 1), 'UNICO': (relativedelta(years=1), 1),
         }
-        if self.frecuencia_pago not in periodos: return
+
+        if self.frecuencia_pago not in periodos:
+            print(f"DEBUG: Frecuencia de pago '{self.frecuencia_pago}' no válida para Póliza {self.pk}.")
+            return
 
         periodo, num_cuotas = periodos[self.frecuencia_pago]
-        monto_por_cuota = self.valor_cuota if self.valor_cuota and self.valor_cuota > 0 else (self.prima_total_anual / num_cuotas)
+        
+        # --- Lógica de Cálculo de Monto Mejorada ---
+        # Si el usuario especificó un valor de cuota, lo usamos.
+        # Si no, lo calculamos dividiendo la prima total.
+        # Nos aseguramos de manejar el caso de num_cuotas = 0 para evitar división por cero.
+        monto_por_cuota = Decimal('0.00')
+        if self.valor_cuota and self.valor_cuota > 0:
+            monto_por_cuota = self.valor_cuota
+        elif self.prima_total_anual and num_cuotas > 0:
+            monto_por_cuota = self.prima_total_anual / Decimal(num_cuotas)
+        
+        if monto_por_cuota <= 0:
+            print(f"DEBUG: No se genera plan para Póliza {self.pk}. Monto de cuota es cero o negativo.")
+            return
+
         fecha_actual_cuota = self.fecha_inicio_vigencia
 
-        for _ in range(num_cuotas):
-            if self.fecha_fin_vigencia and fecha_actual_cuota > self.fecha_fin_vigencia: break
-            PagoCuota.objects.create(poliza=self, fecha_vencimiento_cuota=fecha_actual_cuota, monto_cuota=monto_por_cuota)
+        print(f"DEBUG: Generando {num_cuotas} cuotas para Póliza {self.pk}...")
+        for i in range(num_cuotas):
+            if self.fecha_fin_vigencia and fecha_actual_cuota > self.fecha_fin_vigencia:
+                break
+            
+            PagoCuota.objects.create(
+                poliza=self,
+                fecha_vencimiento_cuota=fecha_actual_cuota,
+                monto_cuota=monto_por_cuota.quantize(Decimal('0.01')) # Redondeo a 2 decimales
+            )
+            print(f"  -> Creada cuota {i+1} para fecha {fecha_actual_cuota}")
             fecha_actual_cuota += periodo
 
     def __str__(self):
