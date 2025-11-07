@@ -70,19 +70,12 @@ class PolizaForm(forms.ModelForm):
             'notas_poliza': forms.Textarea(attrs={'rows': 3}),
             'descripcion_bien_asegurado': forms.Textarea(attrs={'rows': 2}),
         }
-
     def __init__(self, *args, **kwargs):
-        # 1. Sacamos 'user' de kwargs ANTES de llamar a super()
-        user = kwargs.pop('user', None)
-        
-        # 2. Llamamos al __init__ del padre con los kwargs ya "limpios"
         super().__init__(*args, **kwargs)
-        
-        # 3. Usamos 'user' para filtrar los querysets
-        if user:
-            self.fields['cliente'].queryset = Cliente.objects.filter(usuario=user).order_by('nombre_completo')
-            self.fields['aseguradora'].queryset = Aseguradora.objects.filter(usuario=user).order_by('nombre')
-
+        for field_name, field in self.fields.items():
+            css_class = 'form-select' if isinstance(field.widget, forms.Select) else 'form-control'
+            field.widget.attrs.update({'class': css_class})
+    
     def clean(self):
         cleaned_data = super().clean()
         fecha_inicio = cleaned_data.get("fecha_inicio_vigencia")

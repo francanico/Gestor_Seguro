@@ -207,12 +207,18 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     template_name = 'polizas/poliza_form.html'
     success_message = "Póliza creada exitosamente."
 
-    def get_form_kwargs(self):
-        """ Pasa el usuario al __init__ del PolizaForm. """
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
+    def get_form(self, form_class=None):
+        """
+        Sobrescribimos get_form para filtrar los desplegables.
+        """
+        form = super().get_form(form_class)
+        # Filtramos los campos para que solo muestren opciones del usuario actual
+        form.fields['cliente'].queryset = Cliente.objects.filter(usuario=self.request.user)
+        form.fields['aseguradora'].queryset = Aseguradora.objects.filter(usuario=self.request.user)
+        return form
 
+    # ... (get_context_data, form_valid, etc. se mantienen igual que la versión estándar
+    #      que te di para las Vistas Basadas en Clases, sin 'post' sobrescrito)
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Crear Nueva Póliza"
@@ -225,21 +231,13 @@ class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     def form_valid(self, form):
         context = self.get_context_data()
         formset = context['formset']
-        
         if formset.is_valid():
             with transaction.atomic():
-                # Asigna el usuario y guarda la póliza
                 form.instance.usuario = self.request.user
                 self.object = form.save()
-                
-                # Asocia el formset a la póliza recién creada y guarda
                 formset.instance = self.object
                 formset.save()
-                
-                # Genera el plan de pagos
                 self.object.generar_plan_de_pagos()
-                
-            # Llama al form_valid de SuccessMessageMixin para el mensaje
             return super().form_valid(form)
         else:
             return self.form_invalid(form)
@@ -309,13 +307,17 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
     form_class = PolizaForm
     template_name = 'polizas/poliza_form.html'
     success_message = "Póliza actualizada exitosamente."
+    
+    def get_form(self, form_class=None):
+        """
+        Sobrescribimos get_form para filtrar los desplegables.
+        """
+        form = super().get_form(form_class)
+        form.fields['cliente'].queryset = Cliente.objects.filter(usuario=self.request.user)
+        form.fields['aseguradora'].queryset = Aseguradora.objects.filter(usuario=self.request.user)
+        return form
 
-    def get_form_kwargs(self):
-        """ Pasa el usuario al __init__ del PolizaForm. """
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
-
+    # ... (get_context_data, form_valid, etc. se mantienen igual que la versión estándar)
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Editar Póliza"
@@ -328,7 +330,6 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMix
     def form_valid(self, form):
         context = self.get_context_data()
         formset = context['formset']
-        
         if formset.is_valid():
             with transaction.atomic():
                 self.object = form.save()
