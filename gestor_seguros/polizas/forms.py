@@ -74,14 +74,7 @@ class PolizaForm(forms.ModelForm):
             self.fields['cliente'].queryset = Cliente.objects.filter(usuario=user).order_by('nombre_completo')
             self.fields['aseguradora'].queryset = Aseguradora.objects.filter(usuario=user).order_by('nombre')
     
-    def clean(self):
-        cleaned_data = super().clean()
-        fecha_inicio = cleaned_data.get("fecha_inicio_vigencia")
-        fecha_fin = cleaned_data.get("fecha_fin_vigencia")
-        if fecha_inicio and fecha_fin and fecha_fin < fecha_inicio:
-            raise ValidationError("La fecha de fin de vigencia no puede ser anterior a la fecha de inicio.")
-        return cleaned_data
-
+    
 #---(PAGO CUOTA FORM)---
 
 # --- FORMULARIO PARA EDITAR UNA CUOTA (DENTRO DE UN FORMSET) ---

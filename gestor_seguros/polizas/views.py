@@ -204,109 +204,67 @@ class PolizaDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
         
         return redirect(poliza.get_absolute_url())
 
-class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+class PolizaCreateView(LoginRequiredMixin, CreateView):
     model = Poliza
     form_class = PolizaForm
     template_name = 'polizas/poliza_form.html'
-    success_message = "Póliza creada exitosamente."
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Crear Nueva Póliza"
-        if 'formset' not in context:
-            if self.request.POST:
-                context['formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
-            else:
-                context['formset'] = AseguradoFormSet(prefix='asegurados')
+        if self.request.POST:
+            context['formset'] = AseguradoFormSet(self.request.POST, prefix='asegurados')
+        else:
+            context['formset'] = AseguradoFormSet(prefix='asegurados')
         return context
 
-    def post(self, request, *args, **kwargs):
-        self.object = None
-        form = self.get_form()
+    def form_valid(self, form):
+        context = self.get_context_data()
+        formset = context['formset']
         
-        # Reconstruimos el formset con los datos del POST
-        formset = AseguradoFormSet(request.POST, prefix='asegurados')
-
-        if 'add_item' in request.POST:
-            # Creamos una copia de los datos para poder modificarlos
-            form_data = request.POST.copy()
-            form_count = int(form_data.get('asegurados-TOTAL_FORMS', 0))
-            form_data['asegurados-TOTAL_FORMS'] = str(form_count + 1)
-            
-            # Volvemos a crear el formset con un formulario extra
-            formset_con_extra = AseguradoFormSet(form_data, prefix='asegurados')
-            
-            return self.render_to_response(self.get_context_data(form=form, formset=formset_con_extra))
-
-        if form.is_valid() and formset.is_valid():
-            return self.form_valid(form, formset)
+        if formset.is_valid():
+            with transaction.atomic():
+                form.instance.usuario = self.request.user
+                self.object = form.save()
+                formset.instance = self.object
+                formset.save()
+                self.object.generar_plan_de_pagos()
+            return super().form_valid(form)
         else:
-            return self.form_invalid(form, formset)
+            return self.form_invalid(form)
 
-    def form_valid(self, form, formset):
-        with transaction.atomic():
-            form.instance.usuario = self.request.user
-            self.object = form.save()
-            formset.instance = self.object
-            formset.save()
-            self.object.generar_plan_de_pagos()
-        return super().form_valid(form)
-
-    def form_invalid(self, form, formset):
-        messages.error(self.request, "Por favor, corrige los errores.")
-        return self.render_to_response(self.get_context_data(form=form, formset=formset))
-    
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
 
-class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMixin, UpdateView):
+class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
     model = Poliza
     form_class = PolizaForm
     template_name = 'polizas/poliza_form.html'
-    success_message = "Póliza actualizada exitosamente."
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Editar Póliza"
-        if 'formset' not in context:
-            if self.request.POST:
-                context['formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
-            else:
-                context['formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
-        return context
-    
-    def post(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        form = self.get_form()
-        
-        if 'add_item' in request.POST:
-            form_data = request.POST.copy()
-            form_count = int(form_data.get('asegurados-TOTAL_FORMS', 0))
-            form_data['asegurados-TOTAL_FORMS'] = str(form_count + 1)
-            
-            formset_con_extra = AseguradoFormSet(form_data, instance=self.object, prefix='asegurados')
-            return self.render_to_response(self.get_context_data(form=form, formset=formset_con_extra))
-
-        formset = AseguradoFormSet(request.POST, instance=self.object, prefix='asegurados')
-        if form.is_valid() and formset.is_valid():
-            return self.form_valid(form, formset)
+        if self.request.POST:
+            context['formset'] = AseguradoFormSet(self.request.POST, instance=self.object, prefix='asegurados')
         else:
-            return self.form_invalid(form, formset)
-            
-    def form_valid(self, form, formset):
-        with transaction.atomic():
-            self.object = form.save()
-            formset.save()
-            self.object.generar_plan_de_pagos()
-        return super().form_valid(form)
-    
-    def form_invalid(self, form, formset):
-        messages.error(self.request, "Por favor, corrige los errores.")
-        return self.render_to_response(self.get_context_data(form=form, formset=formset))
-    
+            context['formset'] = AseguradoFormSet(instance=self.object, prefix='asegurados')
+        return context
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        formset = context['formset']
+        
+        if formset.is_valid():
+            with transaction.atomic():
+                self.object = form.save()
+                formset.save()
+                self.object.generar_plan_de_pagos()
+            return super().form_valid(form)
+        else:
+            return self.form_invalid(form)
+
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
-
 
 
 class PolizaDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
