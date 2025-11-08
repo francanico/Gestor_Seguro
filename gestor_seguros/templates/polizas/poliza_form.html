@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% load widget_tweaks %}
 {% load static %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
@@ -9,100 +8,40 @@
     <h2><i class="fas fa-file-signature"></i> {{ titulo_pagina }}</h2>
 </div>
 
-<form method="post" enctype="multipart/form-data" novalidate>
+<form method="post" enctype="multipart/form-data">
     {% csrf_token %}
 
-    <!-- Errores generales del formulario principal -->
-    {% if form.non_field_errors %}
-        <div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>
-    {% endif %}
+    <!-- Errores generales -->
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    {% if formset.non_field_errors %}<div class="alert alert-danger">{{ formset.non_field_errors }}</div>{% endif %}
 
-    <!-- Card 1: Datos Principales de la Póliza -->
+    <!-- Card 1: Datos de la Póliza -->
     <div class="card mb-4">
         <div class="card-header">Información de la Póliza</div>
         <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-6 mb-3">
-                    <label for="{{ form.cliente.id_for_label }}" class="form-label">{{ form.cliente.label }}</label>
-                    {% render_field form.cliente class+="form-select" %}
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="{{ form.aseguradora.id_for_label }}" class="form-label">{{ form.aseguradora.label }}</label>
-                    {% render_field form.aseguradora class+="form-select" %}
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="{{ form.numero_poliza.id_for_label }}" class="form-label">{{ form.numero_poliza.label }}</label>
-                    {% render_field form.numero_poliza class+="form-control" %}
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="{{ form.ramo_tipo_seguro.id_for_label }}" class="form-label">{{ form.ramo_tipo_seguro.label }}</label>
-                    {% render_field form.ramo_tipo_seguro class+="form-control" %}
-                </div>
-                <div class="col-12 mb-3">
-                    <label for="{{ form.descripcion_bien_asegurado.id_for_label }}" class="form-label">{{ form.descripcion_bien_asegurado.label }}</label>
-                    {% render_field form.descripcion_bien_asegurado class+="form-control" rows="2" %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Card 2: Vigencia, Pagos y Comisiones -->
-    <div class="card mb-4">
-        <div class="card-header">Vigencia, Pagos y Comisiones</div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4 mb-3"><label class="form-label">{{ form.fecha_emision.label }}</label>{% render_field form.fecha_emision class+="form-control" %}</div>
-                <div class="col-md-4 mb-3"><label class="form-label">{{ form.fecha_inicio_vigencia.label }}</label>{% render_field form.fecha_inicio_vigencia class+="form-control" %}</div>
-                <div class="col-md-4 mb-3"><label class="form-label">{{ form.fecha_fin_vigencia.label }}</label>{% render_field form.fecha_fin_vigencia class+="form-control" %}</div>
-                
-                <div class="col-md-4 mb-3"><label class="form-label">{{ form.prima_total_anual.label }}</label>{% render_field form.prima_total_anual class+="form-control" %}</div>
-                <div class="col-md-4 mb-3"><label class="form-label">{{ form.frecuencia_pago.label }}</label>{% render_field form.frecuencia_pago class+="form-select" %}</div>
-                <div class="col-md-4 mb-3"><label class="form-label">{{ form.valor_cuota.label }}</label>{% render_field form.valor_cuota class+="form-control" %}</div>
-
-                <div class="col-md-4 mb-3"><label class="form-label">{{ form.comision_monto.label }}</label>{% render_field form.comision_monto class+="form-control" %}</div>
-                <div class="col-md-4 mb-3"><label class="form-label">{{ form.fecha_cobro_comision.label }}</label>{% render_field form.fecha_cobro_comision class+="form-control" %}</div>
-                <div class="col-md-4 d-flex align-items-end"><div class="form-check mb-3">{% render_field form.comision_cobrada class+="form-check-input" %} <label for="{{ form.comision_cobrada.id_for_label }}" class="form-check-label">{{ form.comision_cobrada.label }}</label></div></div>
-            </div>
+            {{ form.as_p }}
         </div>
     </div>
     
-    <!-- Card 3: Otros Detalles y Archivos -->
-    <div class="card mb-4">
-        <div class="card-header">Otros Detalles</div>
-        <div class="card-body">
-             <div class="row g-3">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">{{ form.estado_poliza.label }}</label>
-                    {% render_field form.estado_poliza class+="form-select" %}
-                    {% for error in form.estado_poliza.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">{{ form.archivo_poliza.label }}</label>
-                    {% render_field form.archivo_poliza class+="form-control" %}
-                </div>
-                <div class="col-12 mb-3">
-                    <label class="form-label">{{ form.notas_poliza.label }}</label>
-                    {% render_field form.notas_poliza class+="form-control" rows="3" %}
-                </div>
-             </div>
-        </div>
-    </div>
-    
-    <!-- Card 4: Asegurados en la Póliza (Formset) -->
+    <!-- Card 4: Asegurados en la Póliza -->
     <div class="card">
-        <!-- ... (El contenido del formset que ya funciona va aquí) ... -->
+        <div class="card-header">Asegurados en la Póliza</div>
+        <div class="card-body">
+            {{ formset.management_form }}
+            {% for asegurado_form in formset %}
+                <div class="asegurado-form mb-4 p-3 border rounded">
+                    {{ asegurado_form.as_p }}
+                    {% if asegurado_form.instance.pk %}<p>{{ asegurado_form.DELETE }} <label>Eliminar</label></p>{% endif %}
+                    <hr>
+                </div>
+            {% endfor %}
+        </div>
     </div>
 
     <!-- Botones de Acción Finales -->
     <div class="mt-4">
-        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Cambios</button>
-        <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'polizas:lista_polizas' %}{% endif %}" class="btn btn-secondary">
-            <i class="fas fa-times"></i> Cancelar
-        </a>
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'polizas:lista_polizas' %}{% endif %}" class="btn btn-secondary">Cancelar</a>
     </div>
 </form>
-{% endblock %}
-
-{% block extra_js %}
-<!-- El código JS que necesites va aquí -->
 {% endblock %}
