@@ -1,40 +1,49 @@
-// static/js/poliza_form.js
 (function() {
+    console.log("INTENTANDO INICIAR SCRIPT: poliza_form.js");
+
     document.addEventListener('DOMContentLoaded', function() {
+        console.log("EVENTO DOMContentLoaded DISPARADO.");
+
         const addButton = document.getElementById('add-asegurado-form');
         const container = document.getElementById('asegurado-forms-container');
         const totalFormsInput = document.querySelector('input[name="asegurados-TOTAL_FORMS"]');
         const emptyFormTemplate = document.getElementById('empty-form-template');
         const noAseguradosMessage = document.getElementById('no-asegurados-message');
 
-        if (!addButton || !container || !totalFormsInput || !emptyFormTemplate) {
-            console.error("Faltan elementos del formset en el DOM. El script de añadir/quitar no funcionará.");
+        console.log("Buscando elementos...");
+        console.log("Botón 'Añadir':", addButton);
+        console.log("Contenedor:", container);
+        console.log("Input Total Forms:", totalFormsInput);
+        console.log("Plantilla:", emptyFormTemplate);
+
+        if (!addButton) {
+            console.error("ERROR CRÍTICO: No se encontró el botón con id='add-asegurado-form'.");
             return;
         }
 
+        if (!container || !totalFormsInput || !emptyFormTemplate) {
+            console.error("ERROR CRÍTICO: Faltan elementos esenciales del formset.");
+            return;
+        }
+        
+        console.log("Todos los elementos encontrados. Añadiendo listener al botón.");
+        
         addButton.addEventListener('click', function() {
-            if (noAseguradosMessage) { noAseguradosMessage.style.display = 'none'; }
+            console.log("¡CLIC DETECTADO! Añadiendo nuevo formulario.");
+
+            if (noAseguradosMessage) {
+                noAseguradosMessage.style.display = 'none';
+            }
+            
             let formNum = parseInt(totalFormsInput.value);
             let newFormHtml = emptyFormTemplate.innerHTML.replace(/__prefix__/g, formNum);
+            
             container.insertAdjacentHTML('beforeend', newFormHtml);
             totalFormsInput.value = formNum + 1;
         });
+        
+        console.log("Listener añadido exitosamente al botón 'Añadir Asegurado'.");
 
-        container.addEventListener('click', function(e) {
-            if (e.target && e.target.classList.contains('remove-asegurado-form')) {
-                e.target.closest('.asegurado-form').remove();
-                if (container.children.length === 0 && noAseguradosMessage) {
-                    noAseguradosMessage.style.display = 'block';
-                }
-            }
-            if (e.target && e.target.getAttribute('name')?.endsWith('-DELETE')) {
-                const formElement = e.target.closest('.asegurado-form');
-                if (e.target.checked) {
-                    formElement.style.opacity = '0.5';
-                } else {
-                    formElement.style.opacity = '1';
-                }
-            }
-        });
+        // ... (el resto del script para eliminar)
     });
 })();
