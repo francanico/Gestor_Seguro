@@ -53,29 +53,29 @@ AseguradoFormSet = inlineformset_factory(
 class PolizaForm(forms.ModelForm):
     class Meta:
         model = Poliza
-        # Usamos 'exclude' para asegurarnos de que todos los demás campos se incluyan.
-        # 'usuario' y 'renovacion_de' se manejan en la vista.
         exclude = ('usuario', 'renovacion_de')
 
     def __init__(self, *args, **kwargs):
-        # Extraemos 'user' para filtrar los desplegables.
+        # 1. Extraemos 'user' de kwargs ANTES de llamar a super()
         user = kwargs.pop('user', None)
+        
+        # 2. Llamamos a super() con los kwargs ya "limpios"
         super().__init__(*args, **kwargs)
 
-        # Asignamos clases CSS para el estilo.
+        # 3. Asignamos clases CSS
         for field_name, field in self.fields.items():
             css_class = 'form-control'
             if isinstance(field.widget, forms.Select):
                 css_class = 'form-select'
             elif isinstance(field.widget, forms.CheckboxInput):
                 css_class = 'form-check-input'
-            
             field.widget.attrs.update({'class': css_class})
 
+        # 4. Si el 'user' fue pasado, filtramos los querysets
         if user:
-            # Filtramos los desplegables para mostrar solo los datos del usuario.
-            self.fields['cliente'].queryset = Cliente.objects.filter(usuario=user)
-            self.fields['aseguradora'].queryset = Aseguradora.objects.filter(usuario=user)
+            self.fields['cliente'].queryset = Cliente.objects.filter(usuario=user).order_by('nombre_completo')
+            self.fields['aseguradora'].queryset = Aseguradora.objects.filter(usuario=user).order_by('nombre')
+
 
     def clean(self):
         cleaned_data = super().clean()
