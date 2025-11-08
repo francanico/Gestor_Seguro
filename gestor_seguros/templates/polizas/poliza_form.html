@@ -2,20 +2,19 @@
 {% load widget_tweaks %}
 {% load static %}
 
-{% block title %}{{ titulo_pagina }}{% endblock %}
+{% block title %}{{ titulo_pagina|default:"Formulario de Póliza" }}{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h2><i class="fas fa-file-signature"></i> {{ titulo_pagina }}</h2>
+    <h2><i class="fas fa-file-signature"></i> {{ titulo_pagina|default:"Formulario de Póliza" }}</h2>
 </div>
 
 <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
 
-    <!-- Errores generales del formulario principal -->
-    {% if form.non_field_errors %}
-        <div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>
-    {% endif %}
+    <!-- Errores generales -->
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>{% endif %}
+    {% if formset.non_field_errors %}<div class="alert alert-danger">{{ formset.non_field_errors }}</div>{% endif %}
 
     <!-- Card 1: Datos Principales de la Póliza -->
     <div class="card mb-4">
@@ -61,7 +60,7 @@
         </div>
     </div>
     
-    <!-- Card 4: Asegurados en la Póliza (Formset con JS) -->
+    <!-- Card 4: Asegurados en la Póliza (Formset) -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>Asegurados en la Póliza</span>
@@ -71,18 +70,14 @@
         </div>
         <div class="card-body">
             {{ formset.management_form }}
-            {% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
-
             <div id="asegurado-forms-container">
-                {% for asegurado_form in formset %}
-                    {% include 'polizas/_asegurado_form_snippet.html' with form=asegurado_form %}
+                {% for form_asegurado in formset %}
+                    {% include 'polizas/_asegurado_form_snippet.html' with form=form_asegurado %}
                 {% endfor %}
             </div>
-
             <div id="no-asegurados-message" {% if formset.forms %}style="display: none;"{% endif %}>
                 <p class="text-muted">No hay asegurados registrados. Haz clic en "Añadir Asegurado" para agregar el primero.</p>
             </div>
-            
             <template id="empty-form-template">
                 {% include 'polizas/_asegurado_form_snippet.html' with form=formset.empty_form %}
             </template>
@@ -96,8 +91,10 @@
             <i class="fas fa-times"></i> Cancelar
         </a>
     </div>
+
 </form>
 {% endblock %}
+
 
 {% block extra_js %}
 <script src="{% static 'js/poliza_form.js' %}"></script>
