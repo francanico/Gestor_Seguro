@@ -204,12 +204,17 @@ class PolizaDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
         
         return redirect(poliza.get_absolute_url())
 
-class PolizaCreateView(LoginRequiredMixin, CreateView):
+class PolizaCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Poliza
     form_class = PolizaForm
     template_name = 'polizas/poliza_form.html'
+    success_message = "Póliza creada exitosamente."
 
     def get_context_data(self, **kwargs):
+        """
+        Añade el formset al contexto. El 'form' principal es añadido
+        automáticamente por la clase CreateView.
+        """
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Crear Nueva Póliza"
         if self.request.POST:
@@ -219,6 +224,10 @@ class PolizaCreateView(LoginRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
+        """
+        Se ejecuta cuando el formulario principal ('form') es válido.
+        Aquí validamos y guardamos el formset.
+        """
         context = self.get_context_data()
         formset = context['formset']
         
@@ -231,17 +240,23 @@ class PolizaCreateView(LoginRequiredMixin, CreateView):
                 self.object.generar_plan_de_pagos()
             return super().form_valid(form)
         else:
+            # Si el formset no es válido, llamamos a form_invalid
             return self.form_invalid(form)
 
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
 
-class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
+class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Poliza
     form_class = PolizaForm
     template_name = 'polizas/poliza_form.html'
-    
+    success_message = "Póliza actualizada exitosamente."
+
     def get_context_data(self, **kwargs):
+        """
+        Añade el formset al contexto. El 'form' principal es añadido
+        automáticamente por la clase UpdateView.
+        """
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Editar Póliza"
         if self.request.POST:
@@ -251,6 +266,9 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form):
+        """
+        Se ejecuta cuando el formulario principal ('form') es válido.
+        """
         context = self.get_context_data()
         formset = context['formset']
         
@@ -265,7 +283,6 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
-
 
 class PolizaDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     model = Poliza
