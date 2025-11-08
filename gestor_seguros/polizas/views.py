@@ -281,8 +281,6 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
-
-
 class PolizaDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     model = Poliza
     template_name = 'polizas/poliza_confirm_delete.html'

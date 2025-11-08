@@ -26,14 +26,9 @@ class AseguradoraForm(forms.ModelForm):
 class AseguradoForm(forms.ModelForm):
     class Meta:
         model = Asegurado
-        fields = ['nombre_completo', 'cedula', 'fecha_nacimiento', 'parentesco', 'sexo', 'email', 'telefono', 'notas']
-        widgets = {
-            'fecha_nacimiento': forms.DateInput(attrs={'type': 'date'}),
-            'notas': forms.Textarea(attrs={'rows': 2}),
-        }
+        exclude = ('poliza',)
 
     def __init__(self, *args, **kwargs):
-        # Este __init__ es simple, no maneja 'user', solo pone los campos como no requeridos.
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.required = False
@@ -53,28 +48,51 @@ AseguradoFormSet = inlineformset_factory(
 class PolizaForm(forms.ModelForm):
     class Meta:
         model = Poliza
-        fields = ['cliente', 'aseguradora', 'numero_poliza', 'ramo_tipo_seguro',
-                'descripcion_bien_asegurado', 'fecha_emision', 'fecha_inicio_vigencia',
-                'fecha_fin_vigencia', 'prima_total_anual', 'frecuencia_pago',
-                'valor_cuota', 'comision_monto', 'comision_cobrada',
-                'fecha_cobro_comision', 'estado_poliza', 'notas_poliza', 'archivo_poliza']
-        widgets = {
-            'fecha_emision': forms.DateInput(attrs={'type': 'date'}),
-            'fecha_inicio_vigencia': forms.DateInput(attrs={'type': 'date'}),
-            'fecha_fin_vigencia': forms.DateInput(attrs={'type': 'date'}),
-            'fecha_cobro_comision': forms.DateInput(attrs={'type': 'date'}),
-            'notas_poliza': forms.Textarea(attrs={'rows': 3}),
-            'descripcion_bien_asegurado': forms.Textarea(attrs={'rows': 2}),
-        }
+        exclude = ('usuario', 'renovacion_de')
 
     def __init__(self, *args, **kwargs):
+        # 1. Extraemos 'user' de kwargs ANTES de cualquier otra cosa.
         user = kwargs.pop('user', None)
+        
+        # 2. Llamamos al __init__ de la clase padre con los kwargs ya "limpios".
         super().__init__(*args, **kwargs)
+
+        # 3. Asignamos clases CSS para el estilo.
+        for field_name, field in self.fields.items():
+            css_class = 'form-control'
+            if isinstance(field.widget, forms.Select):
+                css_class = 'form-select'
+            elif isinstance(field.widget, forms.CheckboxInput):
+                css_class = 'form-check-input'
+            field.widget.attrs.update({'class': css_class})
+
+        # 4. Si el 'user' fue pasado, filtramos los querysets.
         if user:
             self.fields['cliente'].queryset = Cliente.objects.filter(usuario=user).order_by('nombre_completo')
             self.fields['aseguradora'].queryset = Aseguradora.objects.filter(usuario=user).order_by('nombre')
-    
-    
+        else:
+            # Si por alguna razón no se pasa el user, dejamos los desplegables vacíos
+            # para evitar mostrar datos de otros usuarios.
+            self.fields['cliente'].queryset = Cliente.objects.none()
+            self.fields['aseguradora'].queryset = Aseguradora.objects.none()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        fecha_inicio = cleaned_data.get("fecha_inicio_vigencia")
+        fecha_fin = cleaned_data.get("fecha_fin_vigencia")
+        if fecha_inicio and fecha_fin and fecha_fin < fecha_inicio:
+            raise ValidationError("La fecha de fin de vigencia no puede ser anterior a la fecha de inicio.")
+        return cleaned_data
+
+
+# --- OTROS FORMULARIOS (SIN CAMBIOS, PERO INCLUIDOS PARA COMPLETITUD) ---
+class AseguradoraForm(forms.ModelForm):
+    class Meta:
+        model = Aseguradora
+        fields = ['nombre', 'rif', 'contacto_nombre', 'contacto_email', 'contacto_telefono']
+
+
+
 #---(PAGO CUOTA FORM)---
 
 # --- FORMULARIO PARA EDITAR UNA CUOTA (DENTRO DE UN FORMSET) ---
