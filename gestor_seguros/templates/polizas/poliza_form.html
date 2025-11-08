@@ -93,10 +93,9 @@
     </div>
 
 </form>
-{% endblock %}
-
 
 {% block extra_js %}
-{# --- BLOQUE CORRECTO --- #}
+{{ block.super }} {# <-- ESTA LÍNEA ES CRUCIAL SI base.html TIENE JS #}
 <script src="{% static 'js/poliza_form.js' %}"></script>
+{% endblock extra_js %}
 {% endblock %}
