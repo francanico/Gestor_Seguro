@@ -53,11 +53,13 @@ AseguradoFormSet = inlineformset_factory(
 class PolizaForm(forms.ModelForm):
     class Meta:
         model = Poliza
-        fields = ['cliente', 'aseguradora', 'numero_poliza', 'ramo_tipo_seguro',
-                'descripcion_bien_asegurado', 'fecha_emision', 'fecha_inicio_vigencia',
-                'fecha_fin_vigencia', 'prima_total_anual', 'frecuencia_pago',
-                'valor_cuota', 'comision_monto', 'comision_cobrada',
-                'fecha_cobro_comision', 'estado_poliza', 'notas_poliza', 'archivo_poliza']
+        fields = [
+            'cliente', 'aseguradora', 'numero_poliza', 'ramo_tipo_seguro',
+            'descripcion_bien_asegurado', 'fecha_emision', 'fecha_inicio_vigencia',
+            'fecha_fin_vigencia', 'prima_total_anual', 'frecuencia_pago',
+            'valor_cuota', 'comision_monto', 'comision_cobrada',
+            'fecha_cobro_comision', 'estado_poliza', 'notas_poliza', 'archivo_poliza'
+        ]
         widgets = {
             'fecha_emision': forms.DateInput(attrs={'type': 'date'}),
             'fecha_inicio_vigencia': forms.DateInput(attrs={'type': 'date'}),
@@ -68,13 +70,36 @@ class PolizaForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        # 1. "Capturamos" el argumento 'user' y lo eliminamos de kwargs
         user = kwargs.pop('user', None)
+        
+        # 2. Ahora llamamos al __init__ del padre con los kwargs ya "limpios"
         super().__init__(*args, **kwargs)
+
+        # 3. Si el usuario fue pasado, filtramos los querysets
         if user:
             self.fields['cliente'].queryset = Cliente.objects.filter(usuario=user).order_by('nombre_completo')
             self.fields['aseguradora'].queryset = Aseguradora.objects.filter(usuario=user).order_by('nombre')
-    
-    
+        
+        # 4. (Opcional) Aplicamos las clases CSS a los campos
+        for field_name, field in self.fields.items():
+            if field.widget.attrs.get('class'):
+                field.widget.attrs['class'] += ' form-control'
+            else:
+                field.widget.attrs['class'] = 'form-control'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        fecha_inicio = cleaned_data.get("fecha_inicio_vigencia")
+        fecha_fin = cleaned_data.get("fecha_fin_vigencia")
+
+        if fecha_inicio and fecha_fin:
+            if fecha_fin < fecha_inicio:
+                raise ValidationError(
+                    "La fecha de fin de vigencia no puede ser anterior a la fecha de inicio."
+                )
+        return cleaned_data
+
 #---(PAGO CUOTA FORM)---
 
 # --- FORMULARIO PARA EDITAR UNA CUOTA (DENTRO DE UN FORMSET) ---
