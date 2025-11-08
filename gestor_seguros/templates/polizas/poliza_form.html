@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load widget_tweaks %}
 {% load static %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
@@ -8,46 +9,113 @@
     <h2><i class="fas fa-file-signature"></i> {{ titulo_pagina }}</h2>
 </div>
 
-<form method="post" enctype="multipart/form-data">
+<form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
 
-    <!-- Errores generales -->
+    <!-- Errores generales del formulario principal -->
     {% if form.non_field_errors %}
-        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-    {% endif %}
-    {% if formset.non_form_errors %}
-        <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+        <div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>
     {% endif %}
 
-    <!-- Card 1: Datos de la Póliza -->
+    <!-- Card 1: Datos Principales de la Póliza -->
     <div class="card mb-4">
         <div class="card-header">Información de la Póliza</div>
         <div class="card-body">
-            {{ form.as_p }}
+            <div class="row g-3">
+                {% for field in form.visible_fields %}
+                    {# Dividimos los campos en diferentes cards más abajo #}
+                    {% if field.name in "cliente,aseguradora,numero_poliza,ramo_tipo_seguro,descripcion_bien_asegurado" %}
+                        <div class="{% if field.name == 'descripcion_bien_asegurado' %}col-12{% else %}col-md-6{% endif %} mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {% render_field field class+="form-control" %}
+                            {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 2: Vigencia, Pagos y Comisiones -->
+    <div class="card mb-4">
+        <div class="card-header">Vigencia, Pagos y Comisiones</div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for field in form.visible_fields %}
+                    {% if field.name in "fecha_emision,fecha_inicio_vigencia,fecha_fin_vigencia,prima_total_anual,frecuencia_pago,valor_cuota,comision_monto,fecha_cobro_comision,comision_cobrada" %}
+                        <div class="col-md-4 mb-3">
+                             <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                             {% if field.name == 'comision_cobrada' %}
+                                <div class="form-check pt-2">
+                                    {% render_field field class+="form-check-input" %}
+                                </div>
+                             {% else %}
+                                {% render_field field class+="form-control" %}
+                             {% endif %}
+                             {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Card 3: Otros Detalles y Archivos -->
+    <div class="card mb-4">
+        <div class="card-header">Otros Detalles</div>
+        <div class="card-body">
+             <div class="row g-3">
+                {% for field in form.visible_fields %}
+                    {% if field.name in "estado_poliza,archivo_poliza,notas_poliza" %}
+                        <div class="{% if field.name == 'notas_poliza' %}col-12{% else %}col-md-6{% endif %} mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {% render_field field class+="form-control" %}
+                            {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+             </div>
         </div>
     </div>
     
     <!-- Card 4: Asegurados en la Póliza -->
     <div class="card">
-        <div class="card-header">Asegurados en la Póliza</div>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            Asegurados en la Póliza
+            <button type="button" class="btn btn-sm btn-success" id="add-asegurado-form">
+                <i class="fas fa-plus"></i> Añadir Asegurado
+            </button>
+        </div>
         <div class="card-body">
             {{ formset.management_form }}
+            {% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
+
+            <div id="asegurado-forms-container">
+                {% for asegurado_form in formset %}
+                    {% include 'polizas/_asegurado_form_snippet.html' with form=asegurado_form %}
+                {% endfor %}
+            </div>
+
+            <div id="no-asegurados-message" {% if formset.forms %}style="display: none;"{% endif %}>
+                <p class="text-muted">No hay asegurados registrados. Haz clic en "Añadir Asegurado" para agregar el primero.</p>
+            </div>
             
-            {% for asegurado_form in formset %}
-                <div class="asegurado-form mb-4 p-3 border rounded">
-                    {{ asegurado_form.as_p }}
-                    {% if asegurado_form.instance.pk %}
-                        <p>{{ asegurado_form.DELETE }} <label for="{{ asegurado_form.DELETE.id_for_label }}">Marcar para eliminar</label></p>
-                    {% endif %}
-                </div>
-            {% endfor %}
+            <template id="empty-form-template">
+                {% include 'polizas/_asegurado_form_snippet.html' with form=formset.empty_form %}
+            </template>
         </div>
     </div>
 
     <!-- Botones de Acción Finales -->
     <div class="mt-4">
-        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-        <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'polizas:lista_polizas' %}{% endif %}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Cambios</button>
+        <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'polizas:lista_polizas' %}{% endif %}" class="btn btn-secondary">
+            <i class="fas fa-times"></i> Cancelar
+        </a>
     </div>
 </form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/poliza_form.js' %}"></script>
 {% endblock %}
