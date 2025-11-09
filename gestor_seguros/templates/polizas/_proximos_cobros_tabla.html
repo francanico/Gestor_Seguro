@@ -1,14 +1,11 @@
 {% load humanize %}
 
-{# La variable 'lista_de_cobros' será 'cobros_vencidos' o 'cobros_pendientes_30_dias' #}
-{% with lista_de_cobros=cobros_pendientes_30_dias %}
-
-{% if lista_de_cobros %}
+{% if cobros_pendientes_30_dias %} {# Este nombre de variable ahora es una lista de POLIZAS #}
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
-                    <th>Vencimiento (Días)</th>
+                    <th>Vencimiento (Días)</th> {# Esta cabecera mostrará la fecha y los días #}
                     <th># Póliza</th>
                     <th>Cliente</th>
                     <th class="text-end">Monto Cuota</th>
@@ -16,11 +13,12 @@
                 </tr>
             </thead>
             <tbody>
-                {% for poliza in lista_de_cobros %}
+                {% for poliza in cobros_pendientes_30_dias %}
                 {# Obtenemos la primera cuota pendiente de la póliza #}
                 {% with primera_cuota=poliza.cuotas_pendientes_precargadas.0 %}
-                {% if primera_cuota %}
+                {% if primera_cuota %} {# Nos aseguramos de que haya una cuota pendiente #}
                 <tr class="{% if poliza.dias_para_proximo_cobro < 0 %}table-danger{% elif poliza.dias_para_proximo_cobro == 0 %}table-warning{% endif %}">
+                    <!-- Columna 1: Vencimiento y Días (CORREGIDA) -->
                     <td class="fw-bold">
                         {{ primera_cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}
                         {% with dias=poliza.dias_para_proximo_cobro %}
@@ -32,29 +30,29 @@
                                 {% else %}
                                     <span class="badge bg-info text-dark ms-1">{{ dias }} día{{ dias|pluralize }}</span>
                                 {% endif %}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
                             {% endif %}
                         {% endwith %}
                     </td>
+                    <!-- Columna 2: # Póliza -->
                     <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
+                    <!-- Columna 3: Cliente -->
                     <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
+                    <!-- Columna 4: Monto Cuota -->
                     <td class="text-end">${{ primera_cuota.monto_cuota|intcomma }}</td>
+                    <!-- Columna 5: Acciones -->
                     <td class="text-center">
-                        <div class="action-buttons btn-group" role="group">
-                            <!-- Botón para Marcar como Pagada -->
+                        <div class="btn-group" role="group">
                             <form action="{% url 'polizas:marcar_cuota_pagada' primera_cuota.pk %}" method="post" class="d-inline">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-success" title="Marcar esta cuota como Pagada">
-                                    <i class="fas fa-check"></i>
-                                </button>
+                                <button type="submit" class="btn btn-sm btn-success" title="Marcar como Pagada"><i class="fas fa-check"></i></button>
                             </form>
-                            <!-- Botón para Ver Detalles de la Póliza -->
-                            <a href="{{ poliza.get_absolute_url }}" class="btn btn-info" title="Ver Detalles de Póliza">
-                                <i class="fas fa-eye"></i>
-                            </a>
+                            <a href="{{ poliza.get_absolute_url }}" class="btn btn-sm btn-info" title="Ver Detalles de Póliza"><i class="fas fa-eye"></i></a>
                         </div>
                     </td>
                 </tr>
-                {% endif %}
+                {% endif %} {# Fin if primera_cuota #}
                 {% endwith %}
                 {% endfor %}
             </tbody>
@@ -63,5 +61,3 @@
 {% else %}
     <p class="text-muted p-3 mb-0">No hay cobros de cuotas en este rango.</p>
 {% endif %}
-
-{% endwith %}
