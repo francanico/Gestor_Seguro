@@ -222,3 +222,8 @@ main.main-content-area { padding-bottom: 3rem; }
     color: white;
     content: "\f2ed"; /* Ícono de papelera tachada */
 }
+
+.table-danger-light {
+    --bs-table-bg: #fee2e2;
+    --bs-table-border-color: #fecaca;
+}

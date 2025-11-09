@@ -87,11 +87,11 @@
 
         {% if cobros_vencidos %}
         <div class="card border-danger mb-4">
-            <div class="card-header bg-danger text-white"><i class="fas fa-exclamation-triangle"></i> ¡Atención! Cobros de Cuotas Vencidos ({{ cobros_vencidos|length }})</div>
-            <div class="card-body p-0">
-                {% include "polizas/_proximos_cobros_tabla.html" with cobros_pendientes_30_dias=cobros_vencidos %}
-            </div>
-        </div>
+    <div class="card-header bg-danger text-white">¡Atención! Cobros de Cuotas Vencidos ({{ cobros_vencidos|length }})</div>
+    <div class="card-body p-0">
+        {% include "polizas/_proximos_cobros_tabla.html" with lista_de_cobros=cobros_vencidos %}
+    </div>
+</div>
         {% endif %}
 
         <div class="card mb-4" id="vencimientos">
@@ -99,10 +99,12 @@
             <div class="card-body p-0">{% include "polizas/_tabla_polizas_recordatorio.html" with polizas=polizas_a_vencer_30 %}</div>
         </div>
         
-        <div class="card mb-4">
-            <div class="card-header"><i class="fas fa-dollar-sign"></i> Próximos Cobros de Cuotas (en 30 días) ({{ cobros_pendientes_30_dias|length }})</div>
-            <div class="card-body p-0">{% include "polizas/_proximos_cobros_tabla.html" with cobros_pendientes_30_dias=cobros_pendientes_30_dias %}</div>
-        </div>
+        <div class="card">
+    <div class="card-header">Próximos Cobros de Cuotas (en 30 días) ({{ cobros_pendientes_30_dias|length }})</div>
+    <div class="card-body p-0">
+        {% include "polizas/_proximos_cobros_tabla.html" with lista_de_cobros=cobros_pendientes_30_dias %}
+    </div>
+</div>
 
     </div>
 
