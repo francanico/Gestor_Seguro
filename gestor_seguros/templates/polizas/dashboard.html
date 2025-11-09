@@ -91,7 +91,7 @@
             <div class="card-header bg-danger text-white">
                 <i class="fas fa-exclamation-triangle"></i> ¡Atención! Cobros de Cuotas Vencidos ({{ cobros_vencidos|length }})
             </div>
-            <div class="card-body p-0">{% include "polizas/_tabla_cobros_cuotas.html" with lista_de_cobros=cobros_vencidos %}</div>
+            <div class="card-body p-0">{% include "polizas/_proximos_cobros_tabla.html" with lista_de_cobros=cobros_vencidos %}</div>
         </div>
         {% endif %}
 
