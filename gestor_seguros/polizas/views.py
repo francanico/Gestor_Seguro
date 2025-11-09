@@ -403,6 +403,7 @@ def cancelar_renovacion(request, pk):
     })
 
 # --- Dashboard y Recordatorios ---
+
 @login_required
 def dashboard_view(request):
     hoy = timezone.localtime(timezone.now()).date()
