@@ -119,6 +119,47 @@
             <div class="card-body p-0">{% include "polizas/_proximos_cobros_tabla.html" with lista_de_cobros=cobros_pendientes_30_dias %}</div>
         </div>
 
+        <!-- ======================================================== -->
+        <!-- NUEVA SECCIÓN DE PÓLIZAS POR GESTIONAR -->
+        <!-- ======================================================== -->
+        {% if polizas_por_gestionar %}
+        <div class="card border-primary mb-4">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-play-circle"></i> Pólizas Pendientes de Pago o Tramite ({{ polizas_por_gestionar|length }})
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th># Póliza</th>
+                                <th>Cliente</th>
+                                <th>Estado Actual</th>
+                                <th>Inicio Vigencia</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for poliza in polizas_por_gestionar %}
+                            <tr>
+                                <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
+                                <td>{{ poliza.cliente.nombre_completo }}</td>
+                                <td><span class="badge bg-light text-dark">{{ poliza.get_estado_poliza_display }}</span></td>
+                                <td>{{ poliza.fecha_inicio_vigencia|date:"d/m/Y" }}</td>
+                                <td class="text-center">
+                                    <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-sm btn-warning" title="Gestionar y Activar">
+                                        <i class="fas fa-edit"></i> Gestionar
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
     </div>
 
     <!-- COLUMNA DERECHA -->
