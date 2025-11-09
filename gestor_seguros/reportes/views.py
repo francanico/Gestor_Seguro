@@ -15,8 +15,11 @@ def reportes_dashboard(request):
     fecha_inicio_str = request.GET.get('fecha_inicio')
     fecha_fin_str = request.GET.get('fecha_fin')
     
-    # Queryset base para los datos del período (KPIs y gráfico de barras)
-    polizas_query_periodo = Poliza.objects.filter(usuario=user)
+    # Queryset base para TODOS los datos
+    polizas_base = Poliza.objects.filter(usuario=user)
+    
+    # Queryset para los datos que SÍ dependen del período (KPIs y gráfico de barras)
+    polizas_query_periodo = polizas_base
     if fecha_inicio_str:
         polizas_query_periodo = polizas_query_periodo.filter(fecha_emision__gte=fecha_inicio_str)
     if fecha_fin_str:

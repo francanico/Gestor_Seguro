@@ -28,6 +28,15 @@ class AseguradoForm(forms.ModelForm):
         model = Asegurado
         exclude = ('poliza',)
 
+    widgets = {
+            'nombre_completo': forms.TextInput(attrs={'placeholder': 'Nombre y Apellido'}),
+            'cedula': forms.TextInput(attrs={'placeholder': 'V-12345678'}),
+            'fecha_nacimiento': forms.DateInput(attrs={'type': 'date'}),
+            'email': forms.EmailInput(attrs={'placeholder': 'correo@ejemplo.com'}),
+            'telefono': forms.TextInput(attrs={'placeholder': '0414-1234567'}),
+            'notas': forms.Textarea(attrs={'rows': 1, 'placeholder': 'Notas...'}),
+        }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
@@ -51,13 +60,22 @@ class PolizaForm(forms.ModelForm):
         exclude = ('usuario', 'renovacion_de')
 
     widgets = {
-    'fecha_emision': forms.DateInput(attrs={'type': 'date'}),
-    'fecha_inicio_vigencia': forms.DateInput(attrs={'type': 'date'}),
-    'fecha_fin_vigencia': forms.DateInput(attrs={'type': 'date'}),
-    'fecha_cobro_comision': forms.DateInput(attrs={'type': 'date'}),
-    # ...
-}
+            # Calendarios para todas las fechas
+            'fecha_emision': forms.DateInput(attrs={'type': 'date'}),
+            'fecha_inicio_vigencia': forms.DateInput(attrs={'type': 'date'}),
+            'fecha_fin_vigencia': forms.DateInput(attrs={'type': 'date'}),
+            'fecha_cobro_comision': forms.DateInput(attrs={'type': 'date'}),
+            
+            # Placeholders y campos numéricos
+            'ramo_tipo_seguro': forms.TextInput(attrs={'placeholder': 'Ej: Automóvil, Salud, Vida'}),
+            'descripcion_bien_asegurado': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Ej: Placa ABC-123, Apto 5A, Edif. Central'}),
+            'prima_total_anual': forms.NumberInput(attrs={'placeholder': '0.00', 'step': '0.01'}),
+            'valor_cuota': forms.NumberInput(attrs={'placeholder': '0.00', 'step': '0.01'}),
+            'comision_monto': forms.NumberInput(attrs={'placeholder': '0.00', 'step': '0.01'}),
 
+            # Área de texto
+            'notas_poliza': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Detalles importantes de la póliza...'}),
+        }
     def __init__(self, *args, **kwargs):
         # 1. Extraemos 'user' de kwargs ANTES de cualquier otra cosa.
         user = kwargs.pop('user', None)

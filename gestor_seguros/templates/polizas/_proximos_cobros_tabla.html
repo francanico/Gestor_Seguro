@@ -1,10 +1,11 @@
 {% load humanize %}
-{% if cobros_pendientes_30_dias %}
+
+{% if cobros_pendientes_30_dias %} {# Este nombre de variable ahora es una lista de POLIZAS #}
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
-                    <th>Vencimiento (Días)</th>
+                    <th>Vencimiento (Días)</th> {# Esta cabecera mostrará la fecha y los días #}
                     <th># Póliza</th>
                     <th>Cliente</th>
                     <th class="text-end">Monto Cuota</th>
@@ -12,23 +13,47 @@
                 </tr>
             </thead>
             <tbody>
-                {% for cuota in cobros_pendientes_30_dias %}
-                <tr>
-                    <td>
-                        {{ cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}
-                        <!-- ... (lógica de badge para los días) ... -->
+                {% for poliza in cobros_pendientes_30_dias %}
+                {# Obtenemos la primera cuota pendiente de la póliza #}
+                {% with primera_cuota=poliza.cuotas_pendientes_precargadas.0 %}
+                {% if primera_cuota %} {# Nos aseguramos de que haya una cuota pendiente #}
+                <tr class="{% if poliza.dias_para_proximo_cobro < 0 %}table-danger{% elif poliza.dias_para_proximo_cobro == 0 %}table-warning{% endif %}">
+                    <!-- Columna 1: Vencimiento y Días (CORREGIDA) -->
+                    <td class="fw-bold">
+                        {{ primera_cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}
+                        {% with dias=poliza.dias_para_proximo_cobro %}
+                            {% if dias is not None %}
+                                {% if dias < 0 %}
+                                    <span class="badge bg-danger ms-1">Vencido hace {{ dias|slice:"1:" }} d.</span>
+                                {% elif dias == 0 %}
+                                    <span class="badge bg-warning text-dark ms-1">Hoy</span>
+                                {% else %}
+                                    <span class="badge bg-info text-dark ms-1">{{ dias }} día{{ dias|pluralize }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        {% endwith %}
                     </td>
-                    <td><a href="{{ cuota.poliza.get_absolute_url }}">{{ cuota.poliza.numero_poliza }}</a></td>
-                    <td><a href="{{ cuota.poliza.cliente.get_absolute_url }}">{{ cuota.poliza.cliente.nombre_completo }}</a></td>
-                    <td class="text-end">${{ cuota.monto_cuota|intcomma }}</td>
+                    <!-- Columna 2: # Póliza -->
+                    <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
+                    <!-- Columna 3: Cliente -->
+                    <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
+                    <!-- Columna 4: Monto Cuota -->
+                    <td class="text-end">${{ primera_cuota.monto_cuota|intcomma }}</td>
+                    <!-- Columna 5: Acciones -->
                     <td class="text-center">
-                        <form action="{% url 'polizas:marcar_cuota_pagada' cuota.pk %}" method="post" class="d-inline">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-success" title="Marcar como Pagada"><i class="fas fa-check"></i></button>
-                        </form>
-                        <!-- ... (otros botones como ver, editar póliza) ... -->
+                        <div class="btn-group" role="group">
+                            <form action="{% url 'polizas:marcar_cuota_pagada' primera_cuota.pk %}" method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-success" title="Marcar como Pagada"><i class="fas fa-check"></i></button>
+                            </form>
+                            <a href="{{ poliza.get_absolute_url }}" class="btn btn-sm btn-info" title="Ver Detalles de Póliza"><i class="fas fa-eye"></i></a>
+                        </div>
                     </td>
                 </tr>
+                {% endif %} {# Fin if primera_cuota #}
+                {% endwith %}
                 {% endfor %}
             </tbody>
         </table>
