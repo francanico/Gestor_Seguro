@@ -85,41 +85,59 @@
         </div>
         {% endif %}
 
+        <!-- Cobros Vencidos -->
         {% if cobros_vencidos %}
         <div class="card border-danger mb-4">
-    <div class="card-header bg-danger text-white">¡Atención! Cobros de Cuotas Vencidos ({{ cobros_vencidos|length }})</div>
-    <div class="card-body p-0">
-        {% include "polizas/_proximos_cobros_tabla.html" with lista_de_cobros=cobros_vencidos %}
-    </div>
-</div>
+            <div class="card-header bg-danger text-white">
+                <i class="fas fa-exclamation-triangle"></i> ¡Atención! Cobros de Cuotas Vencidos ({{ cobros_vencidos|length }})
+            </div>
+            <div class="card-body p-0">{% include "polizas/_tabla_cobros_cuotas.html" with lista_de_cobros=cobros_vencidos %}</div>
+        </div>
         {% endif %}
 
-        <div class="card mb-4" id="vencimientos">
-            <div class="card-header"><i class="fas fa-bell"></i> Pólizas por Vencer en los Próximos 30 Días ({{ polizas_a_vencer_30.count }})</div>
+        <!-- Pólizas por Vencer en 30 Días -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark"> {# <-- COLOR AÑADIDO #}
+                <i class="fas fa-bell"></i> Pólizas por Vencer en los Próximos 30 Días ({{ polizas_a_vencer_30.count }})
+            </div>
             <div class="card-body p-0">{% include "polizas/_tabla_polizas_recordatorio.html" with polizas=polizas_a_vencer_30 %}</div>
         </div>
         
-        <div class="card">
-    <div class="card-header">Próximos Cobros de Cuotas (en 30 días) ({{ cobros_pendientes_30_dias|length }})</div>
-    <div class="card-body p-0">
-        {% include "polizas/_proximos_cobros_tabla.html" with lista_de_cobros=cobros_pendientes_30_dias %}
-    </div>
-</div>
+        <!-- Pólizas por Vencer en 31-60 Días -->
+        <div class="card mb-4">
+            <div class="card-header" style="background-color: #e3f2fd; color: #1e88e5;"> {# <-- COLOR AÑADIDO (AZUL CLARO) #}
+                <i class="fas fa-calendar-alt"></i> Pólizas por Vencer entre 31 y 60 Días ({{ polizas_a_vencer_60.count }})
+            </div>
+            <div class="card-body p-0">{% include "polizas/_tabla_polizas_recordatorio.html" with polizas=polizas_a_vencer_60 %}</div>
+        </div>
+
+        <!-- Próximos Cobros -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white"> {# <-- COLOR AÑADIDO #}
+                <i class="fas fa-dollar-sign"></i> Próximos Cobros de Cuotas (en 30 días) ({{ cobros_pendientes_30_dias|length }})
+            </div>
+            <div class="card-body p-0">{% include "polizas/_tabla_cobros_cuotas.html" with lista_de_cobros=cobros_pendientes_30_dias %}</div>
+        </div>
 
     </div>
 
     <!-- COLUMNA DERECHA -->
     <div class="col-lg-4">
         <div class="card">
-            <div class="card-header"><i class="fas fa-birthday-cake"></i> Cumpleaños del Mes</div>
+            <div class="card-header" style="background-color: #dcfce7; color: #16a34a;"> {# <-- COLOR AÑADIDO (VERDE CLARO) #}
+                <i class="fas fa-birthday-cake"></i> Cumpleaños del Mes
+            </div>
             <div class="card-body">{% include "polizas/_cumpleanos_lista.html" %}</div>
         </div>
         <div class="card">
-            <div class="card-header"><i class="fas fa-hand-holding-usd"></i> Comisiones Pendientes</div>
+            <div class="card-header" style="background-color: #f3e5f5; color: #8e24aa;"> {# <-- COLOR AÑADIDO (PÚRPURA CLARO) #}
+                <i class="fas fa-hand-holding-usd"></i> Comisiones Pendientes
+            </div>
             <div class="card-body">{% include "polizas/_comisiones_pendientes_lista.html" %}</div>
         </div>
     </div>
 </div>
+
 
 </div> <!-- Fin de la fila principal -->
 
