@@ -116,7 +116,7 @@
             <div class="card-header bg-primary text-white"> {# <-- COLOR AÑADIDO #}
                 <i class="fas fa-dollar-sign"></i> Próximos Cobros de Cuotas (en 30 días) ({{ cobros_pendientes_30_dias|length }})
             </div>
-            <div class="card-body p-0">{% include "polizas/_tabla_cobros_cuotas.html" with lista_de_cobros=cobros_pendientes_30_dias %}</div>
+            <div class="card-body p-0">{% include "polizas/_proximos_cobros_tabla.html" with lista_de_cobros=cobros_pendientes_30_dias %}</div>
         </div>
 
     </div>
