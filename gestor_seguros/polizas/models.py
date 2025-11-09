@@ -321,6 +321,13 @@ class PagoCuota(models.Model):
             return (self.fecha_vencimiento_cuota - hoy).days
         return None
 
+    @property
+    def dias_para_vencimiento(self):
+        if self.fecha_vencimiento_cuota:
+            hoy = timezone.now().date()
+            return (self.fecha_vencimiento_cuota - hoy).days
+        return None
+
     def __str__(self):
         return f"Cuota de {self.poliza.numero_poliza} con vencimiento {self.fecha_vencimiento_cuota}"
 

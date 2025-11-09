@@ -14,35 +14,40 @@
             </thead>
             <tbody>
                 {% for poliza in lista_de_cobros %}
-                {# Obtenemos la primera cuota pendiente de la lista precargada #}
                 {% with primera_cuota=poliza.cuotas_pendientes_list.0 %}
                 {% if primera_cuota %}
-                <tr class="{% if (primera_cuota.dias_vencimiento - hoy).days < 0 %}table-danger-light{% endif %}">
-                    <td class="fw-bold">
-                        {{ primera_cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}
-                        {% with dias=(primera_cuota.fecha_vencimiento_cuota - hoy).days %}
-                            {% if dias < 0 %}
-                                <span class="badge bg-danger ms-1">Vencido hace {{ dias|slice:"1:" }} d.</span>
-                            {% elif dias == 0 %}
-                                <span class="badge bg-warning text-dark ms-1">Hoy</span>
-                            {% else %}
-                                <span class="badge bg-info text-dark ms-1">En {{ dias }} día{{ dias|pluralize }}</span>
+
+                    {# --- CORRECCIÓN CLAVE --- #}
+                    {% with dias=primera_cuota.dias_para_vencimiento %}
+                    <tr class="{% if dias < 0 %}table-danger-light{% elif dias == 0 %}table-warning{% endif %}">
+                        <td class="fw-bold">
+                            {{ primera_cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}
+                            
+                            {% if dias is not None %}
+                                {% if dias < 0 %}
+                                    <span class="badge bg-danger ms-1">Vencido hace {{ dias|slice:"1:" }} d.</span>
+                                {% elif dias == 0 %}
+                                    <span class="badge bg-warning text-dark ms-1">Hoy</span>
+                                {% else %}
+                                    <span class="badge bg-info text-dark ms-1">En {{ dias }} día{{ dias|pluralize }}</span>
+                                {% endif %}
                             {% endif %}
-                        {% endwith %}
-                    </td>
-                    <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
-                    <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
-                    <td class="text-end">${{ primera_cuota.monto_cuota|intcomma }}</td>
-                    <td class="text-center">
-                        <div class="action-buttons btn-group" role="group">
-                            <form action="{% url 'polizas:marcar_cuota_pagada' primera_cuota.pk %}" method="post" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-success" title="Marcar como Pagada"><i class="fas fa-check"></i></button>
-                            </form>
-                            <a href="{{ poliza.get_absolute_url }}" class="btn btn-info" title="Ver Detalles de Póliza"><i class="fas fa-eye"></i></a>
-                        </div>
-                    </td>
-                </tr>
+                        </td>
+                        <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
+                        <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
+                        <td class="text-end">${{ primera_cuota.monto_cuota|intcomma }}</td>
+                        <td class="text-center">
+                            <div class="action-buttons btn-group" role="group">
+                                <form action="{% url 'polizas:marcar_cuota_pagada' primera_cuota.pk %}" method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success" title="Marcar como Pagada"><i class="fas fa-check"></i></button>
+                                </form>
+                                <a href="{{ poliza.get_absolute_url }}" class="btn btn-info" title="Ver Detalles de Póliza"><i class="fas fa-eye"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endwith %}
+
                 {% endif %}
                 {% endwith %}
                 {% endfor %}
