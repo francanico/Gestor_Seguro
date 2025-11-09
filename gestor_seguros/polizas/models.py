@@ -291,7 +291,6 @@ class Poliza(models.Model):
         # Esto permite tener "123" para 2025 y "123" para 2026.
         unique_together = ('usuario', 'numero_poliza', 'fecha_inicio_vigencia')
 
-
 class PagoCuota(models.Model):
     ESTADO_PAGO_CHOICES = [
         ('PENDIENTE', 'Pendiente'),
@@ -311,6 +310,22 @@ class PagoCuota(models.Model):
 
     def __str__(self):
         return f"Cuota de {self.poliza.numero_poliza} con vencimiento {self.fecha_vencimiento_cuota}"
+
+    @property
+    def dias_vencimiento(self):
+        """
+        Calcula la diferencia en días entre la fecha de vencimiento de la cuota y hoy.
+        """
+        if self.fecha_vencimiento_cuota:
+            hoy = timezone.now().date()
+            return (self.fecha_vencimiento_cuota - hoy).days
+        return None
+
+    def __str__(self):
+        return f"Cuota de {self.poliza.numero_poliza} con vencimiento {self.fecha_vencimiento_cuota}"
+
+    class Meta:
+        ordering = ['fecha_vencimiento_cuota']
 
     class Meta:
         verbose_name = "Cuota de Póliza"
