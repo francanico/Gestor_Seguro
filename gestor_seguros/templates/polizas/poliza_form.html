@@ -18,11 +18,11 @@
     <div class="card mb-4">
         <div class="card-header">Información de la Póliza</div>
         <div class="card-body"><div class="row g-3">
-            <div class="col-md-6"><label class="form-label">{{ form.cliente.label }}</label>{% render_field form.cliente %}</div>
-            <div class="col-md-6"><label class="form-label">{{ form.aseguradora.label }}</label>{% render_field form.aseguradora %}</div>
-            <div class="col-md-6"><label class="form-label">{{ form.numero_poliza.label }}</label>{% render_field form.numero_poliza %}</div>
-            <div class="col-md-6"><label class="form-label">{{ form.ramo_tipo_seguro.label }}</label>{% render_field form.ramo_tipo_seguro %}</div>
-            <div class="col-12"><label class="form-label">{{ form.descripcion_bien_asegurado.label }}</label>{% render_field form.descripcion_bien_asegurado rows="2" %}</div>
+            <div class="col-md-6"><label class="form-label">{{ form.cliente.label }}</label>{% render_field form.cliente class="form-select" %}</div>
+            <div class="col-md-6"><label class="form-label">{{ form.aseguradora.label }}</label>{% render_field form.aseguradora class="form-select" %}</div>
+            <div class="col-md-6"><label class="form-label">{{ form.numero_poliza.label }}</label>{% render_field form.numero_poliza class="form-control" %}</div>
+            <div class="col-md-6"><label class="form-label">{{ form.ramo_tipo_seguro.label }}</label>{% render_field form.ramo_tipo_seguro class="form-control" placeholder="Ej: Vida, Auto, Hogar" %}</div>
+            <div class="col-12"><label class="form-label">{{ form.descripcion_bien_asegurado.label }}</label>{% render_field form.descripcion_bien_asegurado class="form-control" rows="2" placeholder="Ej: Placa Vehículo, Dirección Inmueble" %}</div>
         </div></div>
     </div>
 
@@ -30,15 +30,17 @@
     <div class="card mb-4">
         <div class="card-header">Vigencia, Pagos y Comisiones</div>
         <div class="card-body"><div class="row g-3">
-            <div class="col-md-4"><label class="form-label">{{ form.fecha_emision.label }}</label>{% render_field form.fecha_emision %}</div>
-            <div class="col-md-4"><label class="form-label">{{ form.fecha_inicio_vigencia.label }}</label>{% render_field form.fecha_inicio_vigencia %}</div>
-            <div class="col-md-4"><label class="form-label">{{ form.fecha_fin_vigencia.label }}</label>{% render_field form.fecha_fin_vigencia %}</div>
-            <div class="col-md-4"><label class="form-label">{{ form.prima_total_anual.label }}</label>{% render_field form.prima_total_anual %}</div>
-            <div class="col-md-4"><label class="form-label">{{ form.frecuencia_pago.label }}</label>{% render_field form.frecuencia_pago %}</div>
-            <div class="col-md-4"><label class="form-label">{{ form.valor_cuota.label }}</label>{% render_field form.valor_cuota %}</div>
-            <div class="col-md-4"><label class="form-label">{{ form.comision_monto.label }}</label>{% render_field form.comision_monto %}</div>
-            <div class="col-md-4"><label class="form-label">{{ form.fecha_cobro_comision.label }}</label>{% render_field form.fecha_cobro_comision %}</div>
-            <div class="col-md-4 d-flex align-items-end"><div class="form-check mb-2">{% render_field form.comision_cobrada %} <label for="{{ form.comision_cobrada.id_for_label }}" class="form-check-label">{{ form.comision_cobrada.label }}</label></div></div>
+            <div class="col-md-4"><label class="form-label">{{ form.fecha_emision.label }}</label>{% render_field form.fecha_emision class="form-control" type="date" %}</div>
+            <div class="col-md-4"><label class="form-label">{{ form.fecha_inicio_vigencia.label }}</label>{% render_field form.fecha_inicio_vigencia class="form-control" type="date" %}</div>
+            <div class="col-md-4"><label class="form-label">{{ form.fecha_fin_vigencia.label }}</label>{% render_field form.fecha_fin_vigencia class="form-control" type="date" %}</div>
+            
+            <div class="col-md-4"><label class="form-label">{{ form.prima_total_anual.label }}</label>{% render_field form.prima_total_anual class="form-control" placeholder="0.00" %}</div>
+            <div class="col-md-4"><label class="form-label">{{ form.frecuencia_pago.label }}</label>{% render_field form.frecuencia_pago class="form-select" %}</div>
+            <div class="col-md-4"><label class="form-label">{{ form.valor_cuota.label }}</label>{% render_field form.valor_cuota class="form-control" placeholder="0.00" %}</div>
+
+            <div class="col-md-4"><label class="form-label">{{ form.comision_monto.label }}</label>{% render_field form.comision_monto class="form-control" placeholder="0.00" %}</div>
+            <div class="col-md-4"><label class="form-label">{{ form.fecha_cobro_comision.label }}</label>{% render_field form.fecha_cobro_comision class="form-control" type="date" %}</div>
+            <div class="col-md-4 d-flex align-items-end"><div class="form-check mb-2">{% render_field form.comision_cobrada class="form-check-input" %} <label for="{{ form.comision_cobrada.id_for_label }}" class="form-check-label">{{ form.comision_cobrada.label }}</label></div></div>
         </div></div>
     </div>
     
