@@ -63,27 +63,37 @@
                             <tr>
                                 <th># Póliza</th>
                                 <th>Cliente</th>
+                                <th>Estado Actual</th>
                                 <th>Inicio Vigencia</th>
                                 <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for poliza in polizas_en_tramite %}
-                            <tr>
-                                <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
-                                <td>{{ poliza.cliente.nombre_completo }}</td>
-                                <td>{{ poliza.fecha_inicio_vigencia|date:"d/m/Y" }}</td>
-                                <td class="text-center">
-                                    <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-sm btn-warning" title="Gestionar y Activar"><i class="fas fa-edit"></i> Gestionar</a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                    {% for poliza in polizas_por_gestionar %}
+                    <tr>
+                        <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
+                        <td>{{ poliza.cliente.nombre_completo }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if poliza.estado_poliza == 'PENDIENTE_PAGO' %}bg-warning text-dark
+                                {% else %}bg-info text-dark{% endif %}">
+                                {{ poliza.get_estado_poliza_display }}
+                            </span>
+                        </td>
+                        <td>{{ poliza.fecha_inicio_vigencia|date:"d/m/Y" }}</td>
+                        <td class="text-center">
+                            <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-sm btn-warning" title="Gestionar y Activar">
+                                <i class="fas fa-edit"></i> Gestionar
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        {% endif %}
+    </div>
+</div>
+{% endif %}
 
         <!-- Cobros Vencidos -->
         {% if cobros_vencidos %}
