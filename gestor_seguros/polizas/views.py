@@ -427,6 +427,8 @@ def dashboard_view(request):
     polizas_vencidas = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__lt=hoy, estado_poliza__in=['VIGENTE', 'PENDIENTE_PAGO']).order_by('fecha_fin_vigencia')
     polizas_a_vencer_30 = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=30))).order_by('fecha_fin_vigencia')
     polizas_a_vencer_60 = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy + timedelta(days=31), hoy + timedelta(days=60))).order_by('fecha_fin_vigencia')
+    polizas_por_gestionar = polizas_activas_y_pendientes.filter(estado_poliza__in=['EN_TRAMITE', 'PENDIENTE_PAGO']).order_by('fecha_inicio_vigencia')
+
 
     cobros_pendientes_30_dias = []
     cobros_vencidos = []
@@ -481,6 +483,7 @@ def dashboard_view(request):
         'total_polizas_vigentes': total_polizas_vigentes,
         'cumpleaneros_hoy_json': cumpleaneros_hoy_json,
         'polizas_vencen_semana_json': polizas_vencen_semana_json,
+        'polizas_por_gestionar': polizas_por_gestionar,
         'titulo_pagina': "Dashboard de Pólizas",
     }
     
