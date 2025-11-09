@@ -401,96 +401,58 @@ def cancelar_renovacion(request, pk):
         'poliza_original': poliza_original,
         'poliza_renovada': poliza_renovada
     })
+
 # --- Dashboard y Recordatorios ---
 @login_required
 def dashboard_view(request):
-    # Usamos timezone.localtime para asegurarnos de que la fecha 'hoy'
-    # corresponde a la zona horaria del servidor (America/Caracas).
     hoy = timezone.localtime(timezone.now()).date()
     
-    # --- QUERIES BASE OPTIMIZADOS ---
-    
-    # Usamos prefetch_related para cargar todos los pagos de cuotas en una sola consulta extra
-    prefetch_pagos = Prefetch('cuotas', queryset=PagoCuota.objects.order_by('fecha_vencimiento_cuota'))
-    
+    # --- QUERIES BASE ---
     polizas_activas_y_pendientes = Poliza.objects.filter(
         usuario=request.user
     ).exclude(
         estado_poliza__in=['CANCELADA', 'RENOVADA']
-    ).select_related(
-        'cliente', 'aseguradora'
-    ).prefetch_related(
-        prefetch_pagos
-    )
+    ).select_related('cliente', 'aseguradora')
+
     # --- CÁLCULOS PARA EL DASHBOARD ---
 
     # A. Gestión de Renovaciones
     polizas_en_tramite = polizas_activas_y_pendientes.filter(estado_poliza='EN_TRAMITE').order_by('fecha_inicio_vigencia')
     polizas_vencidas = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__lt=hoy, estado_poliza__in=['VIGENTE', 'PENDIENTE_PAGO']).order_by('fecha_fin_vigencia')
     polizas_a_vencer_30 = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=30))).order_by('fecha_fin_vigencia')
+    polizas_a_vencer_60 = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy + timedelta(days=31), hoy + timedelta(days=60))).order_by('fecha_fin_vigencia')
 
-    # B. Gestión de Cobros de Cuotas
-    # --- LÓGICA PARA PRÓXIMOS COBROS (AHORA MUCHO MÁS RÁPIDA) ---
-    cobros_pendientes_30_dias = []
+    # B. Gestión de Cobros de Cuotas (LÓGICA SIMPLE Y DIRECTA)
+    # 1. Obtenemos TODAS las cuotas pendientes del usuario de una sola vez.
+    cuotas_pendientes = PagoCuota.objects.filter(
+        poliza__usuario=request.user,
+        estado='PENDIENTE',
+        poliza__estado_poliza__in=['VIGENTE', 'PENDIENTE_PAGO', 'EN_TRAMITE']
+    ).select_related('poliza', 'poliza__cliente').order_by('fecha_vencimiento_cuota')
+
+    # 2. Clasificamos las cuotas en Python.
     cobros_vencidos = []
-
-    # Iteramos sobre las pólizas activas, no sobre las cuotas.
-    # Usamos prefetch_related para cargar eficientemente la primera cuota pendiente de cada póliza.
-    polizas_con_cuotas = polizas_activas_y_pendientes.exclude(
-        frecuencia_pago__in=['UNICO', 'ANUAL']
-    ).prefetch_related(
-        Prefetch(
-            'cuotas',
-            queryset=PagoCuota.objects.filter(estado='PENDIENTE').order_by('fecha_vencimiento_cuota'),
-            to_attr='proximas_cuotas_pendientes' # Guardamos el resultado en un nuevo atributo
-        )
-    )
-
-    for poliza in polizas_con_cuotas:
-        # Verificamos si la pre-carga encontró alguna cuota pendiente
-        if hasattr(poliza, 'proximas_cuotas_pendientes') and poliza.proximas_cuotas_pendientes:
-            # La primera en la lista es la próxima a pagar
-            proxima_cuota = poliza.proximas_cuotas_pendientes[0]
-            dias = (proxima_cuota.fecha_vencimiento_cuota - hoy).days
-            
-            # Clasificamos la póliza según su próxima cuota
-            if dias < 0:
-                cobros_vencidos.append(proxima_cuota) # Añadimos el objeto cuota
-            elif 0 <= dias <= 30:
-                cobros_pendientes_30_dias.append(proxima_cuota) # Añadimos el objeto cuota
-
-    # Ordenamos las listas de cuotas
-    cobros_pendientes_30_dias.sort(key=lambda c: c.fecha_vencimiento_cuota)
-    cobros_vencidos.sort(key=lambda c: c.fecha_vencimiento_cuota)
-
+    cobros_pendientes_30_dias = []
+    for cuota in cuotas_pendientes:
+        dias = (cuota.fecha_vencimiento_cuota - hoy).days
+        if dias < 0:
+            cobros_vencidos.append(cuota)
+        elif 0 <= dias <= 30:
+            cobros_pendientes_30_dias.append(cuota)
+    
     # C. Comisiones
     comisiones_pendientes = Poliza.objects.filter(usuario=request.user, comision_cobrada=False, comision_monto__gt=0).select_related('cliente').order_by('fecha_fin_vigencia')
 
-    # D. CUMPLEAÑOS (LÓGICA SIMPLE Y CONSCIENTE DE TIMEZONE)
-    # =========================================================
+    # D. Cumpleaños
+    cumpleaneros_mes = Cliente.objects.filter(usuario=request.user, fecha_nacimiento__isnull=False, fecha_nacimiento__month=hoy.month).order_by('fecha_nacimiento__day')
     
-    # Obtenemos la fecha local correcta para evitar discrepancias UTC
-    fecha_local_hoy = timezone.localtime(timezone.now()).date()
-    mes_actual = fecha_local_hoy.month
-    
-    # La consulta ahora usa solo el modelo Cliente, que es más simple y robusto
-    cumpleaneros_mes = Cliente.objects.filter(
-        usuario=request.user,
-        fecha_nacimiento__isnull=False,
-        fecha_nacimiento__month=mes_actual
-    ).order_by('fecha_nacimiento__day')
-
-
     # --- KPIs Y DATOS JS ---
     total_clientes = Cliente.objects.filter(usuario=request.user).count()
     total_polizas_vigentes = polizas_activas_y_pendientes.filter(estado_poliza='VIGENTE').count()
     
-    # --- LÓGICA CORREGIDA PARA NOTIFICACIONES JS ---
-    # Filtramos el queryset 'cumpleaneros_mes' que ya tenemos
-    cumpleaneros_hoy = cumpleaneros_mes.filter(fecha_nacimiento__day=fecha_local_hoy.day)
-    # Convertimos el queryset de objetos Cliente a JSON
+    cumpleaneros_hoy = cumpleaneros_mes.filter(fecha_nacimiento__day=hoy.day)
     cumpleaneros_hoy_json = json.dumps([{'nombre': c.nombre_completo} for c in cumpleaneros_hoy])
-    # Pólizas que vencen en la próxima semana    
+    
     polizas_vencen_semana = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=7)))
     polizas_vencen_semana_json = json.dumps([{'numero': p.numero_poliza} for p in polizas_vencen_semana])
 
@@ -500,10 +462,11 @@ def dashboard_view(request):
         'polizas_en_tramite': polizas_en_tramite,
         'polizas_vencidas': polizas_vencidas,
         'polizas_a_vencer_30': polizas_a_vencer_30,
+        'polizas_a_vencer_60': polizas_a_vencer_60,
         'cobros_vencidos': cobros_vencidos,
         'cobros_pendientes_30_dias': cobros_pendientes_30_dias,
         'comisiones_pendientes': comisiones_pendientes,
-        'cumpleaneros_mes': cumpleaneros_mes, 
+        'cumpleaneros_mes': cumpleaneros_mes,
         'total_clientes': total_clientes,
         'total_polizas_vigentes': total_polizas_vigentes,
         'cumpleaneros_hoy_json': cumpleaneros_hoy_json,
