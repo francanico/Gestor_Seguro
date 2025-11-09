@@ -269,18 +269,35 @@ class PolizaUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
         formset = context['formset']
         
         if formset.is_valid():
+            # Lista de campos que, si cambian, fuerzan la regeneración del plan de pagos
+            campos_clave_pago = [
+                'fecha_inicio_vigencia', 'fecha_fin_vigencia', 
+                'frecuencia_pago', 'prima_total_anual', 'valor_cuota'
+            ]
+            
+            # Comprobamos si alguno de los campos clave ha cambiado
+            regenerar_plan = any(field in form.changed_data for field in campos_clave_pago)
+
             with transaction.atomic():
                 self.object = form.save()
                 formset.save()
-                self.object.generar_plan_de_pagos()
-            
+                
+                # --- LÓGICA CORREGIDA ---
+                # Solo regeneramos el plan si uno de los campos clave cambió
+                if regenerar_plan:
+                    print("DEBUG: Detectado cambio en campos clave. Regenerando plan de pagos.")
+                    self.object.generar_plan_de_pagos()
+                else:
+                    print("DEBUG: No hubo cambios en campos clave. El plan de pagos se mantiene.")
+
             messages.success(self.request, "Póliza actualizada exitosamente.")
             return redirect(self.get_success_url())
         else:
             return self.form_invalid(form)
-
+        
     def get_success_url(self):
         return reverse_lazy('polizas:detalle_poliza', kwargs={'pk': self.object.pk})
+
 class PolizaDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     model = Poliza
     template_name = 'polizas/poliza_confirm_delete.html'

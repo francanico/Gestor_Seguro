@@ -50,6 +50,14 @@ class PolizaForm(forms.ModelForm):
         model = Poliza
         exclude = ('usuario', 'renovacion_de')
 
+    widgets = {
+    'fecha_emision': forms.DateInput(attrs={'type': 'date'}),
+    'fecha_inicio_vigencia': forms.DateInput(attrs={'type': 'date'}),
+    'fecha_fin_vigencia': forms.DateInput(attrs={'type': 'date'}),
+    'fecha_cobro_comision': forms.DateInput(attrs={'type': 'date'}),
+    # ...
+}
+
     def __init__(self, *args, **kwargs):
         # 1. Extraemos 'user' de kwargs ANTES de cualquier otra cosa.
         user = kwargs.pop('user', None)

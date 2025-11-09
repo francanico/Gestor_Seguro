@@ -49,16 +49,35 @@
     </div>
     
     <!-- Card 3: Otros Detalles y Archivos -->
-    <div class="card mb-4">
-        <div class="card-header">Otros Detalles</div>
-        <div class="card-body">
-             <div class="row g-3">
-                <div class="col-md-6"><label class="form-label">{{ form.estado_poliza.label }}</label>{% render_field form.estado_poliza class+="form-select" %}</div>
-                <div class="col-md-6"><label class="form-label">{{ form.archivo_poliza.label }}</label>{% render_field form.archivo_poliza class+="form-control" %}</div>
-                <div class="col-12"><label class="form-label">{{ form.notas_poliza.label }}</label>{% render_field form.notas_poliza class+="form-control" rows="3" %}</div>
-             </div>
-        </div>
+<div class="row g-3">
+    <div class="col-md-6 mb-3">
+        <label class="form-label">{{ form.estado_poliza.label }}</label>
+        {% render_field form.estado_poliza class+="form-select" %}
     </div>
+
+    <div class="col-md-6 mb-3">
+        <label class="form-label" for="{{ form.archivo_poliza.id_for_label }}">{{ form.archivo_poliza.label }}</label>
+
+        {% if form.instance.archivo_poliza and form.instance.archivo_poliza.url %}
+            <div class="mb-2">
+                <a href="{{ form.instance.archivo_poliza.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-file-alt me-1"></i> Ver Archivo Actual
+                </a>
+                <div class="form-check form-check-inline ms-3">
+                    {% render_field form.archivo_poliza.clear_checkbox class+="form-check-input" %}
+                    <label for="{{ form.archivo_poliza.clear_checkbox_id }}" class="form-check-label text-danger">Marcar para eliminar</label>
+                </div>
+            </div>
+        {% endif %}
+        
+        {% render_field form.archivo_poliza class+="form-control" %}
+    </div>
+    
+    <div class="col-12 mb-3">
+        <label class="form-label">{{ form.notas_poliza.label }}</label>
+        {% render_field form.notas_poliza class+="form-control" rows="3" %}
+    </div>
+</div>
     
     <!-- Card 4: Asegurados en la Póliza (Formset) -->
     <div class="card">
