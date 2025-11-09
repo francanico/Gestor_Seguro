@@ -17,7 +17,7 @@
                 {# Obtenemos la primera cuota pendiente de la lista precargada #}
                 {% with primera_cuota=poliza.cuotas_pendientes_list.0 %}
                 {% if primera_cuota %}
-                <tr class="{% if (primera_cuota.fecha_vencimiento_cuota - hoy).days < 0 %}table-danger-light{% endif %}">
+                <tr class="{% if (primera_cuota.dias_vencimiento - hoy).days < 0 %}table-danger-light{% endif %}">
                     <td class="fw-bold">
                         {{ primera_cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}
                         {% with dias=(primera_cuota.fecha_vencimiento_cuota - hoy).days %}
