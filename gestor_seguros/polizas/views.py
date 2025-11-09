@@ -408,12 +408,17 @@ def cancelar_renovacion(request, pk):
 def dashboard_view(request):
     hoy = timezone.localtime(timezone.now()).date()
     
-    # --- QUERIES BASE ---
+        # --- QUERIES BASE ---
+    # Usamos prefetch_related para cargar eficientemente solo la primera cuota pendiente de cada póliza
+    primera_cuota_pendiente_qs = PagoCuota.objects.filter(estado='PENDIENTE').order_by('fecha_vencimiento_cuota')
+    
     polizas_activas_y_pendientes = Poliza.objects.filter(
         usuario=request.user
     ).exclude(
         estado_poliza__in=['CANCELADA', 'RENOVADA']
-    ).select_related('cliente', 'aseguradora')
+    ).select_related('cliente', 'aseguradora').prefetch_related(
+        Prefetch('cuotas', queryset=primera_cuota_pendiente_qs, to_attr='cuotas_pendientes_list')
+    )
 
     # --- CÁLCULOS PARA EL DASHBOARD ---
 
@@ -423,24 +428,28 @@ def dashboard_view(request):
     polizas_a_vencer_30 = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=30))).order_by('fecha_fin_vigencia')
     polizas_a_vencer_60 = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy + timedelta(days=31), hoy + timedelta(days=60))).order_by('fecha_fin_vigencia')
 
-    # B. Gestión de Cobros de Cuotas (LÓGICA SIMPLE Y DIRECTA)
-    # 1. Obtenemos TODAS las cuotas pendientes del usuario de una sola vez.
-    cuotas_pendientes = PagoCuota.objects.filter(
-        poliza__usuario=request.user,
-        estado='PENDIENTE',
-        poliza__estado_poliza__in=['VIGENTE', 'PENDIENTE_PAGO', 'EN_TRAMITE']
-    ).select_related('poliza', 'poliza__cliente').order_by('fecha_vencimiento_cuota')
-
-    # 2. Clasificamos las cuotas en Python.
-    cobros_vencidos = []
     cobros_pendientes_30_dias = []
-    for cuota in cuotas_pendientes:
-        dias = (cuota.fecha_vencimiento_cuota - hoy).days
-        if dias < 0:
-            cobros_vencidos.append(cuota)
-        elif 0 <= dias <= 30:
-            cobros_pendientes_30_dias.append(cuota)
+    cobros_vencidos = []
     
+    # Iteramos sobre las pólizas que tienen cuotas periódicas
+    for poliza in polizas_activas_y_pendientes.exclude(frecuencia_pago__in=['UNICO', 'ANUAL']):
+        # Gracias al prefetch, 'cuotas_pendientes_list' contiene solo las cuotas pendientes
+        if hasattr(poliza, 'cuotas_pendientes_list') and poliza.cuotas_pendientes_list:
+            # La primera en la lista es la más antigua pendiente
+            primera_cuota_pendiente = poliza.cuotas_pendientes_list[0]
+            
+            dias = (primera_cuota_pendiente.fecha_vencimiento_cuota - hoy).days
+            
+            # Clasificamos la PÓLIZA según su primera cuota pendiente
+            if dias < 0:
+                cobros_vencidos.append(poliza)
+            elif 0 <= dias <= 30:
+                cobros_pendientes_30_dias.append(poliza)
+
+    # Ordenamos las listas de pólizas
+    cobros_pendientes_30_dias.sort(key=lambda p: p.cuotas_pendientes_list[0].fecha_vencimiento_cuota)
+    cobros_vencidos.sort(key=lambda p: p.cuotas_pendientes_list[0].fecha_vencimiento_cuota)
+
     # C. Comisiones
     comisiones_pendientes = Poliza.objects.filter(usuario=request.user, comision_cobrada=False, comision_monto__gt=0).select_related('cliente').order_by('fecha_fin_vigencia')
 
