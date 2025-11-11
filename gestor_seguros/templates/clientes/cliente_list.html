@@ -11,6 +11,17 @@
     <a href="{% url 'clientes:crear_cliente' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Añadir Cliente</a>
 </div>
 
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get">
+            <div class="input-group">
+                {% render_field filterset.form.nombre_o_doc class="form-control" %}
+                <button class="btn btn-primary" type="submit">Buscar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% if clientes %}
     <!-- Contenedor para la Tabla -->
     <div class="table-container">
