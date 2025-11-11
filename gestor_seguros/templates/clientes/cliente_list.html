@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load widget_tweaks %} {# <-- AÑADE ESTA LÍNEA #}
 
 {% block title %}Lista de Clientes{% endblock %}
 
@@ -11,12 +12,14 @@
     <a href="{% url 'clientes:crear_cliente' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Añadir Cliente</a>
 </div>
 
+<!-- Formulario de Búsqueda -->
 <div class="card mb-4">
     <div class="card-body">
-        <form method="get">
+        <form method="get" class="mb-0">
             <div class="input-group">
-                {% render_field filterset.form.nombre_o_doc class="form-control" %}
-                <button class="btn btn-primary" type="submit">Buscar</button>
+                {# Esta línea ahora funcionará #}
+                {% render_field filterset.form.nombre_o_doc class="form-control" placeholder="Buscar por Nombre o Cédula/RIF..." %}
+                <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i> Buscar</button>
             </div>
         </form>
     </div>
@@ -39,9 +42,7 @@
                 <tbody>
                     {% for cliente in clientes %}
                     <tr>
-                        <td>
-                            <a href="{{ cliente.get_absolute_url }}">{{ cliente.nombre_completo }}</a>
-                        </td>
+                        <td><a href="{{ cliente.get_absolute_url }}">{{ cliente.nombre_completo }}</a></td>
                         <td>{{ cliente.get_tipo_documento_display }} {{ cliente.numero_documento }}</td>
                         <td>{{ cliente.email|default:"N/A" }}</td>
                         <td>{{ cliente.telefono_principal|default:"N/A" }}</td>
@@ -67,7 +68,7 @@
 
 {% else %}
     <div class="alert alert-info mt-4">
-        No hay clientes registrados. <a href="{% url 'clientes:crear_cliente' %}" class="alert-link">Añade uno nuevo</a>.
+        No se encontraron clientes que coincidan con la búsqueda.
     </div>
 {% endif %}
 {% endblock %}
