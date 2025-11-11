@@ -7,6 +7,7 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib.auth.mixins import LoginRequiredMixin # Para proteger vistas
 from .models import Cliente
 from .forms import ClienteForm
+from .filters import ClienteFilter
 
 # Para proteger todas las vistas de esta app, puedes usar @method_decorator(login_required)
 # o heredar de LoginRequiredMixin para cada CBV.
@@ -15,12 +16,17 @@ class ClienteListView(LoginRequiredMixin, ListView):
     model = Cliente
     template_name = 'clientes/cliente_list.html' # clientes/lista_clientes.html
     context_object_name = 'clientes'
-    paginate_by = 10 # Opcional: paginación
+    paginate_by = 15 # Opcional: paginación
 
     def get_queryset(self):
-        # Filtra el queryset para mostrar solo los clientes del usuario actual
         queryset = super().get_queryset().filter(usuario=self.request.user)
-        return queryset
+        self.filterset = ClienteFilter(self.request.GET, queryset=queryset)
+        return self.filterset.qs.order_by('nombre_completo')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['filterset'] = self.filterset
+        return context
 
 class ClienteDetailView(LoginRequiredMixin, DetailView):
     model = Cliente

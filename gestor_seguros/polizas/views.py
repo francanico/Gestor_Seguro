@@ -24,8 +24,7 @@ from django.core.cache import cache
 from decimal import Decimal,InvalidOperation
 from .mixins import OwnerRequiredMixin
 from django.utils.decorators import method_decorator
-
-
+from .filters import PolizaFilter
 
 
 
@@ -104,7 +103,7 @@ class PolizaListView(LoginRequiredMixin, ListView):
     model = Poliza
     template_name = 'polizas/poliza_list.html'
     context_object_name = 'polizas'
-    paginate_by = 10
+    paginate_by = 15
 
     def get_queryset(self):
         queryset = Poliza.objects.select_related('cliente', 'aseguradora')
@@ -129,27 +128,27 @@ class PolizaListView(LoginRequiredMixin, ListView):
             if 'titulo_lista_polizas' in self.request.session:
                 del self.request.session['titulo_lista_polizas']
 
+        return queryset.order_by('-fecha_fin_vigencia')
 
         # También podrías añadir otros filtros aquí, por ejemplo, búsqueda por texto
         # query_busqueda = self.request.GET.get('q')
         # if query_busqueda:
         #     queryset = queryset.filter(numero_poliza__icontains=query_busqueda) # O buscar en más campos
 
-        return queryset.order_by('-fecha_fin_vigencia')
-
-
     def get_queryset(self):
-        # Filtra el queryset para mostrar solo los clientes del usuario actual
-        queryset = super().get_queryset().filter(usuario=self.request.user)
-        return queryset
+        # El queryset base ahora es más simple
+        queryset = super().get_queryset().filter(usuario=self.request.user).select_related('cliente', 'aseguradora')
+        
+        # Aplicamos el filtro
+        self.filterset = PolizaFilter(self.request.GET, queryset=queryset)
+        
+        # Devolvemos el queryset filtrado
+        return self.filterset.qs.order_by('-fecha_fin_vigencia')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Pasar el título dinámico a la plantilla si se estableció
-        context['titulo_dinamico_lista'] = self.request.session.get('titulo_lista_polizas', "Lista de Pólizas")
-        # Limpiar el título de la sesión después de usarlo para que no persista
-        # if 'titulo_lista_polizas' in self.request.session:
-        #     del self.request.session['titulo_lista_polizas']
+        # Pasamos el formulario de filtros a la plantilla
+        context['filterset'] = self.filterset
         return context
 
 class PolizaDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):

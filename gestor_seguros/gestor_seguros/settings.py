@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'cuentas', # Nueva app
+    'django_filters',
+    'cuentas',
     'widget_tweaks',
     'crispy_forms',  # Para formularios más bonitos
     'crispy_bootstrap5',  # Para usar Bootstrap 5 con crispy_forms
