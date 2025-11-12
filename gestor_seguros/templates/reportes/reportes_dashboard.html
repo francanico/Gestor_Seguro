@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load humanize %}
-{% load static %} 
+{% load static %}
 
 {% block title %}Reportes de Agencia{% endblock %}
 
@@ -11,20 +11,6 @@
     class="btn btn-success">
         <i class="fas fa-file-csv"></i> Exportar a CSV
     </a>
-</div>
-
-<!-- Filtros de Fecha -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3 align-items-center">
-            <div class="col-md-5"><label for="id_fecha_inicio" class="form-label">Desde</label><input type="date" name="fecha_inicio" value="{{ request.GET.fecha_inicio|default:'' }}" class="form-control" id="id_fecha_inicio"></div>
-            <div class="col-md-5"><label for="id_fecha_fin" class="form-label">Hasta</label><input type="date" name="fecha_fin" value="{{ request.GET.fecha_fin|default:'' }}" class="form-control" id="id_fecha_fin"></div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100 me-2"><i class="fas fa-filter"></i> Filtrar</button>
-                <a href="{% url 'reportes:dashboard_reportes' %}" class="btn btn-secondary w-100"><i class="fas fa-times"></i></a>
-            </div>
-        </form>
-    </div>
 </div>
 
 <!-- Fila de KPIs -->
@@ -61,51 +47,38 @@
 
 <!-- Fila de Gráficos -->
 <div class="row">
-    <!-- Gráfico de Producción por Mes -->
-    <div class="col-lg-12 col-xl-6">
+    <div class="col-lg-12">
         <div class="card mb-4">
             <div class="card-header"><i class="fas fa-chart-bar me-1"></i> Producción por Mes</div>
             <div class="card-body">
-                {% if produccion_por_mes %}
-                    <canvas id="produccionChart" style="min-height: 250px;"></canvas>
-                {% else %}
-                    <p class="text-muted text-center pt-5 pb-5">No hay datos de producción para mostrar.</p>
-                {% endif %}
+                <canvas id="produccionChart" style="min-height: 250px;"></canvas>
             </div>
         </div>
     </div>
-    <!-- Gráfico de Cartera por Ramo -->
-    <div class="col-lg-6 col-xl-3">
+    <div class="col-lg-6">
         <div class="card mb-4">
             <div class="card-header"><i class="fas fa-chart-pie me-1"></i> Cartera por Ramo</div>
             <div class="card-body">
-                {% if cartera_por_ramo %}
-                    <canvas id="carteraChart" style="min-height: 250px;"></canvas>
-                {% else %}
-                    <p class="text-muted text-center pt-5 pb-5">No hay datos de cartera.</p>
-                {% endif %}
+                <canvas id="carteraRamoChart" style="min-height: 250px;"></canvas>
             </div>
         </div>
     </div>
-
-    <!-- PRODUCCIÓN POR ASEGURADORA -->
-
-    <div class="col-lg-6 col-xl-3">
+    <div class="col-lg-6">
         <div class="card mb-4">
             <div class="card-header"><i class="fas fa-building me-1"></i> Cartera por Aseguradora</div>
             <div class="card-body">
-                {% if produccion_por_aseguradora %}
-                    <canvas id="aseguradoraChart" style="min-height: 250px;"></canvas>
-                {% else %}
-                    <p class="text-muted text-center pt-5 pb-5">No hay datos por aseguradora.</p>
-                {% endif %}
+                <canvas id="carteraAseguradoraChart" style="min-height: 250px;"></canvas>
             </div>
         </div>
     </div>
 </div>
 
-{% block extra_js %}
+{{ produccion_por_mes|json_script:"produccion-data" }}
+{{ cartera_por_ramo|json_script:"cartera-ramo-data" }}
+{{ cartera_por_aseguradora|json_script:"cartera-aseguradora-data" }}
 
+
+{% block extra_js %}
 
 <!-- Primero, cargamos la librería Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
