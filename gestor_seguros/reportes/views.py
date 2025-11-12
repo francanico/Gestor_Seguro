@@ -7,6 +7,10 @@ from django.db.models import Sum, Count,Q
 from django.db.models.functions import TruncMonth
 from datetime import datetime
 from polizas.models import Poliza, Cliente
+from django.utils import timezone
+from polizas.models import Poliza, Aseguradora
+from django.shortcuts import render
+
 
 @login_required
 def reportes_dashboard(request):
@@ -15,7 +19,7 @@ def reportes_dashboard(request):
     fecha_inicio_str = request.GET.get('fecha_inicio')
     fecha_fin_str = request.GET.get('fecha_fin')
     
-    # Queryset base para TODOS los datos
+    # Queryset base para TODAS las pólizas del usuario
     polizas_base = Poliza.objects.filter(usuario=user)
     
     # Queryset para los datos que SÍ dependen del período (KPIs y gráfico de barras)
@@ -23,6 +27,8 @@ def reportes_dashboard(request):
     if fecha_inicio_str:
         polizas_query_periodo = polizas_query_periodo.filter(fecha_emision__gte=fecha_inicio_str)
     if fecha_fin_str:
+        # Añadimos +1 día al filtro 'lte' si usamos fechas, para incluir el día completo
+        # Pero como el input es 'date', no es necesario.
         polizas_query_periodo = polizas_query_periodo.filter(fecha_emision__lte=fecha_fin_str)
 
     # 1. Producción por Mes (para gráfico de barras)
@@ -40,37 +46,39 @@ def reportes_dashboard(request):
         pendientes=Sum('comision_monto', filter=Q(comision_cobrada=False), default=0),
     )
     
-    # 3. Cartera por Ramo (para gráfico de dona) - Se calcula sobre TODA la cartera, no solo el período
-    cartera_por_ramo = list(Poliza.objects.filter(usuario=user).values('ramo_tipo_seguro').annotate(
+    # 3. Cartera por Ramo (para gráfico de dona)
+    cartera_por_ramo = list(polizas_base.values('ramo_tipo_seguro').annotate(
         cantidad=Count('id')
     ).order_by('-cantidad'))
     
-    # 3.1 Prima por aseguradora (para gráfico de dona) 
-    produccion_por_aseguradora = list(
-        polizas_query_periodo.filter(aseguradora__isnull=False)
-        .values('aseguradora__nombre')
-        .annotate(total_prima=Sum('prima_total_anual'))
-        .order_by('-total_prima')
-    )
+    # 4. Cartera por Aseguradora (NUEVO GRÁFICO)
+    cartera_por_aseguradora = list(polizas_base.annotate(
+        nombre_aseguradora=models.F('aseguradora__nombre')
+    ).values('nombre_aseguradora').annotate(
+        cantidad=Count('id')
+    ).order_by('-cantidad'))
 
-    # 4. KPIs
+    # 5. KPIs
     agregados_kpi = polizas_query_periodo.aggregate(
         total_primas=Sum('prima_total_anual', default=0),
         total_polizas=Count('id')
     )
 
     context = {
+        # --- Datos para los Gráficos ---
         'produccion_por_mes': produccion_por_mes,
         'cartera_por_ramo': cartera_por_ramo,
+        'cartera_por_aseguradora': cartera_por_aseguradora, # Nuevo dato
+        
+        # --- Datos para KPIs y Filtros ---
         'comisiones': comisiones,
         'total_primas': agregados_kpi.get('total_primas'),
         'total_polizas_periodo': agregados_kpi.get('total_polizas'),
         'fecha_inicio': fecha_inicio_str,
         'fecha_fin': fecha_fin_str,
-        'titulo_pagina': 'Reportes de Agencia',
-        'produccion_por_aseguradora': produccion_por_aseguradora,
     }
     return render(request, 'reportes/reportes_dashboard.html', context)
+
 
 # --- VISTA DE EXPORTACIÓN ---
 @login_required
