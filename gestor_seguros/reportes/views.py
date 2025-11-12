@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Count,Q
 from django.db.models.functions import TruncMonth
 from datetime import datetime
-from polizas.models import Poliza, Cliente
+from polizas.models import Poliza
 from django.utils import timezone
 from polizas.models import Poliza, Aseguradora
 from django.shortcuts import render
@@ -76,6 +76,8 @@ def reportes_dashboard(request):
         'total_polizas_periodo': agregados_kpi.get('total_polizas'),
         'fecha_inicio': fecha_inicio_str,
         'fecha_fin': fecha_fin_str,
+        'titulo_pagina': 'Reportes de Agencia',
+
     }
     return render(request, 'reportes/reportes_dashboard.html', context)
 
