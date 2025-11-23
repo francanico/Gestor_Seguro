@@ -9,7 +9,7 @@ class PolizaFilter(django_filters.FilterSet):
     q = django_filters.CharFilter(
         method='filtro_general', 
         label="Buscar",
-        widget=forms.TextInput(attrs={'placeholder': 'Nro. Póliza, Cliente, Asegurado...'})
+        widget=forms.TextInput(attrs={'placeholder': 'Nro. Póliza, Cliente, Placa'})
     )
 
     class Meta:
@@ -26,5 +26,6 @@ class PolizaFilter(django_filters.FilterSet):
         return queryset.filter(
             models.Q(numero_poliza__icontains=value) |
             models.Q(cliente__nombre_completo__icontains=value) |
-            models.Q(aseguradora__nombre__icontains=value)
+            models.Q(aseguradora__nombre__icontains=value) |
+            models.Q(descripcion_bien_asegurado__icontains=value)
         )
