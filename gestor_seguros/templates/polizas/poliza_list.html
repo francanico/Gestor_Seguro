@@ -52,6 +52,7 @@
                         <th>Cliente</th>
                         <th>Aseguradora</th>
                         <th>Ramo</th>
+                        <th>Bien Asegurado</th> 
                         <th>Fin Vigencia</th>
                         <th>Estado Renov.</th>
                         <th class="text-end">Prima Anual</th>
@@ -66,6 +67,7 @@
                         <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
                         <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
                         <td>{{ poliza.aseguradora.nombre|default:"N/A" }}</td>
+                        <td>{{ poliza.descripcion_bien_asegurado|default:"N/A"|truncatechars:20 }}</td>
                         <td>{{ poliza.ramo_tipo_seguro }}</td>
                         <td>{{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</td>
                         <td>
