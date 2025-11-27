@@ -9,9 +9,16 @@
 {% block content %}
 
 <!-- Cabecera de la Página -->
+
 <div class="page-header">
     <h2><i class="fas fa-file-invoice"></i> Lista de Pólizas</h2>
-    <a href="{% url 'polizas:crear_poliza' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Añadir Póliza</a>
+    <div>
+        <!-- BOTÓN PARA ABRIR EL MODAL DE IMPORTACIÓN -->
+        <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#importModal">
+            <i class="fas fa-upload"></i> Importar CSV
+        </button>
+        <a href="{% url 'polizas:crear_poliza' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Añadir Póliza</a>
+    </div>
 </div>
 
 <!-- ============================================== -->
@@ -148,5 +155,29 @@
         No hay pólizas registradas. <a href="{% url 'polizas:crear_poliza' %}" class="alert-link">Añade una nueva</a>.
     </div>
 {% endif %}
+
+<!-- Modal de Importación -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importModalLabel">Importar Pólizas desde CSV</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Sube un archivo CSV con el mismo formato que el exportado. El sistema actualizará las pólizas existentes (usando el ID) y creará las nuevas.</p>
+                <form action="{% url 'polizas:importar_polizas_csv' %}" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_csv_file" class="form-label">Seleccionar archivo CSV</label>
+                        <input type="file" name="csv_file" class="form-control" required id="id_csv_file" accept=".csv">
+                    </div>
+                    <hr>
+                    <button type="submit" class="btn btn-primary">Importar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}

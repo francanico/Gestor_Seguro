@@ -15,7 +15,7 @@ urlpatterns = [
     path('cuota/<int:pk_cuota>/pagar/', views.marcar_cuota_pagada, name='marcar_cuota_pagada'),
     path('cuota/<int:pk_cuota>/cancelar/', views.cancelar_pago_cuota, name='cancelar_pago_cuota'),
     path('api/tasa-bcv/', views.obtener_tasa_bcv_api, name='api_tasa_bcv'),
-
+    path('importar/', views.importar_polizas_csv, name='importar_polizas_csv'),
 
     # URLs para Aseguradoras
     path('aseguradoras/', views.AseguradoraListView.as_view(), name='lista_aseguradoras'),

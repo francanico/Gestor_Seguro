@@ -17,7 +17,7 @@ from .forms import PolizaForm, AseguradoraForm,SiniestroForm,AseguradoForm,Asegu
 from clientes.models import Cliente # Para el selector de clientes
 from django.db.models import F,Prefetch
 from django.forms import inlineformset_factory
-import copy,json,requests
+import copy,json,requests,csv,io
 from django.http import JsonResponse, HttpResponseRedirect
 from bs4 import BeautifulSoup
 from django.core.cache import cache
@@ -25,8 +25,7 @@ from decimal import Decimal,InvalidOperation
 from .mixins import OwnerRequiredMixin
 from django.utils.decorators import method_decorator
 from .filters import PolizaFilter
-
-
+from .forms import CSVImportForm
 
 # Constantes para estados de póliza activos
 ESTADOS_POLIZA_ACTIVOS = ['VIGENTE', 'PENDIENTE_PAGO']
@@ -672,3 +671,94 @@ def obtener_tasa_bcv_api(request):
         print(f"TASA BCV OBTENIDA (CACHE): {tasa_str}")
 
     return JsonResponse({'tasa_usd': tasa_str})
+
+@login_required
+def importar_polizas_csv(request):
+    if request.method == 'POST':
+        form = CSVImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            csv_file = request.FILES['csv_file']
+            
+            # Verificamos que es un archivo de texto
+            if not csv_file.name.endswith('.csv'):
+                messages.error(request, '¡Este no es un archivo CSV!')
+                return redirect('polizas:lista_polizas')
+
+            # Leemos el archivo en memoria
+            data_set = csv_file.read().decode('UTF-8')
+            io_string = io.StringIO(data_set)
+            
+            # Contadores para el resumen
+            creadas = 0
+            actualizadas = 0
+            errores = []
+
+            # Saltamos la cabecera
+            next(io_string)
+            reader = csv.reader(io_string)
+
+            for i, row in enumerate(reader):
+                linea = i + 2 # Para reportar errores
+                try:
+                    # Asumimos el mismo orden de columnas que en la exportación
+                    poliza_id = row[0]
+                    numero_poliza = row[1]
+                    cliente_nombre = row[2]
+                    # ... (asigna el resto de las columnas a variables)
+                    aseguradora_nombre = row[5]
+                    # ...
+
+                    # --- Lógica de Cliente y Aseguradora ---
+                    # Busca o crea el cliente
+                    cliente, _ = Cliente.objects.get_or_create(
+                        usuario=request.user,
+                        nombre_completo__iexact=cliente_nombre,
+                        defaults={'nombre_completo': cliente_nombre, 'numero_documento': f'TEMP-{linea}'}
+                    )
+                    # Busca o crea la aseguradora
+                    aseguradora, _ = Aseguradora.objects.get_or_create(
+                        usuario=request.user,
+                        nombre__iexact=aseguradora_nombre,
+                        defaults={'nombre': aseguradora_nombre}
+                    )
+
+                    # --- Lógica de Póliza: Actualizar o Crear ---
+                    if poliza_id:
+                        # Si hay un ID, intentamos actualizar
+                        poliza, created = Poliza.objects.update_or_create(
+                            id=poliza_id,
+                            usuario=request.user, # Filtro de seguridad
+                            defaults={
+                                'numero_poliza': numero_poliza,
+                                'cliente': cliente,
+                                'aseguradora': aseguradora,
+                                # ... (mapea el resto de los campos que quieres que se puedan actualizar)
+                            }
+                        )
+                        if created:
+                            # Esto es raro, significa que el ID no existía. Lo contamos como creado.
+                            creadas += 1
+                        else:
+                            actualizadas += 1
+                    else:
+                        # Si no hay ID, creamos una nueva póliza
+                        Poliza.objects.create(
+                            usuario=request.user,
+                            numero_poliza=numero_poliza,
+                            cliente=cliente,
+                            aseguradora=aseguradora,
+                            # ... (mapea todos los campos necesarios para crear)
+                        )
+                        creadas += 1
+
+                except Exception as e:
+                    errores.append(f"Línea {linea}: {e}")
+
+            messages.success(request, f"Importación completada: {creadas} pólizas creadas, {actualizadas} actualizadas.")
+            if errores:
+                messages.warning(request, f"Se encontraron {len(errores)} errores. Revisa los datos. Ejemplo de error: {errores[0]}")
+
+            return redirect('polizas:lista_polizas')
+
+    # Si es GET, no hacemos nada, la plantilla se encargará de mostrar el formulario
+    return redirect('polizas:lista_polizas')

@@ -109,6 +109,7 @@ def exportar_polizas_csv(request):
     # --- 5. Definir las cabeceras del CSV (más claras y en español) ---
     writer = csv.writer(response, delimiter=';')
     writer.writerow([
+        'ID Poliza',
         'Nro. Poliza',
         'Cliente',
         'Documento Cliente',
@@ -129,6 +130,7 @@ def exportar_polizas_csv(request):
     # --- 6. Escribir los datos de cada póliza en el CSV ---
     for poliza in polizas_query:
         writer.writerow([
+            poliza.id,
             poliza.numero_poliza,
             poliza.cliente.nombre_completo,
             f"{poliza.cliente.get_tipo_documento_display()}-{poliza.cliente.numero_documento}",
