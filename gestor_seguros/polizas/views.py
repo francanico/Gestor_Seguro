@@ -679,86 +679,73 @@ def importar_polizas_csv(request):
         if form.is_valid():
             csv_file = request.FILES['csv_file']
             
-            # Verificamos que es un archivo de texto
             if not csv_file.name.endswith('.csv'):
-                messages.error(request, '¡Este no es un archivo CSV!')
+                messages.error(request, 'El archivo debe tener formato .csv')
                 return redirect('polizas:lista_polizas')
 
-            # Leemos el archivo en memoria
             data_set = csv_file.read().decode('UTF-8')
             io_string = io.StringIO(data_set)
             
-            # Contadores para el resumen
             creadas = 0
             actualizadas = 0
             errores = []
 
-            # Saltamos la cabecera
-            next(io_string)
             reader = csv.reader(io_string)
+            header = next(reader) # Guardamos la cabecera
 
             for i, row in enumerate(reader):
-                linea = i + 2 # Para reportar errores
+                linea = i + 2
                 try:
-                    # Asumimos el mismo orden de columnas que en la exportación
-                    poliza_id = row[0]
-                    numero_poliza = row[1]
-                    cliente_nombre = row[2]
-                    # ... (asigna el resto de las columnas a variables)
-                    aseguradora_nombre = row[5]
-                    # ...
+                    # Asignación por nombres de columna para evitar errores de índice
+                    row_data = dict(zip(header, row))
+                    
+                    poliza_id = row_data.get('ID Poliza')
+                    numero_poliza = row_data.get('Nro. Poliza')
+                    cliente_nombre = row_data.get('Cliente')
+                    aseguradora_nombre = row_data.get('Aseguradora')
+                    ramo = row_data.get('Ramo')
+                    bien_asegurado = row_data.get('Bien Asegurado (Placa)')
+                    # Añade aquí el resto de los campos que quieras importar...
+                    prima_str = row_data.get('Prima Total Anual', '0').replace(',', '.')
 
                     # --- Lógica de Cliente y Aseguradora ---
-                    # Busca o crea el cliente
-                    cliente, _ = Cliente.objects.get_or_create(
-                        usuario=request.user,
-                        nombre_completo__iexact=cliente_nombre,
-                        defaults={'nombre_completo': cliente_nombre, 'numero_documento': f'TEMP-{linea}'}
-                    )
-                    # Busca o crea la aseguradora
-                    aseguradora, _ = Aseguradora.objects.get_or_create(
-                        usuario=request.user,
-                        nombre__iexact=aseguradora_nombre,
-                        defaults={'nombre': aseguradora_nombre}
-                    )
+                    cliente, _ = Cliente.objects.get_or_create(usuario=request.user, nombre_completo__iexact=cliente_nombre, defaults={'nombre_completo': cliente_nombre})
+                    aseguradora, _ = Aseguradora.objects.get_or_create(usuario=request.user, nombre__iexact=aseguradora_nombre, defaults={'nombre': aseguradora_nombre})
+
+                    # --- Preparar datos para la Póliza ---
+                    poliza_data = {
+                        'numero_poliza': numero_poliza,
+                        'cliente': cliente,
+                        'aseguradora': aseguradora,
+                        'ramo_tipo_seguro': ramo,
+                        'descripcion_bien_asegurado': bien_asegurado,
+                        'prima_total_anual': Decimal(prima_str) if prima_str else Decimal('0.00'),
+                        # ... (añade aquí más campos del CSV que quieras procesar)
+                    }
 
                     # --- Lógica de Póliza: Actualizar o Crear ---
-                    if poliza_id:
-                        # Si hay un ID, intentamos actualizar
+                    if poliza_id and poliza_id.isdigit():
                         poliza, created = Poliza.objects.update_or_create(
-                            id=poliza_id,
-                            usuario=request.user, # Filtro de seguridad
-                            defaults={
-                                'numero_poliza': numero_poliza,
-                                'cliente': cliente,
-                                'aseguradora': aseguradora,
-                                # ... (mapea el resto de los campos que quieres que se puedan actualizar)
-                            }
-                        )
-                        if created:
-                            # Esto es raro, significa que el ID no existía. Lo contamos como creado.
-                            creadas += 1
-                        else:
-                            actualizadas += 1
-                    else:
-                        # Si no hay ID, creamos una nueva póliza
-                        Poliza.objects.create(
+                            id=int(poliza_id),
                             usuario=request.user,
-                            numero_poliza=numero_poliza,
-                            cliente=cliente,
-                            aseguradora=aseguradora,
-                            # ... (mapea todos los campos necesarios para crear)
+                            defaults=poliza_data
                         )
+                        if not created:
+                            actualizadas += 1
+                        else: # El ID no existía, se creó una nueva
+                            creadas += 1
+                    else:
+                        poliza_data['usuario'] = request.user
+                        # Añade campos obligatorios que no están en el CSV
+                        poliza_data.setdefault('fecha_inicio_vigencia', timezone.now().date())
+                        poliza_data.setdefault('fecha_fin_vigencia', timezone.now().date() + relativedelta(years=1))
+                        Poliza.objects.create(**poliza_data)
                         creadas += 1
 
                 except Exception as e:
                     errores.append(f"Línea {linea}: {e}")
 
-            messages.success(request, f"Importación completada: {creadas} pólizas creadas, {actualizadas} actualizadas.")
-            if errores:
-                messages.warning(request, f"Se encontraron {len(errores)} errores. Revisa los datos. Ejemplo de error: {errores[0]}")
-
+            # ... (mensajes de resumen)
             return redirect('polizas:lista_polizas')
 
-    # Si es GET, no hacemos nada, la plantilla se encargará de mostrar el formulario
     return redirect('polizas:lista_polizas')

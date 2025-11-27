@@ -117,6 +117,7 @@ def exportar_polizas_csv(request):
         'Telefono Cliente',
         'Aseguradora',
         'Ramo',
+        'Bien Asegurado (Placa)'
         'Fecha Emision',
         'Fecha Inicio Vigencia',
         'Fecha Fin Vigencia',
@@ -138,6 +139,7 @@ def exportar_polizas_csv(request):
             poliza.cliente.telefono_principal,
             poliza.aseguradora.nombre if poliza.aseguradora else 'N/A',
             poliza.ramo_tipo_seguro,
+            poliza.descripcion_bien_asegurado,
             poliza.fecha_emision.strftime('%d/%m/%Y'),
             poliza.fecha_inicio_vigencia.strftime('%d/%m/%Y'),
             poliza.fecha_fin_vigencia.strftime('%d/%m/%Y'),
