@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta,datetime
 from django.db import transaction
 from .models import Poliza, Aseguradora,PagoCuota,Siniestro,Asegurado 
 from .forms import PolizaForm, AseguradoraForm,SiniestroForm,AseguradoForm,AseguradoFormSet
@@ -673,79 +673,107 @@ def obtener_tasa_bcv_api(request):
     return JsonResponse({'tasa_usd': tasa_str})
 
 @login_required
+@transaction.atomic # Si algo falla, revierte todos los cambios en la BD
 def importar_polizas_csv(request):
-    if request.method == 'POST':
-        form = CSVImportForm(request.POST, request.FILES)
-        if form.is_valid():
-            csv_file = request.FILES['csv_file']
+    if request.method != 'POST':
+        # Si no es POST, no hacemos nada, redirigimos.
+        return redirect('polizas:lista_polizas')
+
+    form = CSVImportForm(request.POST, request.FILES)
+    if not form.is_valid():
+        messages.error(request, 'No se seleccionó ningún archivo o el formulario no es válido.')
+        return redirect('polizas:lista_polizas')
+
+    csv_file = request.FILES['csv_file']
+    if not csv_file.name.endswith('.csv'):
+        messages.error(request, 'Formato de archivo incorrecto. Por favor, sube un archivo .csv')
+        return redirect('polizas:lista_polizas')
+
+    # Usamos utf-8-sig para manejar el BOM que Excel a veces añade
+    reader = csv.DictReader(io.StringIO(csv_file.read().decode('utf-8-sig')))
+    
+    reporte = {'creadas': 0, 'actualizadas': 0, 'errores': []}
+    
+    print("--- INICIANDO PROCESO DE IMPORTACIÓN CSV ---")
+
+    for i, row in enumerate(reader):
+        linea = i + 2
+        try:
+            # --- 1. Leer y limpiar datos del CSV ---
+            poliza_id = row.get('ID Poliza', '').strip()
+            numero_poliza = row.get('Nro. Poliza', '').strip()
+            cliente_nombre = row.get('Cliente', '').strip()
+            aseguradora_nombre = row.get('Aseguradora', '').strip()
+            bien_asegurado = row.get('Bien Asegurado (Placa)', '').strip()
+
+            if not numero_poliza or not cliente_nombre or not aseguradora_nombre:
+                raise ValueError("Faltan datos esenciales (Nro. Póliza, Cliente o Aseguradora)")
+
+            # --- 2. Buscar o crear objetos relacionados ---
+            cliente, _ = Cliente.objects.get_or_create(
+                usuario=request.user, nombre_completo__iexact=cliente_nombre,
+                defaults={'nombre_completo': cliente_nombre}
+            )
+            aseguradora, _ = Aseguradora.objects.get_or_create(
+                usuario=request.user, nombre__iexact=aseguradora_nombre,
+                defaults={'nombre': aseguradora_nombre}
+            )
             
-            if not csv_file.name.endswith('.csv'):
-                messages.error(request, 'El archivo debe tener formato .csv')
-                return redirect('polizas:lista_polizas')
-
-            data_set = csv_file.read().decode('UTF-8')
-            io_string = io.StringIO(data_set)
+            # --- 3. Preparar el diccionario de datos para la póliza ---
+            poliza_defaults = {
+                'numero_poliza': numero_poliza,
+                'cliente': cliente,
+                'aseguradora': aseguradora,
+                'descripcion_bien_asegurado': bien_asegurado,
+                'ramo_tipo_seguro': row.get('Ramo', '').strip(),
+                'prima_total_anual': Decimal(row.get('Prima Total Anual', '0').replace(',', '.')),
+                'comision_monto': Decimal(row.get('Monto Comision', '0').replace(',', '.')),
+                'comision_cobrada': row.get('Comision Cobrada', '').strip().lower() == 'si',
+                'estado_poliza': row.get('Estado de la Poliza', 'VIGENTE').strip().upper().replace(' ', '_'),
+                'frecuencia_pago': row.get('Frecuencia de Pago', 'ANUAL').strip().upper(),
+            }
             
-            creadas = 0
-            actualizadas = 0
-            errores = []
+            # Conversión de fechas segura
+            for campo_fecha in ['Fecha Emision', 'Fecha Inicio Vigencia', 'Fecha Fin Vigencia']:
+                fecha_str = row.get(campo_fecha, '').strip()
+                if fecha_str:
+                    poliza_defaults[campo_fecha.lower().replace(' ', '_')] = datetime.strptime(fecha_str, '%d/%m/%Y').date()
 
-            reader = csv.reader(io_string)
-            header = next(reader) # Guardamos la cabecera
+            # --- 4. Lógica de Actualizar o Crear ---
+            if poliza_id and poliza_id.isdigit():
+                # Actualizar póliza existente
+                poliza, created = Poliza.objects.update_or_create(
+                    id=int(poliza_id),
+                    usuario=request.user, # Filtro de seguridad
+                    defaults=poliza_defaults
+                )
+                if not created:
+                    reporte['actualizadas'] += 1
+                    print(f"Línea {linea}: Póliza ID {poliza_id} ACTUALIZADA.")
+                else: # ID no existía, se creó una nueva
+                    reporte['creadas'] += 1
+                    print(f"Línea {linea}: Póliza con ID {poliza_id} no encontrada, se CREÓ una nueva.")
+            else:
+                # Crear póliza nueva
+                poliza_defaults['usuario'] = request.user
+                poliza_defaults.setdefault('fecha_inicio_vigencia', timezone.now().date())
+                poliza_defaults.setdefault('fecha_fin_vigencia', timezone.now().date() + relativedelta(years=1))
+                poliza = Poliza.objects.create(**poliza_defaults)
+                reporte['creadas'] += 1
+                print(f"Línea {linea}: Póliza nueva '{numero_poliza}' CREADA.")
+            
+            # Siempre regenerar el plan de pagos
+            poliza.generar_plan_de_pagos()
 
-            for i, row in enumerate(reader):
-                linea = i + 2
-                try:
-                    # Asignación por nombres de columna para evitar errores de índice
-                    row_data = dict(zip(header, row))
-                    
-                    poliza_id = row_data.get('ID Poliza')
-                    numero_poliza = row_data.get('Nro. Poliza')
-                    cliente_nombre = row_data.get('Cliente')
-                    aseguradora_nombre = row_data.get('Aseguradora')
-                    ramo = row_data.get('Ramo')
-                    bien_asegurado = row_data.get('Bien Asegurado (Placa)')
-                    # Añade aquí el resto de los campos que quieras importar...
-                    prima_str = row_data.get('Prima Total Anual', '0').replace(',', '.')
+        except (ValueError, InvalidOperation, KeyError) as e:
+            error_msg = f"Error en línea {linea}: {e} | Datos: {row}"
+            reporte['errores'].append(error_msg)
+            print(f"ERROR: {error_msg}")
 
-                    # --- Lógica de Cliente y Aseguradora ---
-                    cliente, _ = Cliente.objects.get_or_create(usuario=request.user, nombre_completo__iexact=cliente_nombre, defaults={'nombre_completo': cliente_nombre})
-                    aseguradora, _ = Aseguradora.objects.get_or_create(usuario=request.user, nombre__iexact=aseguradora_nombre, defaults={'nombre': aseguradora_nombre})
-
-                    # --- Preparar datos para la Póliza ---
-                    poliza_data = {
-                        'numero_poliza': numero_poliza,
-                        'cliente': cliente,
-                        'aseguradora': aseguradora,
-                        'ramo_tipo_seguro': ramo,
-                        'descripcion_bien_asegurado': bien_asegurado,
-                        'prima_total_anual': Decimal(prima_str) if prima_str else Decimal('0.00'),
-                        # ... (añade aquí más campos del CSV que quieras procesar)
-                    }
-
-                    # --- Lógica de Póliza: Actualizar o Crear ---
-                    if poliza_id and poliza_id.isdigit():
-                        poliza, created = Poliza.objects.update_or_create(
-                            id=int(poliza_id),
-                            usuario=request.user,
-                            defaults=poliza_data
-                        )
-                        if not created:
-                            actualizadas += 1
-                        else: # El ID no existía, se creó una nueva
-                            creadas += 1
-                    else:
-                        poliza_data['usuario'] = request.user
-                        # Añade campos obligatorios que no están en el CSV
-                        poliza_data.setdefault('fecha_inicio_vigencia', timezone.now().date())
-                        poliza_data.setdefault('fecha_fin_vigencia', timezone.now().date() + relativedelta(years=1))
-                        Poliza.objects.create(**poliza_data)
-                        creadas += 1
-
-                except Exception as e:
-                    errores.append(f"Línea {linea}: {e}")
-
-            # ... (mensajes de resumen)
-            return redirect('polizas:lista_polizas')
-
+    # --- 5. Reporte final al usuario ---
+    messages.success(request, f"Importación finalizada. Pólizas creadas: {reporte['creadas']}. Pólizas actualizadas: {reporte['actualizadas']}.")
+    if reporte['errores']:
+        messages.warning(request, f"Se encontraron {len(reporte['errores'])} errores. Revisa los logs del servidor para más detalles.")
+    
+    print("--- FIN DEL PROCESO DE IMPORTACIÓN CSV ---")
     return redirect('polizas:lista_polizas')
