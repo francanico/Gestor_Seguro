@@ -117,7 +117,7 @@ def exportar_polizas_csv(request):
         'Telefono Cliente',
         'Aseguradora',
         'Ramo',
-        'Bien Asegurado (Placa)'
+        'Bien Asegurado (Placa)',
         'Fecha Emision',
         'Fecha Inicio Vigencia',
         'Fecha Fin Vigencia',
