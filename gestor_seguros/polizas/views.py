@@ -710,9 +710,6 @@ def importar_polizas_csv(request):
     # Usamos el archivo ya decodificado
     io_string = io.StringIO(decoded_file)
     reader = csv.DictReader(io_string)
-
-    # Usamos utf-8-sig para manejar el BOM que Excel a veces añade
-    reader = csv.DictReader(io.StringIO(csv_file.read().decode('utf-8-sig')))
     
     reporte = {'creadas': 0, 'actualizadas': 0, 'errores': []}
     
