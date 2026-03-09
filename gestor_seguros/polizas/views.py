@@ -776,14 +776,20 @@ def importar_polizas_csv(request):
                 aseguradora = Aseguradora.objects.create(usuario=request.user, nombre=aseguradora_nombre)
             
             # --- 3. Preparar el diccionario de datos para la póliza ---
+            
+            # Helper seguro para parsear decimales vacíos
+            def safe_decimal(value):
+                val = value.strip().replace(',', '.')
+                return Decimal(val) if val else Decimal('0.00')
+
             poliza_defaults = {
                 'numero_poliza': numero_poliza,
                 'cliente': cliente,
                 'aseguradora': aseguradora,
                 'descripcion_bien_asegurado': bien_asegurado,
                 'ramo_tipo_seguro': row.get('Ramo', '').strip(),
-                'prima_total_anual': Decimal(row.get('Prima Total Anual', '0').replace(',', '.')),
-                'comision_monto': Decimal(row.get('Monto Comision', '0').replace(',', '.')),
+                'prima_total_anual': safe_decimal(row.get('Prima Total Anual', '0')),
+                'comision_monto': safe_decimal(row.get('Monto Comision', '0')),
                 'comision_cobrada': row.get('Comision Cobrada', '').strip().lower() == 'si',
                 'estado_poliza': row.get('Estado de la Poliza', 'VIGENTE').strip().upper().replace(' ', '_'),
                 'frecuencia_pago': row.get('Frecuencia de Pago', 'ANUAL').strip().upper(),
