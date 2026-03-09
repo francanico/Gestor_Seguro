@@ -761,8 +761,11 @@ def importar_polizas_csv(request):
             aseguradora_nombre = row.get('Aseguradora', '').strip()
             bien_asegurado = row.get('Bien Asegurado (Placa)', '').strip()
 
-            if not numero_poliza or not cliente_nombre or not aseguradora_nombre:
-                raise ValueError("Faltan datos esenciales (Nro. Póliza, Cliente o Aseguradora)")
+            if not cliente_nombre or not aseguradora_nombre:
+                raise ValueError("Faltan datos esenciales (Cliente o Aseguradora)")
+                
+            if not numero_poliza or numero_poliza.upper() == 'N/A':
+                numero_poliza = f"GEN-{timezone.now().strftime('%Y%m%d%H%M%S')}-{i}"
 
             # --- 2. Buscar o crear objetos relacionados ---
             # Manejo seguro para Cliente
