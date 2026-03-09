@@ -633,39 +633,33 @@ def obtener_tasa_bcv_api(request):
     
     if not tasa_str:
         try:
-            url = 'https://www.bcv.org.ve/' # <-- CAMBIO: A veces la raíz es más estable
-            headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'}
+            # Usar API pública PyDolarVe en lugar de scraping directo al BCV para evitar bloqueos y timeouts
+            url = 'https://pydolarve.org/api/v1/dollar?page=bcv'
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
             
-            response = requests.get(url, headers=headers, timeout=30, verify=False)
+            response = requests.get(url, headers=headers, timeout=15)
             response.raise_for_status()
             
-            soup = BeautifulSoup(response.content, 'html.parser')
+            data = response.json()
             
-            # --- LÓGICA DE SCRAPING MEJORADA Y MÁS SEGURA ---
-            usd_div = soup.find('div', id='dolar')
-            if not usd_div:
-                raise ValueError("No se pudo encontrar el div con id='dolar'. La estructura de la página del BCV puede haber cambiado.")
+            # La API de pydolarve devuelve un diccionario de monitores. Buscamos el BCV (o usd)
+            monitores = data.get('monitors', {})
+            usd_data = monitores.get('usd')
+            
+            if not usd_data or 'price' not in usd_data:
+                raise ValueError("La estructura de la API ha cambiado o no se encontró el monitor usd/bcv.")
                 
-            strong_tag = usd_div.find('strong')
-            if not strong_tag:
-                raise ValueError("No se pudo encontrar la etiqueta <strong> dentro del div 'dolar'.")
-
-            tasa_raw_str = strong_tag.get_text(strip=True)
-            if not tasa_raw_str:
-                raise ValueError("La etiqueta <strong> para la tasa del dólar está vacía.")
-
-            # Limpiamos el string: quitamos puntos de miles y cambiamos coma decimal a punto
-            tasa_limpia_str = tasa_raw_str.replace('.', '').replace(',', '.')
-            tasa_decimal = Decimal(tasa_limpia_str)
+            tasa_raw = usd_data['price']
+            tasa_decimal = Decimal(str(tasa_raw))
             
             tasa_str = str(tasa_decimal)
             cache.set(CACHE_KEY, tasa_str, timeout=43200) # 12 horas
             
-            print(f"TASA BCV OBTENIDA (SCRAPING): {tasa_str}")
+            print(f"TASA BCV OBTENIDA (API EXTERNA): {tasa_str}")
 
-        except (requests.RequestException, ValueError, InvalidOperation, AttributeError) as e:
-            # Si el scraping falla, devolvemos un error claro
-            error_message = f'Error al hacer scraping en BCV: {str(e)}'
+        except (requests.RequestException, ValueError, InvalidOperation, KeyError) as e:
+            # Si la API falla, devolvemos un error claro
+            error_message = f'Error al consultar API de tasa de cambio: {str(e)}'
             print(error_message)
             return JsonResponse({'error': error_message}, status=503) # 503: Service Unavailable
     else:
