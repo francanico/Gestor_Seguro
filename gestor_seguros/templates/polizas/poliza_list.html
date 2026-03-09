@@ -15,7 +15,7 @@
     <div>
         <!-- BOTÓN PARA ABRIR EL MODAL DE IMPORTACIÓN -->
         <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#importModal">
-            <i class="fas fa-upload"></i> Importar CSV
+            <i class="fas fa-upload"></i> Importar
         </button>
         <a href="{% url 'polizas:crear_poliza' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Añadir Póliza</a>
     </div>
@@ -161,16 +161,16 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="importModalLabel">Importar Pólizas desde CSV</h5>
+                <h5 class="modal-title" id="importModalLabel">Importar Pólizas desde CSV / Excel</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p class="text-muted">Sube un archivo CSV con el mismo formato que el exportado. El sistema actualizará las pólizas existentes (usando el ID) y creará las nuevas.</p>
+                <p class="text-muted">Sube un archivo CSV o de Excel (.xlsx) con el mismo formato que el exportado. El sistema actualizará las pólizas existentes (usando el ID) y creará las nuevas.</p>
                 <form action="{% url 'polizas:importar_polizas_csv' %}" method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label for="id_csv_file" class="form-label">Seleccionar archivo CSV</label>
-                        <input type="file" name="csv_file" class="form-control" required id="id_csv_file" accept=".csv">
+                        <label for="id_archivo" class="form-label">Seleccionar archivo</label>
+                        <input type="file" name="archivo" class="form-control" required id="id_archivo" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
                     </div>
                     <hr>
                     <button type="submit" class="btn btn-primary">Importar</button>

@@ -25,7 +25,8 @@ from decimal import Decimal,InvalidOperation
 from .mixins import OwnerRequiredMixin
 from django.utils.decorators import method_decorator
 from .filters import PolizaFilter
-from .forms import CSVImportForm
+from .forms import DocumentoImportForm
+import openpyxl
 
 # Constantes para estados de póliza activos
 ESTADOS_POLIZA_ACTIVOS = ['VIGENTE', 'PENDIENTE_PAGO']
@@ -678,44 +679,79 @@ def importar_polizas_csv(request):
     if request.method != 'POST':
         return redirect('polizas:lista_polizas')
 
-    form = CSVImportForm(request.POST, request.FILES)
+    form = DocumentoImportForm(request.POST, request.FILES)
     if not form.is_valid():
         messages.error(request, 'No se seleccionó ningún archivo.')
         return redirect('polizas:lista_polizas')
 
-    csv_file = request.FILES['csv_file']
-    if not csv_file.name.endswith('.csv'):
-        messages.error(request, 'Formato de archivo incorrecto. Sube un archivo .csv')
-        return redirect('polizas:lista_polizas')
-
-    # --- LÓGICA DE DECODIFICACIÓN MEJORADA ---
-    decoded_file = None
-    # Lista de codificaciones comunes a probar
-    encodings_to_try = ['utf-8', 'utf-8-sig', 'latin-1', 'iso-8859-1', 'cp1252']
+    archivo = request.FILES['archivo']
+    nombre_archivo = archivo.name.lower()
     
-    file_content = csv_file.read()
-    for encoding in encodings_to_try:
-        try:
-            decoded_file = file_content.decode(encoding)
-            print(f"DEBUG: Archivo decodificado exitosamente con {encoding}")
-            break # Si funciona, salimos del bucle
-        except UnicodeDecodeError:
-            print(f"DEBUG: Falló la decodificación con {encoding}")
-            continue # Si falla, probamos la siguiente
-
-    if not decoded_file:
-        messages.error(request, "No se pudo decodificar el archivo. Asegúrate de que esté guardado en formato UTF-8 o Latin-1.")
+    if not (nombre_archivo.endswith('.csv') or nombre_archivo.endswith('.xlsx')):
+        messages.error(request, 'Formato de archivo incorrecto. Sube un archivo .csv o .xlsx')
         return redirect('polizas:lista_polizas')
 
-    # Usamos el archivo ya decodificado
-    io_string = io.StringIO(decoded_file)
-    reader = csv.DictReader(io_string)
+    filas_datos = []
+    
+    print(f"--- INICIANDO PROCESO DE IMPORTACIÓN FORMATO: {nombre_archivo} ---")
+
+    try:
+        if nombre_archivo.endswith('.xlsx'):
+            # LÓGICA DE EXCEL
+            wb = openpyxl.load_workbook(archivo, data_only=True)
+            sheet = wb.active
+            headers = [cell.value for cell in sheet[1]]
+            
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                if any(row):  # Ignorar filas completamente vacías
+                    row_dict = dict(zip(headers, row))
+                    # Convertir todo a string para mantener consistencia con CSV
+                    for key, val in row_dict.items():
+                        if val is None:
+                            row_dict[key] = ""
+                        elif isinstance(val, datetime):
+                            row_dict[key] = val.strftime('%d/%m/%Y')
+                        else:
+                            row_dict[key] = str(val).strip()
+                    filas_datos.append(row_dict)
+                    
+        elif nombre_archivo.endswith('.csv'):
+            # LÓGICA DE CSV (Decodificación robusta y auto-detección de separador)
+            decoded_file = None
+            encodings_to_try = ['utf-8-sig', 'utf-8', 'latin-1', 'iso-8859-1', 'cp1252']
+            
+            file_content = archivo.read()
+            for encoding in encodings_to_try:
+                try:
+                    decoded_file = file_content.decode(encoding)
+                    print(f"DEBUG: Archivo decodificado exitosamente con {encoding}")
+                    break
+                except UnicodeDecodeError:
+                    continue
+
+            if not decoded_file:
+                messages.error(request, "No se pudo decodificar el archivo CSV. Asegúrate de que esté en formato UTF-8.")
+                return redirect('polizas:lista_polizas')
+
+            # Detectar si el archivo usa comas o punto y coma
+            # Miramos la primera línea de datos
+            primer_salto = decoded_file.find('\n')
+            primera_linea = decoded_file[:primer_salto] if primer_salto != -1 else decoded_file
+            delimitador = ';' if primera_linea.count(';') > primera_linea.count(',') else ','
+            
+            print(f"DEBUG: Delimitador CSV detectado: '{delimitador}'")
+
+            io_string = io.StringIO(decoded_file)
+            reader = csv.DictReader(io_string, delimiter=delimitador)
+            filas_datos = list(reader)
+            
+    except Exception as e:
+        messages.error(request, f"Error al leer el archivo: {str(e)}")
+        return redirect('polizas:lista_polizas')
     
     reporte = {'creadas': 0, 'actualizadas': 0, 'errores': []}
     
-    print("--- INICIANDO PROCESO DE IMPORTACIÓN CSV ---")
-
-    for i, row in enumerate(reader):
+    for i, row in enumerate(filas_datos):
         linea = i + 2
         try:
             # --- 1. Leer y limpiar datos del CSV ---

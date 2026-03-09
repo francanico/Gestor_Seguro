@@ -6,8 +6,8 @@ from django.core.exceptions import ValidationError
 from clientes.models import Cliente
 
 
-class CSVImportForm(forms.Form):
-    csv_file = forms.FileField(label="Seleccionar archivo CSV")
+class DocumentoImportForm(forms.Form):
+    archivo = forms.FileField(label="Seleccionar archivo CSV o Excel (.xlsx)")
 
 class AseguradoraForm(forms.ModelForm):
     class Meta:
