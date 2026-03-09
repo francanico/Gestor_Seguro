@@ -819,7 +819,14 @@ def importar_polizas_csv(request):
                     reporte['creadas'] += 1
                     print(f"Línea {linea}: Póliza con ID {poliza_id} no encontrada, se CREÓ una nueva.")
             else:
-                # Crear póliza nueva
+                # Crear póliza nueva (Detección de duplicados activos)
+                base_numero = numero_poliza
+                contador = 1
+                while Poliza.objects.filter(usuario=request.user, numero_poliza=numero_poliza).exists():
+                    numero_poliza = f"{base_numero}-{contador}"
+                    contador += 1
+                
+                poliza_defaults['numero_poliza'] = numero_poliza # Actualizamos con el nuevo si cambió
                 poliza_defaults['usuario'] = request.user
                 poliza_defaults.setdefault('fecha_inicio_vigencia', timezone.now().date())
                 poliza_defaults.setdefault('fecha_fin_vigencia', timezone.now().date() + relativedelta(years=1))
