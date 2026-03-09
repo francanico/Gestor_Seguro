@@ -12,7 +12,7 @@ from documentos.models import Documento
 class Aseguradora(models.Model):
 
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='aseguradoras')
-    nombre = models.CharField(max_length=150, unique=True, verbose_name="Nombre de la Aseguradora")
+    nombre = models.CharField(max_length=150, verbose_name="Nombre de la Aseguradora")
     rif = models.CharField(max_length=20, blank=True, null=True, verbose_name="RIF")
     contacto_nombre = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nombre de Contacto")
     contacto_email = models.EmailField(blank=True, null=True, verbose_name="Email de Contacto")
@@ -30,8 +30,7 @@ class Aseguradora(models.Model):
         verbose_name = "Aseguradora"
         verbose_name_plural = "Aseguradoras"
         ordering = ['nombre']
-        unique_together = ('usuario', 'nombre')
-        unique_together = ('usuario', 'rif')
+        unique_together = (('usuario', 'nombre'), ('usuario', 'rif'))
 
 # ---  MODELO PARA CADA PERSONA CUBIERTA EN LA PÓLIZA ---
 class Asegurado(models.Model):
@@ -110,7 +109,7 @@ class Poliza(models.Model):
 
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name="polizas", verbose_name="Cliente")
     aseguradora = models.ForeignKey(Aseguradora, on_delete=models.SET_NULL, null=True, blank=True, related_name="polizas", verbose_name="Aseguradora")
-    numero_poliza = models.CharField(max_length=100, unique=True, verbose_name="Número de Póliza")
+    numero_poliza = models.CharField(max_length=100, verbose_name="Número de Póliza")
     ramo_tipo_seguro = models.CharField(max_length=100, verbose_name="Ramo o Tipo de Seguro (Ej: Vida, Auto, Hogar)")
     descripcion_bien_asegurado = models.TextField(blank=True, null=True, verbose_name="Descripción del Bien Asegurado (Ej: Placa Vehículo, Dirección Inmueble)")
 
