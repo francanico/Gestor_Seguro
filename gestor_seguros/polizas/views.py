@@ -674,7 +674,6 @@ def obtener_tasa_bcv_api(request):
     return JsonResponse({'tasa_usd': tasa_str})
 
 @login_required
-@transaction.atomic
 def importar_polizas_csv(request):
     if request.method != 'POST':
         return redirect('polizas:lista_polizas')
@@ -821,12 +820,13 @@ def importar_polizas_csv(request):
             if poliza:
                 # Actualizar póliza existente
                 try:
-                    for attr, value in poliza_defaults.items():
-                        setattr(poliza, attr, value)
-                    poliza.save()
+                    with transaction.atomic():
+                        for attr, value in poliza_defaults.items():
+                            setattr(poliza, attr, value)
+                        poliza.save()
+                        poliza.generar_plan_de_pagos()
                     reporte['actualizadas'] += 1
                     print(f"Línea {linea}: Póliza ID {poliza.id} ACTUALIZADA.")
-                    poliza.generar_plan_de_pagos()
                 except IntegrityError as e:
                     error_msg = f"Error de integridad al actualizar Póliza ID {poliza.id}: {e}"
                     reporte['errores'].append(error_msg)
@@ -848,10 +848,11 @@ def importar_polizas_csv(request):
                 poliza_defaults.setdefault('fecha_fin_vigencia', timezone.now().date() + relativedelta(years=1))
                 
                 try:
-                    poliza = Poliza.objects.create(**poliza_defaults)
+                    with transaction.atomic():
+                        poliza = Poliza.objects.create(**poliza_defaults)
+                        poliza.generar_plan_de_pagos()
                     reporte['creadas'] += 1
                     print(f"Línea {linea}: Póliza nueva '{numero_poliza}' CREADA.")
-                    poliza.generar_plan_de_pagos()
                 except IntegrityError as e:
                     error_msg = f"Error de integridad al crear Póliza '{numero_poliza}': {e}"
                     reporte['errores'].append(error_msg)
