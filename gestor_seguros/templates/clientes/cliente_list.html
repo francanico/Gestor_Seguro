@@ -7,9 +7,15 @@
 {% block content %}
 
 <!-- Cabecera de la Página -->
-<div class="page-header">
+<div class="page-header justify-content-between align-items-center">
     <h2><i class="fas fa-users"></i> Lista de Clientes</h2>
-    <a href="{% url 'clientes:crear_cliente' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Añadir Cliente</a>
+    <div class="header-actions">
+        <!-- Botón para eliminar múltiples (Oculto por defecto, se muestra con JS) -->
+        <button type="button" id="btnDeleteSelected" class="btn btn-danger me-2 d-none" onclick="confirmarEliminacionMasiva()">
+            <i class="fas fa-trash-alt"></i> Eliminar (<span id="selectedCount">0</span>)
+        </button>
+        <a href="{% url 'clientes:crear_cliente' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Añadir Cliente</a>
+    </div>
 </div>
 
 <!-- Formulario de Búsqueda -->
@@ -28,36 +34,49 @@
 {% if clientes %}
     <!-- Contenedor para la Tabla -->
     <div class="table-container">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>Nombre Completo</th>
-                        <th>Documento</th>
-                        <th>Email</th>
-                        <th>Teléfono</th>
-                        <th class="text-center">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cliente in clientes %}
-                    <tr>
-                        <td><a href="{{ cliente.get_absolute_url }}">{{ cliente.nombre_completo }}</a></td>
-                        <td>{{ cliente.get_tipo_documento_display }} {{ cliente.numero_documento }}</td>
-                        <td>{{ cliente.email|default:"N/A" }}</td>
-                        <td>{{ cliente.telefono_principal|default:"N/A" }}</td>
-                        <td class="text-center">
-                            <div class="action-buttons btn-group" role="group">
-                                <a href="{{ cliente.get_absolute_url }}" class="btn btn-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
-                                <a href="{% url 'clientes:editar_cliente' cliente.pk %}" class="btn btn-warning" title="Editar"><i class="fas fa-edit"></i></a>
-                                <a href="{% url 'clientes:eliminar_cliente' cliente.pk %}" class="btn btn-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        <form id="bulkDeleteForm" method="post" action="{% url 'clientes:eliminar_clientes_masivo' %}">
+            {% csrf_token %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selectAll">
+                                </div>
+                            </th>
+                            <th>Nombre Completo</th>
+                            <th>Documento</th>
+                            <th>Email</th>
+                            <th>Teléfono</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cliente in clientes %}
+                        <tr>
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input client-checkbox" type="checkbox" name="cliente_ids" value="{{ cliente.pk }}">
+                                </div>
+                            </td>
+                            <td><a href="{{ cliente.get_absolute_url }}">{{ cliente.nombre_completo }}</a></td>
+                            <td>{{ cliente.get_tipo_documento_display }} {{ cliente.numero_documento }}</td>
+                            <td>{{ cliente.email|default:"N/A" }}</td>
+                            <td>{{ cliente.telefono_principal|default:"N/A" }}</td>
+                            <td class="text-center">
+                                <div class="action-buttons btn-group" role="group">
+                                    <a href="{{ cliente.get_absolute_url }}" class="btn btn-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
+                                    <a href="{% url 'clientes:editar_cliente' cliente.pk %}" class="btn btn-warning" title="Editar"><i class="fas fa-edit"></i></a>
+                                    <a href="{% url 'clientes:eliminar_cliente' cliente.pk %}" class="btn btn-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
     </div>
 
     {% if is_paginated %}
@@ -71,4 +90,58 @@
         No se encontraron clientes que coincidan con la búsqueda.
     </div>
 {% endif %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const clientCheckboxes = document.querySelectorAll('.client-checkbox');
+        const btnDeleteSelected = document.getElementById('btnDeleteSelected');
+        const selectedCountSpan = document.getElementById('selectedCount');
+
+        function updateDeleteButtonVisibility() {
+            if(!btnDeleteSelected) return;
+            const checkedCount = document.querySelectorAll('.client-checkbox:checked').length;
+            selectedCountSpan.textContent = checkedCount;
+            
+            if (checkedCount > 0) {
+                btnDeleteSelected.classList.remove('d-none');
+            } else {
+                btnDeleteSelected.classList.add('d-none');
+                if(selectAllCheckbox) selectAllCheckbox.checked = false;
+            }
+        }
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                clientCheckboxes.forEach(checkbox => {
+                    checkbox.checked = selectAllCheckbox.checked;
+                });
+                updateDeleteButtonVisibility();
+            });
+        }
+
+        clientCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                updateDeleteButtonVisibility();
+                
+                // Si desmarcamos uno, desmarcar el "Seleccionar Todos"
+                if (!this.checked && selectAllCheckbox) {
+                    selectAllCheckbox.checked = false;
+                }
+            });
+        });
+    });
+
+    function confirmarEliminacionMasiva() {
+        const checkedCount = document.querySelectorAll('.client-checkbox:checked').length;
+        if (checkedCount === 0) return;
+        
+        if (confirm(`¿Estás seguro de que deseas eliminar a los ${checkedCount} clientes seleccionados? Esta acción no se puede deshacer y eliminará todas las pólizas y documentos asociados.`)) {
+            document.getElementById('bulkDeleteForm').submit();
+        }
+    }
+</script>
+{% endblock %}
+
 {% endblock %}

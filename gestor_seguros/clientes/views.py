@@ -97,3 +97,29 @@ class ClienteDeleteView(LoginRequiredMixin, SuccessMessageMixin, DeleteView):
         # Asegura que el usuario solo puede editar SUS PROPIOS clientes.
         # Si intenta acceder a un cliente de otro usuario, obtendrá un 404.
         return self.model.objects.filter(usuario=self.request.user)
+
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.contrib import messages
+from django.shortcuts import redirect
+
+@login_required
+@require_POST
+def eliminar_clientes_masivo(request):
+    cliente_ids = request.POST.getlist('cliente_ids')
+    
+    if not cliente_ids:
+        messages.warning(request, "No se seleccionó ningún cliente para eliminar.")
+        return redirect('clientes:lista_clientes')
+        
+    # Filtrar solo los clientes que pertenecen al usuario actual y que estén en la lista
+    clientes_a_eliminar = Cliente.objects.filter(id__in=cliente_ids, usuario=request.user)
+    cantidad = clientes_a_eliminar.count()
+    
+    if cantidad > 0:
+        clientes_a_eliminar.delete()
+        messages.success(request, f"Se eliminaron {cantidad} clientes exitosamente.")
+    else:
+        messages.warning(request, "No se encontraron clientes válidos para eliminar.")
+        
+    return redirect('clientes:lista_clientes')
