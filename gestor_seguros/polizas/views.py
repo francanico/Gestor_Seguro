@@ -673,21 +673,43 @@ def obtener_tasa_bcv_api(request):
     return JsonResponse({'tasa_usd': tasa_str})
 
 @login_required
-@transaction.atomic # Si algo falla, revierte todos los cambios en la BD
+@transaction.atomic
 def importar_polizas_csv(request):
     if request.method != 'POST':
-        # Si no es POST, no hacemos nada, redirigimos.
         return redirect('polizas:lista_polizas')
 
     form = CSVImportForm(request.POST, request.FILES)
     if not form.is_valid():
-        messages.error(request, 'No se seleccionó ningún archivo o el formulario no es válido.')
+        messages.error(request, 'No se seleccionó ningún archivo.')
         return redirect('polizas:lista_polizas')
 
     csv_file = request.FILES['csv_file']
     if not csv_file.name.endswith('.csv'):
-        messages.error(request, 'Formato de archivo incorrecto. Por favor, sube un archivo .csv')
+        messages.error(request, 'Formato de archivo incorrecto. Sube un archivo .csv')
         return redirect('polizas:lista_polizas')
+
+    # --- LÓGICA DE DECODIFICACIÓN MEJORADA ---
+    decoded_file = None
+    # Lista de codificaciones comunes a probar
+    encodings_to_try = ['utf-8', 'utf-8-sig', 'latin-1', 'iso-8859-1', 'cp1252']
+    
+    file_content = csv_file.read()
+    for encoding in encodings_to_try:
+        try:
+            decoded_file = file_content.decode(encoding)
+            print(f"DEBUG: Archivo decodificado exitosamente con {encoding}")
+            break # Si funciona, salimos del bucle
+        except UnicodeDecodeError:
+            print(f"DEBUG: Falló la decodificación con {encoding}")
+            continue # Si falla, probamos la siguiente
+
+    if not decoded_file:
+        messages.error(request, "No se pudo decodificar el archivo. Asegúrate de que esté guardado en formato UTF-8 o Latin-1.")
+        return redirect('polizas:lista_polizas')
+
+    # Usamos el archivo ya decodificado
+    io_string = io.StringIO(decoded_file)
+    reader = csv.DictReader(io_string)
 
     # Usamos utf-8-sig para manejar el BOM que Excel a veces añade
     reader = csv.DictReader(io.StringIO(csv_file.read().decode('utf-8-sig')))
