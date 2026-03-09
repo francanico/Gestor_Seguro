@@ -765,14 +765,15 @@ def importar_polizas_csv(request):
                 raise ValueError("Faltan datos esenciales (Nro. Póliza, Cliente o Aseguradora)")
 
             # --- 2. Buscar o crear objetos relacionados ---
-            cliente, _ = Cliente.objects.get_or_create(
-                usuario=request.user, nombre_completo__iexact=cliente_nombre,
-                defaults={'nombre_completo': cliente_nombre}
-            )
-            aseguradora, _ = Aseguradora.objects.get_or_create(
-                usuario=request.user, nombre__iexact=aseguradora_nombre,
-                defaults={'nombre': aseguradora_nombre}
-            )
+            # Manejo seguro para Cliente
+            cliente = Cliente.objects.filter(usuario=request.user, nombre_completo__iexact=cliente_nombre).first()
+            if not cliente:
+                cliente = Cliente.objects.create(usuario=request.user, nombre_completo=cliente_nombre, numero_documento=f"Generado-{cliente_nombre[:10]}-{timezone.now().timestamp()}")
+            
+            # Manejo seguro para Aseguradora
+            aseguradora = Aseguradora.objects.filter(usuario=request.user, nombre__iexact=aseguradora_nombre).first()
+            if not aseguradora:
+                aseguradora = Aseguradora.objects.create(usuario=request.user, nombre=aseguradora_nombre)
             
             # --- 3. Preparar el diccionario de datos para la póliza ---
             poliza_defaults = {
