@@ -11,7 +11,7 @@ from django.contrib import messages
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from datetime import timedelta,datetime
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from .models import Poliza, Aseguradora,PagoCuota,Siniestro,Asegurado 
 from .forms import PolizaForm, AseguradoraForm,SiniestroForm,AseguradoForm,AseguradoFormSet
 from clientes.models import Cliente # Para el selector de clientes
@@ -805,37 +805,57 @@ def importar_polizas_csv(request):
                     poliza_defaults[campo_fecha.lower().replace(' ', '_')] = datetime.strptime(fecha_str, '%d/%m/%Y').date()
 
             # --- 4. Lógica de Actualizar o Crear ---
+            poliza = None
             if poliza_id and poliza_id.isdigit():
+                poliza = Poliza.objects.filter(id=int(poliza_id), usuario=request.user).first()
+            
+            # Si no se encontró por ID, intentamos por número y fecha para no chocar con unique_together
+            if not poliza:
+                fecha_ini = poliza_defaults.get('fecha_inicio_vigencia', timezone.now().date())
+                poliza = Poliza.objects.filter(
+                    usuario=request.user, 
+                    numero_poliza=numero_poliza,
+                    fecha_inicio_vigencia=fecha_ini
+                ).first()
+
+            if poliza:
                 # Actualizar póliza existente
-                poliza, created = Poliza.objects.update_or_create(
-                    id=int(poliza_id),
-                    usuario=request.user, # Filtro de seguridad
-                    defaults=poliza_defaults
-                )
-                if not created:
+                try:
+                    for attr, value in poliza_defaults.items():
+                        setattr(poliza, attr, value)
+                    poliza.save()
                     reporte['actualizadas'] += 1
-                    print(f"Línea {linea}: Póliza ID {poliza_id} ACTUALIZADA.")
-                else: # ID no existía, se creó una nueva
-                    reporte['creadas'] += 1
-                    print(f"Línea {linea}: Póliza con ID {poliza_id} no encontrada, se CREÓ una nueva.")
+                    print(f"Línea {linea}: Póliza ID {poliza.id} ACTUALIZADA.")
+                    poliza.generar_plan_de_pagos()
+                except IntegrityError as e:
+                    error_msg = f"Error de integridad al actualizar Póliza ID {poliza.id}: {e}"
+                    reporte['errores'].append(error_msg)
+                    print(f"ERROR: {error_msg}")
             else:
                 # Crear póliza nueva (Detección de duplicados activos)
                 base_numero = numero_poliza
+                fecha_ini = poliza_defaults.get('fecha_inicio_vigencia', timezone.now().date())
                 contador = 1
-                while Poliza.objects.filter(usuario=request.user, numero_poliza=numero_poliza).exists():
+                
+                # Respetamos el unique_together('usuario', 'numero_poliza', 'fecha_inicio_vigencia')
+                while Poliza.objects.filter(usuario=request.user, numero_poliza=numero_poliza, fecha_inicio_vigencia=fecha_ini).exists():
                     numero_poliza = f"{base_numero}-{contador}"
                     contador += 1
                 
-                poliza_defaults['numero_poliza'] = numero_poliza # Actualizamos con el nuevo si cambió
+                poliza_defaults['numero_poliza'] = numero_poliza
                 poliza_defaults['usuario'] = request.user
                 poliza_defaults.setdefault('fecha_inicio_vigencia', timezone.now().date())
                 poliza_defaults.setdefault('fecha_fin_vigencia', timezone.now().date() + relativedelta(years=1))
-                poliza = Poliza.objects.create(**poliza_defaults)
-                reporte['creadas'] += 1
-                print(f"Línea {linea}: Póliza nueva '{numero_poliza}' CREADA.")
-            
-            # Siempre regenerar el plan de pagos
-            poliza.generar_plan_de_pagos()
+                
+                try:
+                    poliza = Poliza.objects.create(**poliza_defaults)
+                    reporte['creadas'] += 1
+                    print(f"Línea {linea}: Póliza nueva '{numero_poliza}' CREADA.")
+                    poliza.generar_plan_de_pagos()
+                except IntegrityError as e:
+                    error_msg = f"Error de integridad al crear Póliza '{numero_poliza}': {e}"
+                    reporte['errores'].append(error_msg)
+                    print(f"ERROR: {error_msg}")
 
         except (ValueError, InvalidOperation, KeyError) as e:
             error_msg = f"Error en línea {linea}: {e} | Datos: {row}"
