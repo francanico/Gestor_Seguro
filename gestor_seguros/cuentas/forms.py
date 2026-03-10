@@ -2,6 +2,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from .models import PerfilUsuario
 
 class RegistroUsuarioForm(UserCreationForm):
     email = forms.EmailField(required=True, help_text="Requerido. Será utilizado para notificaciones.")
@@ -43,6 +44,20 @@ class UserUpdateForm(forms.ModelForm):
             'first_name': 'Nombre(s)',
             'last_name': 'Apellidos',
             'email': 'Correo Electrónico',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.update({'class': 'form-control'})
+
+class ProfileUpdateForm(forms.ModelForm):
+    class Meta:
+        model = PerfilUsuario
+        fields = ['nombre_agencia', 'rif', 'telefono_profesional', 'direccion_agencia', 'biografia']
+        widgets = {
+            'direccion_agencia': forms.Textarea(attrs={'rows': 2}),
+            'biografia': forms.Textarea(attrs={'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):

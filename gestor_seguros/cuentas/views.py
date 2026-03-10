@@ -42,17 +42,28 @@ def registro_usuario(request):
 
 @login_required
 def perfil_usuario(request):
+    from .forms import ProfileUpdateForm
+    from .models import PerfilUsuario
+    
     if request.method == 'POST':
         u_form = UserUpdateForm(request.POST, instance=request.user)
-        if u_form.is_valid():
+        p_form = ProfileUpdateForm(request.POST, instance=request.user.perfil)
+        
+        if u_form.is_valid() and p_form.is_valid():
             u_form.save()
-            messages.success(request, '¡Tu perfil ha sido actualizado exitosamente!')
-            return redirect('cuentas:perfil_usuario') # Redirige a la misma página para ver los cambios
+            p_form.save()
+            messages.success(request, '¡Tu perfil y datos de agencia han sido actualizados!')
+            return redirect('cuentas:perfil_usuario')
     else:
         u_form = UserUpdateForm(instance=request.user)
+        # Asegurar que el perfil exista (por si acaso el signal falló anteriormente)
+        if not hasattr(request.user, 'perfil'):
+            PerfilUsuario.objects.create(user=request.user)
+        p_form = ProfileUpdateForm(instance=request.user.perfil)
 
     context = {
         'u_form': u_form,
-        'titulo_pagina': 'Mi Perfil'
+        'p_form': p_form,
+        'titulo_pagina': 'Gestión de Perfil Profesional'
     }
     return render(request, 'cuentas/perfil.html', context)

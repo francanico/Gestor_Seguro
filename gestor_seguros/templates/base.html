@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             tasaBCV = parseFloat(data.tasa_usd);
-            tasaDisplay.textContent = tasaBCV.toLocaleString('es-VE', { minimumFractionDigits: 4 });
+            tasaDisplay.textContent = tasaBCV.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             
             loader.style.display = 'none';
             content.style.display = 'block';
