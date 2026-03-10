@@ -263,17 +263,26 @@ class Poliza(models.Model):
         fecha_actual_cuota = self.fecha_inicio_vigencia
 
         print(f"DEBUG: Generando {num_cuotas} cuotas para Póliza {self.pk}...")
+        
+        # --- Optimización: Crear todas las cuotas en memoria y luego insertarlas en bloque ---
+        cuotas_a_crear = []
         for i in range(num_cuotas):
             if self.fecha_fin_vigencia and fecha_actual_cuota > self.fecha_fin_vigencia:
                 break
             
-            PagoCuota.objects.create(
+            cuota = PagoCuota(
                 poliza=self,
                 fecha_vencimiento_cuota=fecha_actual_cuota,
                 monto_cuota=monto_por_cuota.quantize(Decimal('0.01')) # Redondeo a 2 decimales
             )
-            print(f"  -> Creada cuota {i+1} para fecha {fecha_actual_cuota}")
+            cuotas_a_crear.append(cuota)
+            print(f"  -> Preparada cuota {i+1} para fecha {fecha_actual_cuota}")
             fecha_actual_cuota += periodo
+
+        # Ejecutamos un solo INSERT a la base de datos con todas las cuotas (Mejora de rendimiento)
+        if cuotas_a_crear:
+            PagoCuota.objects.bulk_create(cuotas_a_crear)
+            print(f"DEBUG: {len(cuotas_a_crear)} cuotas insertadas en lote exitosamente.")
 
     def __str__(self):
         return f"Póliza {self.numero_poliza} - {self.cliente.nombre_completo} ({self.ramo_tipo_seguro})"
