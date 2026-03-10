@@ -644,39 +644,42 @@ def obtener_tasa_bcv_api(request):
     tasa_str = cache.get(CACHE_KEY)
     
     if not tasa_str:
-        try:
-            # Usar API pública PyDolarVe en lugar de scraping directo al BCV para evitar bloqueos y timeouts
-            url = 'https://pydolarve.org/api/v1/dollar?page=bcv'
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
-            
-            response = requests.get(url, headers=headers, timeout=15)
-            response.raise_for_status()
-            
-            data = response.json()
-            
-            # La API de pydolarve devuelve un diccionario de monitores. Buscamos el BCV (o usd)
-            monitores = data.get('monitors', {})
-            usd_data = monitores.get('usd')
-            
-            if not usd_data or 'price' not in usd_data:
-                raise ValueError("La estructura de la API ha cambiado o no se encontró el monitor usd/bcv.")
+        # Lista de APIs para intentar obtener la tasa (Multi-provider fallback)
+        APIS = [
+            {
+                'url': 'https://ve.dolarapi.com/v1/dolares/oficial',
+                'parser': lambda d: d.get('promedio')
+            },
+            {
+                'url': 'https://pydolarve.org/api/v1/dollar?page=bcv',
+                'parser': lambda d: d.get('monitors', {}).get('usd', {}).get('price')
+            }
+        ]
+        
+        errors = []
+        for api in APIS:
+            try:
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+                response = requests.get(api['url'], headers=headers, timeout=10)
+                response.raise_for_status()
+                data = response.json()
                 
-            tasa_raw = usd_data['price']
-            tasa_decimal = Decimal(str(tasa_raw))
+                tasa_raw = api['parser'](data)
+                if tasa_raw:
+                    tasa_decimal = Decimal(str(tasa_raw))
+                    tasa_str = str(tasa_decimal)
+                    cache.set(CACHE_KEY, tasa_str, timeout=43200) # 12 horas
+                    print(f"DEBUG: Tasa BCV obtenida exitosamente de {api['url']}: {tasa_str}")
+                    break
+            except Exception as e:
+                errors.append(f"{api['url']}: {str(e)}")
+                continue
+        
+        if not tasa_str:
+            error_msg = f"No se pudo obtener la tasa de ninguna fuente comercial. Errores: {'; '.join(errors)}"
+            print(f"CRÍTICO: {error_msg}")
+            return JsonResponse({'error': error_msg}, status=503)
             
-            tasa_str = str(tasa_decimal)
-            cache.set(CACHE_KEY, tasa_str, timeout=43200) # 12 horas
-            
-            print(f"TASA BCV OBTENIDA (API EXTERNA): {tasa_str}")
-
-        except (requests.RequestException, ValueError, InvalidOperation, KeyError) as e:
-            # Si la API falla, devolvemos un error claro
-            error_message = f'Error al consultar API de tasa de cambio: {str(e)}'
-            print(error_message)
-            return JsonResponse({'error': error_message}, status=503) # 503: Service Unavailable
-    else:
-        print(f"TASA BCV OBTENIDA (CACHE): {tasa_str}")
-
     return JsonResponse({'tasa_usd': tasa_str})
 
 @login_required
