@@ -215,25 +215,54 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     } catch (e) { console.error('Error parsing policy data:', e); }
 
-    // --- GRÁFICOR DE RAMOS (NUEVO) ---
+    // --- GRÁFICOR DE RAMOS (MEJORADO) ---
     try {
-        const ramoData = JSON.parse('{{ chart_ramos_json|safe }}');
+        const ramoContainer = document.querySelector("#chart-ramos");
+        const chartRamosData = '{{ chart_ramos_json|safe }}';
+        
+        if (!chartRamosData || chartRamosData === 'null') {
+            ramoContainer.innerHTML = '<div class="text-center py-5"><i class="fas fa-chart-pie fa-3x text-light mb-3"></i><p class="text-muted">No se encontraron pólizas para analizar por ramo.</p></div>';
+            return;
+        }
+
+        const ramoData = JSON.parse(chartRamosData);
+        
         if (ramoData.labels && ramoData.labels.length > 0) {
             const options = {
-                chart: { type: 'donut', height: 350, fontFamily: 'Plus Jakarta Sans, sans-serif' },
+                chart: { 
+                    type: 'donut', 
+                    height: 380, 
+                    fontFamily: 'Plus Jakarta Sans, sans-serif',
+                    animations: { enabled: true, easing: 'easeinout', speed: 800 }
+                },
                 series: ramoData.series,
                 labels: ramoData.labels,
-                colors: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6'],
-                plotOptions: { pie: { donut: { size: '70%', labels: { show: true, total: { show: true, label: 'Total Pólizas' } } } } },
-                legend: { position: 'bottom' },
-                responsive: [{ breakpoint: 480, options: { chart: { width: 300 }, legend: { position: 'bottom' } } }]
+                colors: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899', '#6366F1'],
+                plotOptions: { 
+                    pie: { 
+                        donut: { 
+                            size: '75%', 
+                            labels: { 
+                                show: true, 
+                                total: { show: true, label: 'Producción', formatter: () => ramoData.series.reduce((a,b) => a+b, 0) + ' Pol.' } 
+                            } 
+                        } 
+                    } 
+                },
+                legend: { position: 'bottom', fontSize: '14px' },
+                dataLabels: { enabled: true, dropShadow: { enabled: false } },
+                stroke: { show: false },
+                responsive: [{ breakpoint: 480, options: { chart: { height: 300 }, legend: { position: 'bottom' } } }]
             };
-            const chart = new ApexCharts(document.querySelector("#chart-ramos"), options);
+            const chart = new ApexCharts(ramoContainer, options);
             chart.render();
         } else {
-            document.querySelector("#chart-ramos").innerHTML = '<p class="text-center text-muted py-5">No hay datos suficientes para generar el análisis de ramos.</p>';
+            ramoContainer.innerHTML = '<div class="text-center py-5"><i class="fas fa-folder-open fa-3x text-light mb-3"></i><p class="text-muted">Agrega pólizas con ramos específicos para ver este análisis.</p></div>';
         }
-    } catch (e) { console.error('Error rendering chart:', e); }
+    } catch (e) { 
+        console.error('Error rendering chart:', e);
+        document.querySelector("#chart-ramos").innerHTML = '<p class="text-center text-danger py-5">Error al cargar el gráfico. Por favor, recarga la página.</p>';
+    }
 });
 </script>
 {% endblock %}

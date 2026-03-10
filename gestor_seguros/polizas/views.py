@@ -459,7 +459,12 @@ def dashboard_view(request):
     
     # --- KPIs Y DATOS JS ---
     total_clientes = Cliente.objects.filter(usuario=request.user).count()
-    total_polizas_vigentes = polizas_activas_y_pendientes.filter(estado_poliza='VIGENTE').count()
+    
+    # KPI de Vigentes: Definimos como vigentes aquellas con estado VIGENTE o PENDIENTE_PAGO que no han vencido
+    total_polizas_vigentes = polizas_activas_y_pendientes.filter(
+        estado_poliza__in=['VIGENTE', 'PENDIENTE_PAGO', 'EN_TRAMITE'],
+        fecha_fin_vigencia__gte=hoy
+    ).count()
     
     cumpleaneros_hoy = cumpleaneros_mes.filter(fecha_nacimiento__day=hoy.day)
     cumpleaneros_hoy_json = json.dumps([{'nombre': c.nombre_completo} for c in cumpleaneros_hoy])
@@ -467,15 +472,22 @@ def dashboard_view(request):
     polizas_vencen_semana = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=7)))
     polizas_vencen_semana_json = json.dumps([{'numero': p.numero_poliza} for p in polizas_vencen_semana])
 
-    # --- DATOS PARA GRÁFICOS (NUEVO) ---
+    # --- DATOS PARA GRÁFICOS (MEJORADO) ---
     from django.db.models import Sum, Count
-    datos_ramos = polizas_activas_y_pendientes.values('ramo_tipo_seguro').annotate(
+    # Usamos all_polizas para el gráfico para que siempre muestre algo si hay datos
+    datos_ramos = Poliza.objects.filter(usuario=request.user).values('ramo_tipo_seguro').annotate(
         total=Count('id'),
         monto=Sum('prima_total_anual')
     ).order_by('-total')
     
-    chart_ramos_labels = [d['ramo_tipo_seguro'] for d in datos_ramos]
-    chart_ramos_series = [float(d['total']) for d in datos_ramos]
+    chart_ramos_labels = []
+    chart_ramos_series = []
+    
+    for d in datos_ramos:
+        label = d['ramo_tipo_seguro'] if d['ramo_tipo_seguro'] else 'Sin Ramo'
+        chart_ramos_labels.append(str(label))
+        chart_ramos_series.append(float(d['total']))
+    
     chart_ramos_json = json.dumps({'labels': chart_ramos_labels, 'series': chart_ramos_series})
 
     # --- CONTEXTO FINAL ---
