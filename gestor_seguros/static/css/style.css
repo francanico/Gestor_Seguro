@@ -1,229 +1,286 @@
-/* static/css/style.css - Versión 2.0 Global y Definitiva */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* static/css/style.css - Premium Enterprise Edition */
+
+/* 1. Imports (Tipografía Premium) */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap');
 
 :root {
-    /* Paleta de Colores Principal */
-    --primary-color: #3B71CA;
-    --primary-color-hover: #315eab;
+    /* Paleta Corporativa Premium */
+    --primary-color: #4F46E5;      /* Indigo 600 */
+    --primary-color-hover: #4338CA; /* Indigo 700 */
+    --primary-color-light: #EEF2FF; /* Indigo 50 */
+    --secondary-color: #0F172A;    /* Slate 900 */
+    
     --bs-primary: var(--primary-color);
-    --bs-primary-rgb: 59, 113, 202;
+    --bs-primary-rgb: 79, 70, 229;
     
-    /* Colores de Texto y Fondos */
-    --text-color: #212529;
-    --text-muted: #6c757d;
-    --background-color: #f4f7f6;
-    --surface-color: #ffffff;
-    --border-color: #dee2e6;
+    /* Degradados Premium */
+    --gradient-primary: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%);
+    --gradient-text: linear-gradient(135deg, #0F172A 0%, #334155 100%);
     
-    /* Colores Semánticos */
-    --success-color: #198754;
-    --warning-color: #ffc107;
-    --danger-color: #dc3545;
-    --info-color: #0dcaf0;
+    /* Backgrounds y Superficies */
+    --background-color: #F8FAFC;   /* Slate 50 */
+    --surface-color: #FFFFFF;
+    --border-color: #E2E8F0;       /* Slate 200 */
     
-    /* Tipografía y Geometría */
-    --font-family-sans-serif: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .05);
-    --border-radius: 0.5rem;
+    /* Textos */
+    --text-main: #0F172A;          /* Slate 900 */
+    --text-muted: #64748B;         /* Slate 500 */
+    
+    /* Estados Semánticos Refinados */
+    --success-color: #10B981;      /* Emerald 500 */
+    --success-bg: #D1FAE5;
+    --warning-color: #F59E0B;      /* Amber 500 */
+    --warning-bg: #FEF3C7;
+    --danger-color: #EF4444;       /* Red 500 */
+    --danger-bg: #FEE2E2;
+    --info-color: #3B82F6;         /* Blue 500 */
+    
+    /* Layout & Geometry */
+    --font-family-body: 'Plus Jakarta Sans', sans-serif;
+    --font-family-display: 'Outfit', sans-serif;
+    --radius-sm: 0.375rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1.25rem;
+    --radius-xl: 2rem;
+    
+    /* Sombras Premium (Suaves y Difusas) */
+    --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -1px rgba(15, 23, 42, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 10px 10px -5px rgba(15, 23, 42, 0.04);
 }
 
-/* --- Base y Reseteo --- */
+/* --- Base --- */
 body {
-    font-family: var(--font-family-sans-serif);
+    font-family: var(--font-family-body);
     background-color: var(--background-color);
-    color: var(--text-color);
+    color: var(--text-main);
     font-size: 0.95rem;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
 }
-a { color: var(--primary-color); text-decoration: none; }
-a:hover { color: var(--primary-color-hover); text-decoration: none; }
+
+h1, h2, h3, h4, h5, h6, .navbar-brand {
+    font-family: var(--font-family-display);
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+a { color: var(--primary-color); text-decoration: none; transition: all 0.2s ease; }
+a:hover { color: var(--primary-color-hover); }
+
+/* --- Navbar Moderna --- */
+.navbar {
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-sm);
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+.navbar-brand strong { color: var(--primary-color); font-weight: 700; font-size: 1.4rem;}
+.navbar-nav .nav-link {
+    font-weight: 500;
+    color: var(--text-muted);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+}
+.navbar-nav .nav-link:hover, .navbar-nav .nav-link.active {
+    color: var(--primary-color) !important;
+    background-color: var(--primary-color-light);
+}
+
+/* BCV Ticker */
+.bcv-ticker {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+}
+
+/* --- Botones --- */
+.btn {
+    font-family: var(--font-family-body);
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    padding: 0.6rem 1.25rem;
+    transition: all 0.2s ease;
+}
+
+.premium-btn {
+    background: var(--gradient-primary);
+    border: none;
+    color: white;
+}
+.premium-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    color: white;
+    filter: brightness(1.1);
+}
+
+.premium-btn-outline {
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    background: transparent;
+}
+.premium-btn-outline:hover {
+    background-color: var(--primary-color-light);
+    color: var(--primary-color-hover);
+    transform: translateY(-2px);
+}
 
 /* --- Layout Principal --- */
-.navbar {
-    background-color: var(--surface-color);
-    box-shadow: var(--box-shadow);
-}
-.navbar-brand strong { color: var(--primary-color); }
-.navbar-nav .nav-link.active, .navbar-nav .nav-link:hover { color: var(--primary-color) !important; }
-
-main.main-content-area { padding-bottom: 3rem; }
+main.main-content-area { padding-bottom: 4rem; padding-top: 2rem;}
 
 .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
 }
-.page-header h2 { font-weight: 700; font-size: 1.8rem; margin: 0; }
-.page-header i { color: var(--primary-color); margin-right: 0.75rem; }
+.page-header h2 { font-weight: 700; font-size: 2rem; margin: 0; letter-spacing: -0.02em;}
+.page-header i { color: var(--primary-color); padding: 0.5rem; background: var(--primary-color-light); border-radius: var(--radius-md); margin-right: 0.75rem; }
 
-/* --- Cards --- */
-.card {
-    border: none;
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
+/* --- Cards Corporativas --- */
+.card, .premium-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    background-color: var(--surface-color);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     margin-bottom: 1.5rem;
+}
+.card:hover, .premium-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: #cbd5e1;
 }
 .card-header {
     background-color: transparent;
     border-bottom: 1px solid var(--border-color);
-    font-weight: 600;
-    padding: 1rem 1.25rem;
+    font-weight: 700;
+    padding: 1.25rem 1.5rem;
+    border-top-left-radius: var(--radius-lg) !important;
+    border-top-right-radius: var(--radius-lg) !important;
 }
-.card-header i { color: var(--primary-color); margin-right: 0.5rem; }
 
 /* --- Tablas --- */
 .table-container {
     background-color: var(--surface-color);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
     overflow: hidden;
 }
+.table { margin-bottom: 0; }
 .table thead th {
-    background-color: #f8f9fa;
+    background-color: #F8FAFC;
     color: var(--text-muted);
     font-weight: 600;
     text-transform: uppercase;
-    font-size: 0.8rem;
-    vertical-align: middle;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 1rem;
+    border-bottom: 2px solid var(--border-color);
 }
-.table tbody td { vertical-align: middle; }
-.table-hover > tbody > tr:hover { --bs-table-accent-bg: #f8f9fa; }
+.table tbody td { 
+    vertical-align: middle; 
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-main);
+}
+.table-hover > tbody > tr:hover { background-color: #F8FAFC; }
 
 /* --- Formularios --- */
+.form-control, .form-select {
+    border-radius: var(--radius-md);
+    border: 1px solid #cbd5e1;
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
 .form-control:focus, .form-select:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+    box-shadow: 0 0 0 4px var(--primary-color-light);
 }
 
 /* --- Dashboard KPI Cards --- */
-.kpi-card .card-body {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.kpi-card {
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
 }
-.kpi-card .kpi-value { font-size: 2rem; font-weight: 700; }
-.kpi-card .kpi-icon { font-size: 2.5rem; opacity: 0.3; }
-.kpi-card .card-footer { background-color: rgba(0,0,0,0.1); border-top: none; }
-.kpi-card .card-footer a { color: inherit; text-decoration: none; }
-
-/* --- Animación de Cumpleaños --- */
-@keyframes pulse-warning {
-    0%, 100% { background-color: #fff3cd; }
-    50% { background-color: #fff9e0; }
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 150px; height: 150px;
+    background: radial-gradient(circle, var(--primary-color-light) 0%, transparent 70%);
+    z-index: -1;
+    transform: translate(30%, -30%);
+    border-radius: 50%;
 }
-.birthday-today { animation: pulse-warning 2s infinite; }
+.kpi-card .card-body { padding: 1.5rem; }
+.kpi-card .kpi-value { font-size: 2.2rem; font-weight: 800; font-family: var(--font-family-display); color: var(--secondary-color);}
+.kpi-card .kpi-icon { font-size: 2.5rem; color: var(--primary-color); opacity: 0.8; }
 
-/* --- Estilos para la Página de Inicio (Landing Page) --- */
-
-.hero-section {
-    padding: 6rem 0;
-    background-color: var(--surface-color);
-    text-align: center;
-}
-
-.hero-section h1 {
-    font-size: 3.5rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-}
-
-.hero-section .lead {
-    font-size: 1.25rem;
-    color: var(--text-muted);
-    max-width: 600px;
-    margin: 0 auto 2rem auto;
-}
-
-.hero-section .btn {
-    padding: 0.8rem 2rem;
-    font-size: 1.1rem;
+/* --- Badges --- */
+.badge {
+    padding: 0.4em 0.8em;
+    border-radius: var(--radius-xl);
     font-weight: 600;
+    font-size: 0.75rem;
 }
 
-.features-section {
-    padding: 4rem 0;
-}
-
-.feature-card {
-    text-align: center;
-    padding: 2rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background-color: var(--surface-color);
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-
-.feature-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 1rem 2rem rgba(0, 0, 0, .075);
-}
-
-.feature-card .feature-icon {
-    font-size: 3rem;
-    color: var(--primary-color);
-    margin-bottom: 1.5rem;
-    display: inline-block;
-}
-
-.feature-card h3 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-}
-
-/* --- Widget de Subida de Archivo Personalizado --- */
-.custom-file-widget .file-info {
-    font-size: 0.85rem;
-    background-color: #f8f9fa;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.25rem;
-    margin-bottom: 0.5rem;
+/* --- Landing Page Premium --- */
+.premium-padding { padding: 6rem 0; }
+.hero-section {
+    background: radial-gradient(circle at top right, #EEF2FF 0%, #F8FAFC 100%);
+    min-height: 80vh;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
 }
-.custom-file-widget .file-info a {
-    font-weight: 500;
-    color: var(--primary-color);
+.hero-title { letter-spacing: -0.03em; color: var(--secondary-color); }
+.text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
-.custom-file-widget .file-info i {
-    margin-right: 0.25rem;
+.hero-subtitle { color: var(--text-muted); font-size: 1.2rem; max-width: 650px; margin: 0 auto; line-height: 1.6;}
+
+.bg-light-gradient { background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%); }
+
+.icon-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2.5rem;
 }
 
-/* Ocultamos el widget feo de Django (texto y checkbox) */
-#clear-checkbox-wrapper label {
-    display: none; /* Oculta la etiqueta "Eliminar archivo al guardar" */
-}
-
-/* Creamos nuestro propio "botón" de eliminar */
-#clear-checkbox-wrapper input[type="checkbox"] {
-    display: none; /* Ocultamos el checkbox real */
-}
-
+/* Widget Archivos y Otros */
+#clear-checkbox-wrapper label { display: none; }
+#clear-checkbox-wrapper input[type="checkbox"] { display: none; }
 #clear-checkbox-wrapper::before {
     font-family: "Font Awesome 5 Free";
     font-weight: 900;
-    content: "\f1f8"; /* Ícono de papelera */
+    content: "\f1f8";
     display: inline-block;
-    padding: 0.3rem 0.5rem;
-    background-color: #fee2e2;
-    color: #dc2626;
-    border-radius: 0.25rem;
+    padding: 0.4rem 0.6rem;
+    background-color: var(--danger-bg);
+    color: var(--danger-color);
+    border-radius: var(--radius-md);
     cursor: pointer;
     transition: all 0.2s ease;
 }
-#clear-checkbox-wrapper:hover::before {
-    background-color: #dc2626;
-    color: white;
-}
-
-/* Cuando el checkbox está marcado (por JS), cambiamos el estilo del "botón" */
+#clear-checkbox-wrapper:hover::before { background-color: var(--danger-color); color: white; }
 #clear-checkbox-wrapper input[type="checkbox"]:checked + label::before {
-    background-color: #dc2626;
+    background-color: var(--danger-color);
     color: white;
-    content: "\f2ed"; /* Ícono de papelera tachada */
-}
-
-.table-danger-light {
-    --bs-table-bg: #fee2e2;
-    --bs-table-border-color: #fecaca;
+    content: "\f2ed";
 }

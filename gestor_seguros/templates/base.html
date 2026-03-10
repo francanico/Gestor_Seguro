@@ -11,7 +11,12 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-        <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    <!-- Librerías de UI Premium -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <!-- Hoja de Estilos Personalizada -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -34,7 +39,17 @@
                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.app_name == 'polizas' and 'aseguradora' not in request.resolver_match.view_name %}active{% endif %}" href="{% url 'polizas:lista_polizas' %}"><i class="fas fa-file-invoice fa-fw me-1"></i> Pólizas</a></li>
                         <li class="nav-item"><a class="nav-link {% if 'aseguradora' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'polizas:lista_aseguradoras' %}"><i class="fas fa-building fa-fw me-1"></i> Aseguradoras</a></li>
                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.app_name == 'reportes' %}active{% endif %}" href="{% url 'reportes:dashboard_reportes' %}"><i class="fas fa-chart-line fa-fw me-1"></i> Reportes</a></li>
-                        <li class="nav-item"><button type="button" class="btn btn-outline-primary btn-sm me-2 mt-1" data-bs-toggle="modal" data-bs-target="#calculadoraModal"><i class="fas fa-calculator"></i> Calculadora BCV </button></li>
+                        <li class="nav-item ms-md-2 mt-2 mt-lg-0">
+                            <button type="button" class="btn btn-outline-primary btn-sm premium-btn-outline" data-bs-toggle="modal" data-bs-target="#calculadoraModal">
+                                <i class="fas fa-calculator me-1"></i> Calculadora BCV 
+                            </button>
+                        </li>
+                        <li class="nav-item d-none d-lg-flex align-items-center ms-3">
+                            <div class="bcv-ticker px-3 py-1 shadow-sm border border-light" title="Tasa BCV del día">
+                                <span class="spinner-grow text-success me-2" role="status" style="width: 0.5rem; height: 0.5rem;"></span>
+                                <span id="nav-bcv-rate" class="fw-bold text-muted small">Cargando Tasa...</span>
+                            </div>
+                        </li>
                         {% endif %}
                 </ul>
                 <ul class="navbar-nav ms-auto">
@@ -128,12 +143,39 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- AOS Animation Library -->
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+    AOS.init({
+        duration: 800,
+        easing: 'ease-out-cubic',
+        once: true,
+        offset: 50
+    });
+</script>
 
 <!-- ============================================== -->
 <!-- JAVASCRIPT PARA LA CALCULADORA (VERSIÓN MEJORADA) -->
 <!-- ============================================== -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    
+    // --- LÓGICA DEL TICKER BCV GLOBAL ---
+    const navBcvRate = document.getElementById('nav-bcv-rate');
+    if (navBcvRate) {
+        fetch("{% url 'polizas:api_tasa_bcv' %}")
+            .then(res => res.json())
+            .then(data => {
+                if(!data.error) {
+                    const price = parseFloat(data.tasa_usd).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    navBcvRate.innerHTML = `<span class="text-success fw-bolder">Bs. ${price}</span>`;
+                } else {
+                    navBcvRate.innerText = "Error BCV";
+                }
+            })
+            .catch(() => { navBcvRate.innerText = "Error BCV"; });
+    }
+
     const modalEl = document.getElementById('calculadoraModal');
     if (!modalEl) return;
 

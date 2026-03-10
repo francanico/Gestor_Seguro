@@ -227,6 +227,11 @@ class Poliza(models.Model):
         return None
     
     def generar_plan_de_pagos(self):
+        # PROTECCIÓN CRÍTICA: No regenerar si ya hay cuotas con pagos realizados para evitar pérdida de historial.
+        if self.cuotas.filter(estado='PAGADO').exists():
+            print(f"DEBUG: No se puede regenerar plan para Póliza {self.pk}. Ya existen cuotas pagadas.")
+            return
+
         # Primero, borramos cualquier plan de pagos anterior para esta póliza
         self.cuotas.all().delete()
 
