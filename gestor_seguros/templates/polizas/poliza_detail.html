@@ -10,28 +10,29 @@
 <!-- Cabecera de la Página con Acciones -->
 <div class="page-header">
     <h2 class="mb-0">
-        <i class="fas fa-file-invoice-dollar"></i> Detalle de Póliza: {{ poliza.numero_poliza }}
+        <i class="fas fa-file-invoice-dollar icon-gradient"></i> Detalle de Póliza: {{ poliza.numero_poliza }}
         
         {# Badge de estado de renovación con la lógica completa #}
         {% with estado=poliza.estado_renovacion %}
-            {% if estado == "Vencida" %} <span class="badge fs-6 ms-2 bg-danger">{{ estado }}</span>
-            {% elif estado == "Crítico (0-30 días)" %} <span class="badge fs-6 ms-2 bg-warning text-dark">Crítico</span>
-            {% elif estado == "Próximo (31-90 días)" %} <span class="badge fs-6 ms-2 bg-info text-dark">Próximo</span>
-            {% elif estado == "Pendiente Activación" or estado == "En Trámite" or estado == "Pendiente de Pago" %} <span class="badge fs-6 ms-2 bg-primary">{{ estado }}</span>
-            {% elif estado == "Vigente" %} <span class="badge fs-6 ms-2 bg-success">{{ estado }}</span>
-            {% else %} <span class="badge fs-6 ms-2 bg-secondary">{{ poliza.get_estado_poliza_display }}</span>
+            {% if estado == "Vencida" %} <span class="badge badge-soft-danger fs-6 ms-2">{{ estado }}</span>
+            {% elif estado == "Crítico (0-30 días)" %} <span class="badge badge-soft-danger fs-6 ms-2">Vence Pronto</span>
+            {% elif estado == "Próximo (31-90 días)" %} <span class="badge badge-soft-warning fs-6 ms-2">Próximo</span>
+            {% elif estado == "Pendiente Activación" or estado == "En Trámite" %} <span class="badge badge-soft-info fs-6 ms-2">{{ estado }}</span>
+            {% elif estado == "Pendiente de Pago" %} <span class="badge badge-soft-warning fs-6 ms-2">{{ estado }}</span>
+            {% elif estado == "Vigente" %} <span class="badge badge-soft-success fs-6 ms-2">{{ estado }}</span>
+            {% else %} <span class="badge badge-soft-secondary fs-6 ms-2">{{ estado }}</span>
             {% endif %}
         {% endwith %}
     </h2>
-    <div>
+    <div class="d-flex gap-2">
         {% if poliza.estado_poliza == 'RENOVADA' %}
             <a href="{% url 'polizas:cancelar_renovacion' poliza.pk %}" class="btn btn-warning"><i class="fas fa-undo me-1"></i> Cancelar Renovación</a>
         {% elif poliza.estado_poliza != 'CANCELADA' %}
-            <a href="{% url 'polizas:renovar_poliza' poliza.pk %}" class="btn btn-success"><i class="fas fa-sync-alt me-1"></i> Renovar</a>
+            <a href="{% url 'polizas:renovar_poliza' poliza.pk %}" class="btn premium-btn-success"><i class="fas fa-sync-alt me-1"></i> Renovar</a>
         {% endif %}
         
-        <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-warning"><i class="fas fa-edit me-1"></i> Editar</a>
-        <a href="{% url 'polizas:lista_polizas' %}" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i> Volver a la Lista</a>
+        <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn premium-btn-outline"><i class="fas fa-edit me-1"></i> Editar</a>
+        <a href="{% url 'polizas:lista_polizas' %}" class="btn btn-light"><i class="fas fa-arrow-left me-1"></i> Volver</a>
     </div>
 </div>
 

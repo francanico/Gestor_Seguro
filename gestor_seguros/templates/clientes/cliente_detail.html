@@ -4,47 +4,62 @@
 {% block title %}{{ cliente.nombre_completo }} - Gestor de Pólizas{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2><i class="fas fa-user-tie"></i> Detalle del Cliente: {{ cliente.nombre_completo }}</h2>
-    <div>
-        <a href="{% url 'clientes:editar_cliente' cliente.pk %}" class="btn btn-warning"><i class="fas fa-edit"></i> Editar Cliente</a>
-        <a href="{% url 'clientes:lista_clientes' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver a la Lista</a>
+<!-- Cabecera de la Página -->
+<div class="page-header" data-aos="fade-down">
+    <h2 class="mb-0"><i class="fas fa-user-tie icon-gradient"></i> Cliente: {{ cliente.nombre_completo }}</h2>
+    <div class="d-flex gap-2">
+        <a href="{% url 'clientes:editar_cliente' cliente.pk %}" class="btn premium-btn-outline"><i class="fas fa-edit me-1"></i> Editar</a>
+        <a href="{% url 'clientes:lista_clientes' %}" class="btn btn-light"><i class="fas fa-arrow-left me-1"></i> Volver</a>
     </div>
 </div>
 
-<div class="card mb-4">
-    <div class="card-header">
-        Información Personal
+<div class="premium-card mb-4" data-aos="fade-up">
+    <div class="card-header bg-transparent border-0 pt-4 px-4">
+        <h5 class="fw-bold mb-0">Información de Contacto y Perfil</h5>
     </div>
-    <div class="card-body">
-        <div class="row">
+    <div class="card-body px-4 pb-4">
+        <div class="row g-4">
             <div class="col-md-6">
-                <p><strong>Nombre Completo:</strong> {{ cliente.nombre_completo }}</p>
-                <p><strong>Tipo Documento:</strong> {{ cliente.get_tipo_documento_display }}</p>
-                <p><strong>Número Documento:</strong> {{ cliente.numero_documento }}</p>
-                <p><strong>Fecha Nacimiento:</strong> {{ cliente.fecha_nacimiento|date:"d/m/Y"|default:"N/A" }}</p>
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold d-block">Identificación</label>
+                    <span>{{ cliente.get_tipo_documento_display }} {{ cliente.numero_documento }}</span>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold d-block">Fecha de Nacimiento</label>
+                    <span>{{ cliente.fecha_nacimiento|date:"d M, Y"|default:"N/A" }}</span>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold d-block">Email</label>
+                    <a href="mailto:{{ cliente.email }}" class="text-primary">{{ cliente.email|default:"Sin Correo" }}</a>
+                </div>
             </div>
             <div class="col-md-6">
-                <p><strong>Email:</strong> {{ cliente.email|default:"N/A" }}</p>
-                <p><strong>Teléfono Principal:</strong> {{ cliente.telefono_principal }}</p>
-                <p><strong>Teléfono Secundario:</strong> {{ cliente.telefono_secundario|default:"N/A" }}</p>
-                <p><strong>Dirección:</strong> {{ cliente.direccion|default:"N/A" }}</p>
-                <p><strong>Ciudad:</strong> {{ cliente.ciudad|default:"N/A" }}</p>
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold d-block">Teléfonos</label>
+                    <div><i class="fas fa-phone-alt me-1 text-muted small"></i> {{ cliente.telefono_principal }}</div>
+                    {% if cliente.telefono_secundario %}<div><i class="fas fa-mobile-alt me-1 text-muted small"></i> {{ cliente.telefono_secundario }}</div>{% endif %}
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold d-block">Ubicación</label>
+                    <span>{{ cliente.direccion|default:"" }}, {{ cliente.ciudad|default:"" }}</span>
+                </div>
             </div>
         </div>
-        <p><strong>Profesión/Ocupación:</strong> {{ cliente.profesion_ocupacion|default:"N/A" }}</p>
-        <p><strong>Notas Adicionales:</strong> {{ cliente.notas_adicionales|linebreaksbr|default:"N/A" }}</p>
-        <hr>
-        <small class="text-muted">Registrado: {{ cliente.fecha_creacion|date:"d/m/Y H:i" }} | Última actualización: {{ cliente.fecha_actualizacion|date:"d/m/Y H:i" }}</small>
+        {% if cliente.notas_adicionales %}<hr><p class="text-muted small"><strong>Notas:</strong> {{ cliente.notas_adicionales }}</p>{% endif %}
+        <hr class="opacity-50">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">ID: #{{ cliente.pk }} | Creado: {{ cliente.fecha_creacion|date:"d/m/Y" }}</small>
+            <small class="text-muted">Actualizado: {{ cliente.fecha_actualizacion|date:"d/m/Y" }}</small>
+        </div>
     </div>
 </div>
 
-<!-- =============================== -->
-<!-- SECCIÓN DE PÓLIZAS ASOCIADAS (CORREGIDA) -->
-<!-- =============================== -->
-<div class="d-flex justify-content-between align-items-center mb-3 mt-4">
-    <h3><i class="fas fa-file-invoice"></i> Pólizas Asociadas</h3>
-    <a href="{% url 'polizas:crear_poliza' %}?cliente_id={{ cliente.pk }}" class="btn btn-success"><i class="fas fa-plus"></i> Añadir Póliza para este Cliente</a>
+<!-- Pólizas Asociadas Modernas -->
+<div class="d-flex justify-content-between align-items-center mb-3 mt-4" data-aos="fade-up">
+    <h3><i class="fas fa-file-invoice text-primary"></i> Pólizas Asociadas</h3>
+    <a href="{% url 'polizas:crear_poliza' %}?cliente_id={{ cliente.pk }}" class="btn premium-btn-success">
+        <i class="fas fa-plus me-1"></i> Nueva Póliza
+    </a>
 </div>
 
 <div class="table-container">
@@ -72,20 +87,20 @@
                     <td>
                         <!-- Lógica de Estado (consistente con otras plantillas) -->
                         {% with estado=poliza.estado_renovacion %}
-                            {% if estado == "Vencida" %} <span class="badge bg-danger">{{ estado }}</span>
-                            {% elif estado == "Crítico (0-30 días)" %} <span class="badge bg-warning text-dark">Crítico</span>
-                            {% elif estado == "Próximo (31-90 días)" %} <span class="badge bg-info text-dark">Próximo</span>
-                            {% elif estado == "Pendiente Activación" or estado == "En Trámite" or estado == "Pendiente de Pago" %} <span class="badge bg-primary">{{ estado }}</span>
-                            {% elif estado == "Vigente" %} <span class="badge bg-success">{{ estado }}</span>
-                            {% else %} <span class="badge bg-secondary">{{ poliza.get_estado_poliza_display }}</span>
+                            {% if estado == "Vencida" %} <span class="badge badge-soft-danger">{{ estado }}</span>
+                            {% elif estado == "Crítico (0-30 días)" %} <span class="badge badge-soft-danger">Vence Pronto</span>
+                            {% elif estado == "Próximo (31-90 días)" %} <span class="badge badge-soft-warning">Próximo</span>
+                            {% elif estado == "Pendiente Activación" or estado == "En Trámite" or estado == "Pendiente de Pago" %} <span class="badge badge-soft-info">{{ estado }}</span>
+                            {% elif estado == "Vigente" %} <span class="badge badge-soft-success">{{ estado }}</span>
+                            {% else %} <span class="badge badge-soft-secondary">{{ estado }}</span>
                             {% endif %}
                         {% endwith %}
                     </td>
                     <td class="text-center">
-                        <div class="action-buttons btn-group" role="group">
-                            <a href="{{ poliza.get_absolute_url }}" class="btn btn-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
-                            <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-warning" title="Editar Póliza"><i class="fas fa-edit"></i></a>
-                            <a href="{% url 'polizas:eliminar_poliza' poliza.pk %}" class="btn btn-danger" title="Eliminar Póliza"><i class="fas fa-trash"></i></a>
+                        <div class="action-buttons">
+                            <a href="{{ poliza.get_absolute_url }}" class="btn btn-light text-primary" title="Ver"><i class="fas fa-eye"></i></a>
+                            <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-light text-warning" title="Editar"><i class="fas fa-edit"></i></a>
+                            <a href="{% url 'polizas:eliminar_poliza' poliza.pk %}" class="btn btn-light text-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
                         </div>
                     </td>
                 </tr>

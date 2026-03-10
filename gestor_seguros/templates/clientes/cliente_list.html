@@ -7,25 +7,26 @@
 {% block content %}
 
 <!-- Cabecera de la Página -->
-<div class="page-header justify-content-between align-items-center">
+<div class="page-header" data-aos="fade-down">
     <h2><i class="fas fa-users"></i> Lista de Clientes</h2>
-    <div class="header-actions">
-        <!-- Botón para eliminar múltiples (Oculto por defecto, se muestra con JS) -->
-        <button type="button" id="btnDeleteSelected" class="btn btn-danger me-2 d-none" onclick="confirmarEliminacionMasiva()">
-            <i class="fas fa-trash-alt"></i> Eliminar (<span id="selectedCount">0</span>)
+    <div class="d-flex gap-2">
+        <button type="button" id="btnDeleteSelected" class="btn btn-outline-danger d-none" onclick="confirmarEliminacionMasiva()">
+            <i class="fas fa-trash-alt me-1"></i> Borrar (<span id="selectedCount">0</span>)
         </button>
-        <a href="{% url 'clientes:crear_cliente' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Añadir Cliente</a>
+        <a href="{% url 'clientes:crear_cliente' %}" class="btn premium-btn">
+            <i class="fas fa-plus me-1"></i> Añadir Cliente
+        </a>
     </div>
 </div>
 
-<!-- Formulario de Búsqueda -->
-<div class="card mb-4">
-    <div class="card-body">
+<!-- Búsqueda Compacta -->
+<div class="premium-card mb-4" data-aos="fade-up">
+    <div class="card-body p-3">
         <form method="get" class="mb-0">
             <div class="input-group">
-                {# Esta línea ahora funcionará #}
-                {% render_field filterset.form.nombre_o_doc class="form-control" placeholder="Buscar por Nombre o Cédula/RIF..." %}
-                <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i> Buscar</button>
+                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
+                {% render_field filterset.form.nombre_o_doc class="form-control border-start-0 ps-0" placeholder="Buscar por Nombre, RIF o Cédula..." %}
+                <button class="btn premium-btn" type="submit">Buscar Clientes</button>
             </div>
         </form>
     </div>
@@ -39,38 +40,43 @@
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead>
+                    <thead>
                         <tr>
-                            <th style="width: 40px;">
-                                <div class="form-check">
+                            <th style="width: 50px;">
+                                <div class="form-check custom-check">
                                     <input class="form-check-input" type="checkbox" id="selectAll">
                                 </div>
                             </th>
                             <th>Nombre Completo</th>
-                            <th>Documento</th>
-                            <th>Email</th>
-                            <th>Teléfono</th>
+                            <th>Identificación</th>
+                            <th>Contacto</th>
                             <th class="text-center">Acciones</th>
                         </tr>
+                    </thead>
                     </thead>
                     <tbody>
                         {% for cliente in clientes %}
                         <tr>
+                        <tr>
                             <td>
-                                <div class="form-check">
+                                <div class="form-check custom-check">
                                     <input class="form-check-input client-checkbox" type="checkbox" name="cliente_ids" value="{{ cliente.pk }}">
                                 </div>
                             </td>
-                            <td><a href="{{ cliente.get_absolute_url }}">{{ cliente.nombre_completo }}</a></td>
-                            <td>{{ cliente.get_tipo_documento_display }} {{ cliente.numero_documento }}</td>
-                            <td>{{ cliente.email|default:"N/A" }}</td>
-                            <td>{{ cliente.telefono_principal|default:"N/A" }}</td>
+                            <td class="fw-bold"><a href="{{ cliente.get_absolute_url }}">{{ cliente.nombre_completo }}</a></td>
+                            <td class="small text-muted">{{ cliente.get_tipo_documento_display }} {{ cliente.numero_documento }}</td>
+                            <td>
+                                <div class="small fw-medium">{{ cliente.email|default:"Sin Email" }}</div>
+                                <div class="text-muted small">{{ cliente.telefono_principal|default:"Sin Teléfono" }}</div>
+                            </td>
                             <td class="text-center">
-                                <div class="action-buttons btn-group" role="group">
-                                    <a href="{{ cliente.get_absolute_url }}" class="btn btn-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
-                                    <a href="{% url 'clientes:editar_cliente' cliente.pk %}" class="btn btn-warning" title="Editar"><i class="fas fa-edit"></i></a>
-                                    <a href="{% url 'clientes:eliminar_cliente' cliente.pk %}" class="btn btn-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
+                                <div class="action-buttons">
+                                    <a href="{{ cliente.get_absolute_url }}" class="btn btn-light text-primary" title="Ver"><i class="fas fa-eye"></i></a>
+                                    <a href="{% url 'clientes:editar_cliente' cliente.pk %}" class="btn btn-light text-warning" title="Editar"><i class="fas fa-edit"></i></a>
+                                    <a href="{% url 'clientes:eliminar_cliente' cliente.pk %}" class="btn btn-light text-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
                                 </div>
                             </td>
+                        </tr>
                         </tr>
                         {% endfor %}
                     </tbody>

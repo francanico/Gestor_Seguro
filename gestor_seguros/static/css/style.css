@@ -26,14 +26,15 @@
     --text-main: #0F172A;          /* Slate 900 */
     --text-muted: #64748B;         /* Slate 500 */
     
-    /* Estados Semánticos Refinados */
-    --success-color: #10B981;      /* Emerald 500 */
-    --success-bg: #D1FAE5;
-    --warning-color: #F59E0B;      /* Amber 500 */
-    --warning-bg: #FEF3C7;
-    --danger-color: #EF4444;       /* Red 500 */
-    --danger-bg: #FEE2E2;
-    --info-color: #3B82F6;         /* Blue 500 */
+    /* Estados Semánticos Refinados (Legibilidad Mejorada) */
+    --success-color: #059669;      /* Emerald 600 */
+    --success-bg-soft: #ECFDF5;
+    --warning-color: #D97706;      /* Amber 600 */
+    --warning-bg-soft: #FFFBEB;
+    --danger-color: #DC2626;       /* Red 600 */
+    --danger-bg-soft: #FEF2F2;
+    --info-color: #2563EB;         /* Blue 600 */
+    --info-bg-soft: #EFF6FF;
     
     /* Layout & Geometry */
     --font-family-body: 'Plus Jakarta Sans', sans-serif;
@@ -167,32 +168,45 @@ main.main-content-area { padding-bottom: 4rem; padding-top: 2rem;}
     border-top-right-radius: var(--radius-lg) !important;
 }
 
-/* --- Tablas --- */
+/* --- Tablas Modernas --- */
 .table-container {
     background-color: var(--surface-color);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border-color);
     overflow: hidden;
+    margin-bottom: 2rem;
 }
 .table { margin-bottom: 0; }
 .table thead th {
     background-color: #F8FAFC;
     color: var(--text-muted);
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-    padding: 1rem;
-    border-bottom: 2px solid var(--border-color);
+    font-size: 0.7rem;
+    letter-spacing: 0.075em;
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid var(--border-color);
 }
+.table tbody tr { transition: all 0.2s; }
 .table tbody td { 
     vertical-align: middle; 
-    padding: 1rem;
+    padding: 1.25rem 1rem;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-main);
+    font-size: 0.9rem;
 }
-.table-hover > tbody > tr:hover { background-color: #F8FAFC; }
+.table-hover > tbody > tr:hover { 
+    background-color: rgba(79, 70, 229, 0.02); 
+    transform: scale(1.001);
+}
+
+/* Fix para tablas con acciones */
+.action-buttons .btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+    border-radius: var(--radius-md);
+}
 
 /* --- Formularios --- */
 .form-control, .form-select {
@@ -207,33 +221,77 @@ main.main-content-area { padding-bottom: 4rem; padding-top: 2rem;}
     box-shadow: 0 0 0 4px var(--primary-color-light);
 }
 
-/* --- Dashboard KPI Cards --- */
-.kpi-card {
+.custom-check .form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0.125em;
+    border: 2px solid var(--border-color);
+    cursor: pointer;
+}
+.custom-check .form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* --- Dashboard KPI Cards 2.0 (Clean Look) --- */
+.kpi-card-v2 {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+    height: 100%;
     position: relative;
     overflow: hidden;
-    z-index: 1;
 }
-.kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0; right: 0;
-    width: 150px; height: 150px;
-    background: radial-gradient(circle, var(--primary-color-light) 0%, transparent 70%);
-    z-index: -1;
-    transform: translate(30%, -30%);
-    border-radius: 50%;
+.kpi-card-v2:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color);
 }
-.kpi-card .card-body { padding: 1.5rem; }
-.kpi-card .kpi-value { font-size: 2.2rem; font-weight: 800; font-family: var(--font-family-display); color: var(--secondary-color);}
-.kpi-card .kpi-icon { font-size: 2.5rem; color: var(--primary-color); opacity: 0.8; }
+.kpi-card-v2 .kpi-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-right: 1.25rem;
+}
+.kpi-card-v2.kpi-primary .kpi-icon-wrapper { background: var(--primary-color-light); color: var(--primary-color); }
+.kpi-card-v2.kpi-success .kpi-icon-wrapper { background: var(--success-bg-soft); color: var(--success-color); }
+.kpi-card-v2.kpi-warning .kpi-icon-wrapper { background: var(--warning-bg-soft); color: var(--warning-color); }
+.kpi-card-v2.kpi-danger .kpi-icon-wrapper { background: var(--danger-bg-soft); color: var(--danger-color); }
+.kpi-card-v2.kpi-info .kpi-icon-wrapper { background: var(--info-bg-soft); color: var(--info-color); }
 
-/* --- Badges --- */
-.badge {
-    padding: 0.4em 0.8em;
-    border-radius: var(--radius-xl);
-    font-weight: 600;
-    font-size: 0.75rem;
+.kpi-card-v2 .kpi-content { flex-grow: 1; }
+.kpi-card-v2 .kpi-label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    margin-bottom: 0.25rem;
 }
+.kpi-card-v2 .kpi-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--secondary-color);
+    line-height: 1;
+}
+
+.kpi-card-v2 .stretched-link::after { z-index: 2; }
+
+/* --- Badges Soft (Legibilidad Superior) --- */
+.badge-soft-success { background-color: var(--success-bg-soft); color: var(--success-color); border: 1px solid rgba(5, 150, 105, 0.1); }
+.badge-soft-warning { background-color: var(--warning-bg-soft); color: var(--warning-color); border: 1px solid rgba(217, 119, 6, 0.1); }
+.badge-soft-danger { background-color: var(--danger-bg-soft); color: var(--danger-color); border: 1px solid rgba(220, 38, 38, 0.1); }
+.badge-soft-info { background-color: var(--info-bg-soft); color: var(--info-color); border: 1px solid rgba(37, 99, 235, 0.1); }
+.badge-soft-primary { background-color: var(--primary-color-light); color: var(--primary-color); border: 1px solid rgba(79, 70, 229, 0.1); }
+.badge-soft-secondary { background-color: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
 
 /* --- Landing Page Premium --- */
 .premium-padding { padding: 6rem 0; }
@@ -250,6 +308,7 @@ main.main-content-area { padding-bottom: 4rem; padding-top: 2rem;}
 .text-gradient {
     background: var(--gradient-primary);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 .hero-subtitle { color: var(--text-muted); font-size: 1.2rem; max-width: 650px; margin: 0 auto; line-height: 1.6;}
@@ -259,6 +318,7 @@ main.main-content-area { padding-bottom: 4rem; padding-top: 2rem;}
 .icon-gradient {
     background: var(--gradient-primary);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     font-size: 2.5rem;
 }

@@ -9,39 +9,37 @@
 {% block content %}
 
 <!-- Cabecera de la Página -->
-
-<div class="page-header">
+<div class="page-header" data-aos="fade-down">
     <h2><i class="fas fa-file-invoice"></i> Lista de Pólizas</h2>
-    <div>
-        <!-- BOTÓN PARA ABRIR EL MODAL DE IMPORTACIÓN -->
-        <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#importModal">
-            <i class="fas fa-upload"></i> Importar
+    <div class="d-flex gap-2">
+        <button type="button" class="btn premium-btn-outline" data-bs-toggle="modal" data-bs-target="#importModal">
+            <i class="fas fa-upload me-1"></i> Importar
         </button>
-        <a href="{% url 'polizas:crear_poliza' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Añadir Póliza</a>
+        <a href="{% url 'polizas:crear_poliza' %}" class="btn premium-btn">
+            <i class="fas fa-plus me-1"></i> Añadir Póliza
+        </a>
     </div>
 </div>
 
-<!-- ============================================== -->
-<!-- FORMULARIO DE FILTROS Y BÚSQUEDA             -->
-<!-- ============================================== -->
-<div class="card mb-4">
-    <div class="card-body">
+<!-- Filtros Compactos -->
+<div class="premium-card mb-4" data-aos="fade-up">
+    <div class="card-body p-3">
         <form method="get">
-            <div class="row g-3 align-items-center">
-                <div class="col-lg-4">
-                    {{ filterset.form.q.label_tag }}
-                    {% render_field filterset.form.q class="form-control" %}
+            <div class="row g-3">
+                <div class="col-lg-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
+                        {% render_field filterset.form.q class="form-control border-start-0 ps-0" placeholder="Número, Cliente, Placa..." %}
+                    </div>
                 </div>
-                <div class="col-lg-2">
-                    {{ filterset.form.aseguradora.label_tag }}
+                <div class="col-lg-3">
                     {% render_field filterset.form.aseguradora class="form-select" %}
                 </div>
                 <div class="col-lg-2">
-                    {{ filterset.form.estado_poliza.label_tag }}
                     {% render_field filterset.form.estado_poliza class="form-select" %}
                 </div>
-                <div class="col-lg-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">Buscar</button>
+                <div class="col-lg-2">
+                    <button type="submit" class="btn premium-btn w-100">Buscar</button>
                 </div>
             </div>
         </form>
@@ -50,7 +48,7 @@
 
 {% if polizas %}
     <!-- Contenedor para la Tabla -->
-    <div class="table-container">
+    <div class="table-container shadow-sm" data-aos="fade-up" data-aos-delay="100">
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead>
@@ -61,80 +59,61 @@
                         <th>Ramo</th>
                         <th>Bien Asegurado</th> 
                         <th>Fin Vigencia</th>
-                        <th>Estado Renov.</th>
-                        <th class="text-end">Prima Anual</th>
-                        <th class="text-end">Monto Comisión</th>
-                        <th class="text-center">Com. Cobrada</th>
+                        <th>Estado</th>
+                        <th class="text-end">Prima</th>
+                        <th class="text-center">Cobrada</th>
                         <th class="text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for poliza in polizas %}
                     <tr>
-                        <td><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
-                        <td><a href="{{ poliza.cliente.get_absolute_url }}">{{ poliza.cliente.nombre_completo }}</a></td>
-                        <td>{{ poliza.aseguradora.nombre|default:"N/A" }}</td>
-                        <td>{{ poliza.ramo_tipo_seguro }}</td>
-                        <td>{{ poliza.descripcion_bien_asegurado|default:"N/A"|truncatechars:20 }}</td>
-                        <td>{{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</td>
+                        <td class="fw-bold"><a href="{{ poliza.get_absolute_url }}">{{ poliza.numero_poliza }}</a></td>
+                        <td><a href="{{ poliza.cliente.get_absolute_url }}" class="text-secondary fw-medium">{{ poliza.cliente.nombre_completo }}</a></td>
+                        <td><span class="text-muted small">{{ poliza.aseguradora.nombre|default:"N/A" }}</span></td>
+                        <td><span class="badge badge-soft-primary">{{ poliza.ramo_tipo_seguro }}</span></td>
+                        <td class="small text-muted">{{ poliza.descripcion_bien_asegurado|default:"N/A"|truncatechars:15 }}</td>
+                        <td class="small">{{ poliza.fecha_fin_vigencia|date:"d/m/Y" }}</td>
                         <td>
                             {% with estado=poliza.estado_renovacion dias=poliza.dias_para_renovar %}
-                                
-                                {# --- Estados que NO muestran contador de días --- #}
                                 {% if estado == "Renovada" or estado == "Cancelada" %}
-                                    <span class="badge bg-secondary">{{ estado }}</span>
-
+                                    <span class="badge badge-soft-secondary">{{ estado }}</span>
                                 {% elif estado == "En Trámite" %}
-                                    <span class="badge" style="background-color: #6f42c1; color: white;">{{ estado }}</span> {# Un color púrpura para 'En Trámite' #}
-
+                                    <span class="badge badge-soft-info">{{ estado }}</span>
                                 {% elif estado == "Pendiente de Pago" %}
-                                    <span class="badge bg-primary">{{ estado }}</span>
-
-                                {# --- Estados que SÍ muestran contador de días --- #}
+                                    <span class="badge badge-soft-warning">{{ estado }}</span>
                                 {% elif estado == "Vencida" %}
-                                    <span class="badge bg-danger">{{ estado }}</span>
-
+                                    <span class="badge badge-soft-danger">{{ estado }}</span>
                                 {% elif estado == "Crítico (0-30 días)" %}
-                                    <span class="badge bg-warning text-dark">Crítico</span>
-
+                                    <span class="badge badge-soft-danger">Vence Pronto</span>
                                 {% elif estado == "Próximo (31-90 días)" %}
-                                    <span class="badge bg-info text-dark">Próximo</span>
-
+                                    <span class="badge badge-soft-warning">Próximo</span>
                                 {% elif estado == "Vigente" %}
-                                    <span class="badge bg-success">{{ estado }}</span>
-                                
-                                {% else %} {# Cubre "Indeterminado" #}
-                                    <span class="badge bg-dark">{{ estado }}</span>
+                                    <span class="badge badge-soft-success">{{ estado }}</span>
+                                {% else %}
+                                    <span class="badge badge-soft-secondary">{{ estado }}</span>
                                 {% endif %}
-
-                                {# --- Bloque para mostrar los días (AHORA CONDICIONAL) --- #}
-                                {# 'dias' solo tendrá un valor si el estado es VIGENTE, gracias a la nueva lógica del modelo #}
+                                
                                 {% if dias is not None %}
-                                    <small class="text-muted d-block mt-1">
-                                        {% if dias < 0 %}
-                                            (hace {{ dias|slice:"1:" }} día{{ dias|slice:"1:"|pluralize }})
-                                        {% else %}
-                                            ({{ dias }} día{{ dias|pluralize }})
-                                        {% endif %}
+                                    <small class="text-muted d-block mt-1" style="font-size: 0.7rem;">
+                                        {% if dias < 0 %} hace {{ dias|slice:"1:" }} d {% else %} {{ dias }} d {% endif %}
                                     </small>
                                 {% endif %}
-
                             {% endwith %}
                         </td>
-                        <td class="text-end">${{ poliza.prima_total_anual|floatformat:2|intcomma }}</td>
-                        <td class="text-end">${{ poliza.comision_monto|floatformat:2|intcomma }}</td>
+                        <td class="text-end fw-bold">${{ poliza.prima_total_anual|floatformat:2|intcomma }}</td>
                         <td class="text-center">
                             {% if poliza.comision_cobrada %}
-                                <i class="fas fa-check-circle text-success" title="Sí"></i>
+                                <span class="text-success"><i class="fas fa-check-circle"></i></span>
                             {% else %}
-                                <i class="fas fa-times-circle text-danger" title="No"></i>
+                                <span class="text-muted opacity-50"><i class="fas fa-times-circle"></i></span>
                             {% endif %}
                         </td>
                         <td class="text-center">
-                            <div class="action-buttons btn-group" role="group">
-                                <a href="{{ poliza.get_absolute_url }}" class="btn btn-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
-                                <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-warning" title="Editar"><i class="fas fa-edit"></i></a>
-                                <a href="{% url 'polizas:eliminar_poliza' poliza.pk %}" class="btn btn-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
+                            <div class="action-buttons">
+                                <a href="{{ poliza.get_absolute_url }}" class="btn btn-light text-primary" title="Ver"><i class="fas fa-eye"></i></a>
+                                <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-light text-warning" title="Editar"><i class="fas fa-edit"></i></a>
+                                <a href="{% url 'polizas:eliminar_poliza' poliza.pk %}" class="btn btn-light text-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
                             </div>
                         </td>
                     </tr>

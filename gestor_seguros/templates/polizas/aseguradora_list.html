@@ -5,40 +5,42 @@
 
 {% block content %}
 
-<div class="page-header">
+<!-- Cabecera de la Página -->
+<div class="page-header" data-aos="fade-down">
     <h2><i class="fas fa-building"></i> Lista de Aseguradoras</h2>
-    <a href="{% url 'polizas:crear_aseguradora' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Añadir Aseguradora</a>
+    <a href="{% url 'polizas:crear_aseguradora' %}" class="btn premium-btn">
+        <i class="fas fa-plus me-1"></i> Añadir Aseguradora
+    </a>
 </div>
 
 {% if aseguradoras %}
-    <div class="table-container">
+    <div class="table-container shadow-sm" data-aos="fade-up">
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead>
                     <tr>
-                        <th>Nombre</th>
-                        <th>RIF</th>
-                        <th>Nombre Contacto</th>
-                        <th>Email Contacto</th>
-                        <th>Teléfono Contacto</th>
+                        <th>Nombre de la Empresa</th>
+                        <th>RIF / ID</th>
+                        <th>Contacto Principal</th>
                         <th class="text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for aseguradora in aseguradoras %}
                     <tr>
-                        <td>
+                        <td class="fw-bold">
                             <a href="{{ aseguradora.get_absolute_url }}">{{ aseguradora.nombre }}</a>
                         </td>
-                        <td>{{ aseguradora.rif|default:"N/A" }}</td>
-                        <td>{{ aseguradora.contacto_nombre|default:"N/A" }}</td>
-                        <td>{{ aseguradora.contacto_email|default:"N/A" }}</td>
-                        <td>{{ aseguradora.contacto_telefono|default:"N/A" }}</td>
+                        <td class="text-muted small">{{ aseguradora.rif|default:"N/A" }}</td>
+                        <td>
+                            <div class="fw-medium">{{ aseguradora.contacto_nombre|default:"Sin Contacto" }}</div>
+                            <div class="small text-muted">{{ aseguradora.contacto_email|default:"" }} | {{ aseguradora.contacto_telefono|default:"" }}</div>
+                        </td>
                         <td class="text-center">
-                            <div class="action-buttons btn-group" role="group">
-                                <a href="{{ aseguradora.get_absolute_url }}" class="btn btn-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
-                                <a href="{% url 'polizas:editar_aseguradora' aseguradora.pk %}" class="btn btn-warning" title="Editar"><i class="fas fa-edit"></i></a>
-                                <a href="{% url 'polizas:eliminar_aseguradora' aseguradora.pk %}" class="btn btn-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
+                            <div class="action-buttons">
+                                <a href="{{ aseguradora.get_absolute_url }}" class="btn btn-light text-primary" title="Ver"><i class="fas fa-eye"></i></a>
+                                <a href="{% url 'polizas:editar_aseguradora' aseguradora.pk %}" class="btn btn-light text-warning" title="Editar"><i class="fas fa-edit"></i></a>
+                                <a href="{% url 'polizas:eliminar_aseguradora' aseguradora.pk %}" class="btn btn-light text-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
                             </div>
                         </td>
                     </tr>
