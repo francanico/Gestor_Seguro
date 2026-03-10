@@ -4,6 +4,7 @@ from django.urls import reverse
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from documentos.models import Documento
+from simple_history.models import HistoricalRecords
 class Cliente(models.Model):
 
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='clientes')
@@ -30,6 +31,7 @@ class Cliente(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     documentos = GenericRelation(Documento)
+    history = HistoricalRecords()
 
     def __str__(self):
         return f"{self.nombre_completo} ({self.numero_documento})"

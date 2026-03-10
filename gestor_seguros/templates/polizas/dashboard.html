@@ -48,6 +48,20 @@
     </div>
 </div>
 
+<!-- Fila de Gráficos (NUEVO) -->
+<div class="row">
+    <div class="col-lg-12 mb-4">
+        <div class="card premium-card">
+            <div class="card-header bg-white">
+                <i class="fas fa-chart-pie me-2"></i> Análisis de Producción por Ramo
+            </div>
+            <div class="card-body">
+                <div id="chart-ramos" style="min-height: 300px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Contenido Principal del Dashboard -->
 <div class="row">
     <!-- COLUMNA IZQUIERDA -->
@@ -200,6 +214,26 @@ document.addEventListener('DOMContentLoaded', function() {
             }).showToast();
         }
     } catch (e) { console.error('Error parsing policy data:', e); }
+
+    // --- GRÁFICOR DE RAMOS (NUEVO) ---
+    try {
+        const ramoData = JSON.parse('{{ chart_ramos_json|safe }}');
+        if (ramoData.labels && ramoData.labels.length > 0) {
+            const options = {
+                chart: { type: 'donut', height: 350, fontFamily: 'Plus Jakarta Sans, sans-serif' },
+                series: ramoData.series,
+                labels: ramoData.labels,
+                colors: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6'],
+                plotOptions: { pie: { donut: { size: '70%', labels: { show: true, total: { show: true, label: 'Total Pólizas' } } } } },
+                legend: { position: 'bottom' },
+                responsive: [{ breakpoint: 480, options: { chart: { width: 300 }, legend: { position: 'bottom' } } }]
+            };
+            const chart = new ApexCharts(document.querySelector("#chart-ramos"), options);
+            chart.render();
+        } else {
+            document.querySelector("#chart-ramos").innerHTML = '<p class="text-center text-muted py-5">No hay datos suficientes para generar el análisis de ramos.</p>';
+        }
+    } catch (e) { console.error('Error rendering chart:', e); }
 });
 </script>
 {% endblock %}

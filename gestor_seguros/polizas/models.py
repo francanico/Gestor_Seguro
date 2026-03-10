@@ -8,6 +8,7 @@ from clientes.models import Cliente
 from dateutil.relativedelta import relativedelta 
 from django.contrib.contenttypes.fields import GenericRelation
 from documentos.models import Documento
+from simple_history.models import HistoricalRecords
 
 class Aseguradora(models.Model):
 
@@ -17,6 +18,7 @@ class Aseguradora(models.Model):
     contacto_nombre = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nombre de Contacto")
     contacto_email = models.EmailField(blank=True, null=True, verbose_name="Email de Contacto")
     contacto_telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono de Contacto")
+    history = HistoricalRecords()
 
 
     def get_absolute_url(self):
@@ -134,6 +136,7 @@ class Poliza(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     documentos = GenericRelation(Documento)
+    history = HistoricalRecords()
     
     # --- PROPIEDADES PARA RENOVACIÓN ---
 

@@ -53,11 +53,13 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'documentos',
     'reportes',
+    'simple_history',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

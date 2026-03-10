@@ -467,6 +467,17 @@ def dashboard_view(request):
     polizas_vencen_semana = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy, hoy + timedelta(days=7)))
     polizas_vencen_semana_json = json.dumps([{'numero': p.numero_poliza} for p in polizas_vencen_semana])
 
+    # --- DATOS PARA GRÁFICOS (NUEVO) ---
+    from django.db.models import Sum, Count
+    datos_ramos = polizas_activas_y_pendientes.values('ramo_tipo_seguro').annotate(
+        total=Count('id'),
+        monto=Sum('prima_total_anual')
+    ).order_by('-total')
+    
+    chart_ramos_labels = [d['ramo_tipo_seguro'] for d in datos_ramos]
+    chart_ramos_series = [float(d['total']) for d in datos_ramos]
+    chart_ramos_json = json.dumps({'labels': chart_ramos_labels, 'series': chart_ramos_series})
+
     # --- CONTEXTO FINAL ---
     context = {
         'hoy': hoy,
@@ -482,6 +493,7 @@ def dashboard_view(request):
         'total_polizas_vigentes': total_polizas_vigentes,
         'cumpleaneros_hoy_json': cumpleaneros_hoy_json,
         'polizas_vencen_semana_json': polizas_vencen_semana_json,
+        'chart_ramos_json': chart_ramos_json,
         'polizas_por_gestionar': polizas_por_gestionar,
         'titulo_pagina': "Dashboard de Pólizas",
     }
