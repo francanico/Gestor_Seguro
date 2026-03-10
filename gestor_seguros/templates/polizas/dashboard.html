@@ -177,51 +177,62 @@
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
+<!-- DEBUG: Bloque de Gráficos de Ramos -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const notificationData = document.getElementById('notification-data');
-    
+    if (!notificationData) return;
+
     // Notificaciones de Cumpleaños
     try {
-        const cumpleaneros = JSON.parse(notificationData.dataset.cumpleanerosHoy);
-        if (cumpleaneros.length > 0) {
-            let nombres = cumpleaneros.map(c => c.nombre).join(', ');
-            Toastify({
-                text: `🎂 ¡Hoy es el cumpleaños de ${nombres}! No olvides Felicitarlo.`,
-                duration: 10000,
-                close: true,
-                gravity: "bottom",
-                position: "right",
-                backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
-            }).showToast();
+        const cumpleanerosData = notificationData.dataset.cumpleanerosHoy;
+        if (cumpleanerosData) {
+            const cumpleaneros = JSON.parse(cumpleanerosData);
+            if (cumpleaneros.length > 0) {
+                let nombres = cumpleaneros.map(c => c.nombre).join(', ');
+                Toastify({
+                    text: `🎂 ¡Hoy es el cumpleaños de ${nombres}! No olvides Felicitarlo.`,
+                    duration: 10000,
+                    close: true,
+                    gravity: "bottom",
+                    position: "right",
+                    backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
+                }).showToast();
+            }
         }
     } catch (e) { console.error('Error parsing birthday data:', e); }
 
     // Notificaciones de Pólizas por Vencer
     try {
-        const polizasVencen = JSON.parse(notificationData.dataset.polizasVencenSemana);
-        if (polizasVencen.length > 0) {
-            let texto = `🔔 Tienes ${polizasVencen.length} póliza(s) que vencen en los próximos 7 días.`;
-            Toastify({
-                text: texto,
-                destination: "{% url 'polizas:lista_polizas' %}",
-                newWindow: true,
-                duration: 15000,
-                close: true,
-                gravity: "bottom",
-                position: "right",
-                backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)",
-            }).showToast();
+        const polizasVencenData = notificationData.dataset.polizasVencenSemana;
+        if (polizasVencenData) {
+            const polizasVencen = JSON.parse(polizasVencenData);
+            if (polizasVencen.length > 0) {
+                let texto = `🔔 Tienes ${polizasVencen.length} póliza(s) que vencen en los próximos 7 días.`;
+                Toastify({
+                    text: texto,
+                    destination: "{% url 'polizas:lista_polizas' %}",
+                    newWindow: true,
+                    duration: 15000,
+                    close: true,
+                    gravity: "bottom",
+                    position: "right",
+                    backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)",
+                }).showToast();
+            }
         }
     } catch (e) { console.error('Error parsing policy data:', e); }
 
     // --- GRÁFICOR DE RAMOS (MEJORADO) ---
     try {
         const ramoContainer = document.querySelector("#chart-ramos");
+        if (!ramoContainer) return;
+
         const chartRamosData = '{{ chart_ramos_json|safe }}';
+        console.log("DEBUG: Datos del gráfico recibidos:", chartRamosData);
         
-        if (!chartRamosData || chartRamosData === 'null') {
-            ramoContainer.innerHTML = '<div class="text-center py-5"><i class="fas fa-chart-pie fa-3x text-light mb-3"></i><p class="text-muted">No se encontraron pólizas para analizar por ramo.</p></div>';
+        if (!chartRamosData || chartRamosData === 'null' || chartRamosData === '{"labels": [], "series": []}') {
+            ramoContainer.innerHTML = '<div class="text-center py-5"><i class="fas fa-chart-pie fa-3x text-light mb-3"></i><p class="text-muted">No se encontraron pólizas con ramos específicos para analizar.</p></div>';
             return;
         }
 
@@ -261,7 +272,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     } catch (e) { 
         console.error('Error rendering chart:', e);
-        document.querySelector("#chart-ramos").innerHTML = '<p class="text-center text-danger py-5">Error al cargar el gráfico. Por favor, recarga la página.</p>';
+        if (document.querySelector("#chart-ramos")) {
+            document.querySelector("#chart-ramos").innerHTML = '<p class="text-center text-danger py-5">Error al cargar el gráfico. Por favor, recarga la página.</p>';
+        }
     }
 });
 </script>
