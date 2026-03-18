@@ -115,30 +115,8 @@ class PolizaForm(forms.ModelForm):
 
 
 # --- OTROS FORMULARIOS (SIN CAMBIOS, PERO INCLUIDOS PARA COMPLETITUD) ---
-class AseguradoraForm(forms.ModelForm):
-    class Meta:
-        model = Aseguradora
-        fields = ['nombre', 'rif', 'contacto_nombre', 'contacto_email', 'contacto_telefono']
-
-
 
 #---(PAGO CUOTA FORM)---
-
-# --- FORMULARIO PARA EDITAR UNA CUOTA (DENTRO DE UN FORMSET) ---
-    class Meta:
-        model = PagoCuota
-        fields = ['fecha_vencimiento_cuota', 'monto_cuota', 'estado', 'fecha_de_pago_realizado', 'notas_pago']
-        widgets = {
-            'fecha_vencimiento_cuota': forms.DateInput(attrs={'type': 'date'}),
-            'fecha_de_pago_realizado': forms.DateInput(attrs={'type': 'date'}),
-            'notas_pago': forms.Textarea(attrs={'rows': 1}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            css_class = 'form-select' if isinstance(field.widget, forms.Select) else 'form-control form-control-sm'
-            field.widget.attrs.update({'class': css_class})
 
 # --- FORMULARIO PARA MARCAR UNA CUOTA COMO PAGADA (ACCIÓN RÁPIDA) ---
 class RegistrarPagoForm(forms.ModelForm):
