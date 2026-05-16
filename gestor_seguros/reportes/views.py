@@ -17,6 +17,23 @@ def reportes_dashboard(request):
     
     fecha_inicio_str = request.GET.get('fecha_inicio')
     fecha_fin_str = request.GET.get('fecha_fin')
+    filtro_rapido = request.GET.get('filtro_rapido')
+    
+    hoy = timezone.now().date()
+    
+    # Lógica de botones rápidos
+    if filtro_rapido == 'este_mes':
+        fecha_inicio_str = hoy.replace(day=1).strftime('%Y-%m-%d')
+        fecha_fin_str = hoy.strftime('%Y-%m-%d')
+    elif filtro_rapido == 'mes_pasado':
+        primer_dia_este_mes = hoy.replace(day=1)
+        ultimo_dia_mes_pasado = primer_dia_este_mes - timedelta(days=1)
+        primer_dia_mes_pasado = ultimo_dia_mes_pasado.replace(day=1)
+        fecha_inicio_str = primer_dia_mes_pasado.strftime('%Y-%m-%d')
+        fecha_fin_str = ultimo_dia_mes_pasado.strftime('%Y-%m-%d')
+    elif filtro_rapido == 'este_anio':
+        fecha_inicio_str = hoy.replace(month=1, day=1).strftime('%Y-%m-%d')
+        fecha_fin_str = hoy.strftime('%Y-%m-%d')
     
     # Queryset base para TODAS las pólizas del usuario
     polizas_base = Poliza.objects.filter(usuario=user)

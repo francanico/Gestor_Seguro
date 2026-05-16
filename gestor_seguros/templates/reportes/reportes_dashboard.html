@@ -7,28 +7,41 @@
 {% block content %}
 <div class="page-header">
     <h2><i class="fas fa-chart-pie"></i> Reportes de Agencia</h2>
-    <a href="{% url 'reportes:exportar_polizas_csv' %}?fecha_inicio={{ request.GET.fecha_inicio|default:'' }}&fecha_fin={{ request.GET.fecha_fin|default:'' }}" 
+    <a href="{% url 'reportes:exportar_polizas_csv' %}?fecha_inicio={{ fecha_inicio|default:'' }}&fecha_fin={{ fecha_fin|default:'' }}" 
     class="btn btn-success">
         <i class="fas fa-file-csv"></i> Exportar a CSV
     </a>
 </div>
 
-<!-- FILTROS DE FECHA -->
+<!-- FILTROS DE FECHA MEJORADOS -->
 <!-- =============================== -->
-<div class="card mb-4">
+<div class="card mb-4 shadow-sm border-0">
     <div class="card-body">
-        <form method="get" class="row g-3 align-items-end">
-            <div class="col-md-5">
-                <label for="id_fecha_inicio" class="form-label">Desde</label>
-                <input type="date" name="fecha_inicio" value="{{ request.GET.fecha_inicio|default:'' }}" class="form-control" id="id_fecha_inicio">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+            <h6 class="mb-2 mb-md-0 text-muted fw-bold"><i class="fas fa-calendar-alt me-2 text-primary"></i>Período de Análisis</h6>
+            
+            <!-- Botones de Acceso Rápido -->
+            <div class="btn-group btn-group-sm" role="group" aria-label="Filtros rápidos">
+                <a href="?filtro_rapido=este_mes" class="btn btn-outline-primary {% if request.GET.filtro_rapido == 'este_mes' %}active{% endif %}">Este Mes</a>
+                <a href="?filtro_rapido=mes_pasado" class="btn btn-outline-primary {% if request.GET.filtro_rapido == 'mes_pasado' %}active{% endif %}">Mes Pasado</a>
+                <a href="?filtro_rapido=este_anio" class="btn btn-outline-primary {% if request.GET.filtro_rapido == 'este_anio' %}active{% endif %}">Este Año</a>
+                <a href="{% url 'reportes:dashboard_reportes' %}" class="btn btn-outline-secondary">Todo el Tiempo</a>
             </div>
-            <div class="col-md-5">
-                <label for="id_fecha_fin" class="form-label">Hasta</label>
-                <input type="date" name="fecha_fin" value="{{ request.GET.fecha_fin|default:'' }}" class="form-control" id="id_fecha_fin">
+        </div>
+
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-10">
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-calendar-day"></i></span>
+                    <!-- Utilizamos la variable de contexto de la vista para que el form se autorellene al usar botones rápidos -->
+                    <input type="date" name="fecha_inicio" value="{{ fecha_inicio|default:'' }}" class="form-control border-start-0" id="id_fecha_inicio" aria-label="Fecha de inicio">
+                    <span class="input-group-text bg-light border-start-0 border-end-0 text-muted">hasta</span>
+                    <input type="date" name="fecha_fin" value="{{ fecha_fin|default:'' }}" class="form-control border-start-0 border-end-0" id="id_fecha_fin" aria-label="Fecha de fin">
+                    <span class="input-group-text bg-white border-start-0 text-muted"><i class="fas fa-calendar-check"></i></span>
+                </div>
             </div>
             <div class="col-md-2 d-flex">
-                <button type="submit" class="btn btn-primary w-100 me-2"><i class="fas fa-filter"></i> Filtrar</button>
-                <a href="{% url 'reportes:dashboard_reportes' %}" class="btn btn-secondary w-100" title="Limpiar Filtros"><i class="fas fa-times"></i></a>
+                <button type="submit" class="btn btn-primary w-100 shadow-sm"><i class="fas fa-search me-1"></i> Aplicar</button>
             </div>
         </form>
     </div>
