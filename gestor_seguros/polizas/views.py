@@ -106,14 +106,17 @@ class PolizaListView(LoginRequiredMixin, ListView):
     paginate_by = 15
 
     def get_queryset(self):
-        queryset = Poliza.objects.select_related('cliente', 'aseguradora')
+        # Empezamos con el queryset filtrado por el usuario actual
+        queryset = super().get_queryset().filter(usuario=self.request.user).select_related('cliente', 'aseguradora')
+        
+        # Filtros rápidos desde el dashboard
         filtro = self.request.GET.get('filtro_dashboard')
         hoy = timezone.now().date()
         ESTADOS_RELEVANTES = ['VIGENTE', 'PENDIENTE_PAGO']
 
         if filtro == 'vencidas':
             queryset = queryset.filter(fecha_fin_vigencia__lt=hoy, estado_poliza__in=ESTADOS_RELEVANTES)
-            self.request.session['titulo_lista_polizas'] = "Pólizas Vencidas" # Opcional para el título
+            self.request.session['titulo_lista_polizas'] = "Pólizas Vencidas"
         elif filtro == 'vencer30':
             proximos_30_dias = hoy + timedelta(days=30)
             queryset = queryset.filter(fecha_fin_vigencia__gte=hoy, fecha_fin_vigencia__lte=proximos_30_dias, estado_poliza__in=ESTADOS_RELEVANTES)
@@ -124,23 +127,11 @@ class PolizaListView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(fecha_fin_vigencia__gt=proximos_30_dias, fecha_fin_vigencia__lte=proximos_60_dias, estado_poliza__in=ESTADOS_RELEVANTES)
             self.request.session['titulo_lista_polizas'] = "Pólizas Venciendo en 31-60 Días"
         else:
-            # Podrías limpiar el título si no hay filtro o es otro tipo de filtro
             if 'titulo_lista_polizas' in self.request.session:
                 del self.request.session['titulo_lista_polizas']
 
-        return queryset.order_by('-fecha_fin_vigencia')
-
-        # También podrías añadir otros filtros aquí, por ejemplo, búsqueda por texto
-        # query_busqueda = self.request.GET.get('q')
-        # if query_busqueda:
-        #     queryset = queryset.filter(numero_poliza__icontains=query_busqueda) # O buscar en más campos
-
-    def get_queryset(self):
-        # El queryset base ahora es más simple
-        queryset = super().get_queryset().filter(usuario=self.request.user).select_related('cliente', 'aseguradora')
-        
-        # Aplicamos el filtro
-        self.filterset = PolizaFilter(self.request.GET, queryset=queryset)
+        # Aplicamos el filtro pasándole el request
+        self.filterset = PolizaFilter(self.request.GET, queryset=queryset, request=self.request)
         
         # Devolvemos el queryset filtrado
         return self.filterset.qs.order_by('-fecha_fin_vigencia')

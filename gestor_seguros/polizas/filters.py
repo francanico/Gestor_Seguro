@@ -21,6 +21,16 @@ class PolizaFilter(django_filters.FilterSet):
             'estado_poliza': ['exact'],
         }
 
+    def __init__(self, *args, **kwargs):
+        request = kwargs.pop('request', None)
+        super().__init__(*args, **kwargs)
+        if request and request.user.is_authenticated:
+            # Importar el modelo Aseguradora solo cuando se necesita para evitar importaciones circulares o en el inicio
+            from .models import Aseguradora
+            # Filtrar las opciones del selector de aseguradoras para mostrar solo las del usuario
+            if 'aseguradora' in self.filters:
+                self.filters['aseguradora'].queryset = Aseguradora.objects.filter(usuario=request.user).order_by('nombre')
+
     def filtro_general(self, queryset, name, value):
         # Esta función define cómo funciona la búsqueda de texto libre 'q'
         return queryset.filter(
