@@ -91,6 +91,7 @@
                                 <th>Cliente</th>
                                 <th>Estado Actual</th>
                                 <th>Inicio Vigencia</th>
+                                <th>Prima Anual</th>
                                 <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
@@ -107,6 +108,7 @@
                             </span>
                         </td>
                         <td>{{ poliza.fecha_inicio_vigencia|date:"d/m/Y" }}</td>
+                        <td class="fw-bold">${{ poliza.prima_total_anual|floatformat:2|intcomma }}</td>
                         <td class="text-center">
                             <a href="{% url 'polizas:editar_poliza' poliza.pk %}" class="btn btn-sm btn-warning" title="Gestionar y Activar">
                                 <i class="fas fa-edit"></i> Gestionar
