@@ -48,14 +48,16 @@ def reportes_dashboard(request):
     
     # 3. Cartera por Ramo (para gráfico de dona)
     cartera_por_ramo = list(polizas_base.values('ramo_tipo_seguro').annotate(
-        cantidad=Count('id')
+        cantidad=Count('id'),
+        total_prima=Sum('prima_total_anual')
     ).order_by('-cantidad'))
     
     # 4. Cartera por Aseguradora (NUEVO GRÁFICO)
     cartera_por_aseguradora = list(polizas_base.annotate(
         nombre_aseguradora=models.F('aseguradora__nombre')
     ).values('nombre_aseguradora').annotate(
-        cantidad=Count('id')
+        cantidad=Count('id'),
+        total_prima=Sum('prima_total_anual')
     ).order_by('-cantidad'))
 
     # 5. KPIs
