@@ -79,6 +79,7 @@
     <!-- COLUMNA IZQUIERDA -->
     <div class="col-lg-8">
         
+        <!-- Pólizas en Trámite / Renovaciones -->
         {% if polizas_en_tramite %}
         <div class="card border-info mb-4">
             <div class="card-header bg-info text-dark"><i class="fas fa-hourglass-start"></i> Pólizas en Trámite / Renovaciones/ Pendientes de Pago ({{ polizas_en_tramite|length }})</div>
@@ -123,6 +124,28 @@
 </div>
 {% endif %}
 
+    </div> <!-- FIN COLUMNA IZQUIERDA -->
+
+    <!-- COLUMNA DERECHA -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header" style="background-color: #dcfce7; color: #16a34a;"> {# <-- COLOR AÑADIDO (VERDE CLARO) #}
+                <i class="fas fa-birthday-cake"></i> Cumpleaños del Mes
+            </div>
+            <div class="card-body">{% include "polizas/_cumpleanos_lista.html" %}</div>
+        </div>
+        <div class="card mt-4">
+            <div class="card-header" style="background-color: #f3e5f5; color: #8e24aa;"> {# <-- COLOR AÑADIDO (PÚRPURA CLARO) #}
+                <i class="fas fa-hand-holding-usd"></i> Comisiones Pendientes
+            </div>
+            <div class="card-body">{% include "polizas/_comisiones_pendientes_lista.html" %}</div>
+        </div>
+    </div> <!-- FIN COLUMNA DERECHA -->
+</div> <!-- Fin de la fila principal superior -->
+
+<!-- FILA INFERIOR PARA TABLAS LARGAS (100% de ancho) -->
+<div class="row mt-2">
+    <div class="col-12">
         <!-- Cobros Vencidos -->
         {% if cobros_vencidos %}
         <div class="card border-danger mb-4">
@@ -135,7 +158,7 @@
 
         <!-- Pólizas por Vencer en 30 Días -->
         <div class="card mb-4">
-            <div class="card-header bg-warning text-dark"> {# <-- COLOR AÑADIDO #}
+            <div class="card-header bg-warning text-dark">
                 <i class="fas fa-bell"></i> Pólizas por Vencer en los Próximos 30 Días ({{ polizas_a_vencer_30.count }})
             </div>
             <div class="card-body p-0">{% include "polizas/_tabla_polizas_recordatorio.html" with polizas=polizas_a_vencer_30 %}</div>
@@ -143,7 +166,7 @@
         
         <!-- Pólizas por Vencer en 31-60 Días -->
         <div class="card mb-4">
-            <div class="card-header" style="background-color: #e3f2fd; color: #1e88e5;"> {# <-- COLOR AÑADIDO (AZUL CLARO) #}
+            <div class="card-header" style="background-color: #e3f2fd; color: #1e88e5;">
                 <i class="fas fa-calendar-alt"></i> Pólizas por Vencer entre 31 y 60 Días ({{ polizas_a_vencer_60.count }})
             </div>
             <div class="card-body p-0">{% include "polizas/_tabla_polizas_recordatorio.html" with polizas=polizas_a_vencer_60 %}</div>
@@ -151,32 +174,16 @@
 
         <!-- Próximos Cobros -->
         <div class="card mb-4">
-            <div class="card-header bg-primary text-white"> {# <-- COLOR AÑADIDO #}
+            <div class="card-header bg-primary text-white">
                 <i class="fas fa-dollar-sign"></i> Próximos Cobros de Cuotas (en 30 días) ({{ cobros_pendientes_30_dias|length }})
             </div>
             <div class="card-body p-0">{% include "polizas/_proximos_cobros_tabla.html" with lista_de_cobros=cobros_pendientes_30_dias %}</div>
         </div>
     </div>
-
-    <!-- COLUMNA DERECHA -->
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header" style="background-color: #dcfce7; color: #16a34a;"> {# <-- COLOR AÑADIDO (VERDE CLARO) #}
-                <i class="fas fa-birthday-cake"></i> Cumpleaños del Mes
-            </div>
-            <div class="card-body">{% include "polizas/_cumpleanos_lista.html" %}</div>
-        </div>
-        <div class="card">
-            <div class="card-header" style="background-color: #f3e5f5; color: #8e24aa;"> {# <-- COLOR AÑADIDO (PÚRPURA CLARO) #}
-                <i class="fas fa-hand-holding-usd"></i> Comisiones Pendientes
-            </div>
-            <div class="card-body">{% include "polizas/_comisiones_pendientes_lista.html" %}</div>
-        </div>
-    </div>
 </div>
 
 
-</div> <!-- Fin de la fila principal -->
+</div> <!-- Fin de la fila inferior -->
 
 <!-- Almacenar datos para notificaciones JS -->
 <div id="notification-data" 
