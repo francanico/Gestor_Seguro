@@ -3,13 +3,12 @@ from django.db import models
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, Count,Q
+from django.db.models import Sum, Count, Q
 from django.db.models.functions import TruncMonth
-from datetime import datetime
-from polizas.models import Poliza
-from django.utils import timezone
+from datetime import datetime, timedelta
 from polizas.models import Poliza, Aseguradora
-from django.shortcuts import render
+from clientes.models import Cliente
+from django.utils import timezone
 
 
 @login_required
@@ -152,4 +151,126 @@ def exportar_polizas_csv(request):
             poliza.get_frecuencia_pago_display(),
         ])
         
+    return response
+
+
+# -----------------------------------------------------------------------
+# REPORTE AVANZADO CON FILTROS MÚCTIPLES
+# -----------------------------------------------------------------------
+
+def _aplicar_filtros_avanzados(queryset, params, user):
+    """Aplica todos los filtros avanzados sobre un queryset base de pólizas."""
+    cliente_id   = params.get('cliente')
+    aseguradora_id = params.get('aseguradora')
+    ramo         = params.get('ramo')
+    estado       = params.get('estado')
+    vencimiento  = params.get('vencimiento')   # dias: 30, 60, 90, 'vencidas'
+    fecha_inicio = params.get('fecha_inicio_vigencia')
+    fecha_fin    = params.get('fecha_fin_vigencia')
+
+    if cliente_id:
+        queryset = queryset.filter(cliente_id=cliente_id)
+    if aseguradora_id:
+        queryset = queryset.filter(aseguradora_id=aseguradora_id)
+    if ramo:
+        queryset = queryset.filter(ramo_tipo_seguro__icontains=ramo)
+    if estado:
+        queryset = queryset.filter(estado_poliza=estado)
+    if fecha_inicio:
+        queryset = queryset.filter(fecha_fin_vigencia__gte=fecha_inicio)
+    if fecha_fin:
+        queryset = queryset.filter(fecha_fin_vigencia__lte=fecha_fin)
+    if vencimiento:
+        hoy = timezone.now().date()
+        if vencimiento == 'vencidas':
+            queryset = queryset.filter(fecha_fin_vigencia__lt=hoy)
+        else:
+            try:
+                dias = int(vencimiento)
+                limite = hoy + timedelta(days=dias)
+                queryset = queryset.filter(fecha_fin_vigencia__gte=hoy, fecha_fin_vigencia__lte=limite)
+            except ValueError:
+                pass
+    return queryset
+
+
+@login_required
+def reporte_avanzado(request):
+    user = request.user
+
+    # Listas para los selectores
+    clientes       = Cliente.objects.filter(usuario=user).order_by('nombre_completo')
+    aseguradoras   = Aseguradora.objects.filter(usuario=user).order_by('nombre')
+    ramos          = Poliza.objects.filter(usuario=user).values_list(
+                        'ramo_tipo_seguro', flat=True).distinct().order_by('ramo_tipo_seguro')
+    estados        = Poliza.ESTADO_POLIZA_CHOICES
+
+    polizas = None
+    total_registros = 0
+    total_prima = 0
+    hay_busqueda = any(request.GET.get(k) for k in [
+        'cliente', 'aseguradora', 'ramo', 'estado',
+        'vencimiento', 'fecha_inicio_vigencia', 'fecha_fin_vigencia'
+    ])
+
+    if hay_busqueda:
+        base = Poliza.objects.filter(usuario=user).select_related('cliente', 'aseguradora').order_by('fecha_fin_vigencia')
+        polizas = _aplicar_filtros_avanzados(base, request.GET, user)
+        agg = polizas.aggregate(total=Count('id'), prima=Sum('prima_total_anual'))
+        total_registros = agg['total']
+        total_prima = agg['prima'] or 0
+
+    context = {
+        'titulo_pagina': 'Reporte Avanzado',
+        'clientes':     clientes,
+        'aseguradoras': aseguradoras,
+        'ramos':        ramos,
+        'estados':      estados,
+        'polizas':      polizas,
+        'total_registros': total_registros,
+        'total_prima':  total_prima,
+        'hay_busqueda': hay_busqueda,
+        'params':       request.GET,   # para repoblar el form
+    }
+    return render(request, 'reportes/reporte_avanzado.html', context)
+
+
+@login_required
+def exportar_reporte_avanzado_csv(request):
+    user = request.user
+    base = Poliza.objects.filter(usuario=user).select_related('cliente', 'aseguradora').order_by('fecha_fin_vigencia')
+    polizas = _aplicar_filtros_avanzados(base, request.GET, user)
+
+    filename = f'reporte_avanzado_{datetime.now().strftime("%Y-%m-%d")}.csv'
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response.write('\ufeff'.encode('utf8'))   # BOM para Excel
+
+    writer = csv.writer(response, delimiter=';')
+    writer.writerow([
+        'Nro. Póliza', 'Cliente', 'Documento Cliente', 'Email Cliente', 'Teléfono Cliente',
+        'Aseguradora', 'Ramo', 'Bien Asegurado',
+        'Fecha Inicio Vigencia', 'Fecha Fin Vigencia', 'Días para Vencer',
+        'Prima Total Anual', 'Estado Póliza',
+    ])
+
+    hoy = timezone.now().date()
+    for p in polizas:
+        dias = (p.fecha_fin_vigencia - hoy).days if p.fecha_fin_vigencia else ''
+        writer.writerow([
+            p.numero_poliza,
+            p.cliente.nombre_completo,
+            f"{p.cliente.get_tipo_documento_display()}-{p.cliente.numero_documento}",
+            p.cliente.email or '',
+            p.cliente.telefono_principal or '',
+            p.aseguradora.nombre if p.aseguradora else '',
+            p.ramo_tipo_seguro,
+            p.descripcion_bien_asegurado or '',
+            p.fecha_inicio_vigencia.strftime('%d/%m/%Y'),
+            p.fecha_fin_vigencia.strftime('%d/%m/%Y'),
+            dias,
+            p.prima_total_anual,
+            p.get_estado_poliza_display(),
+        ])
+
     return response
