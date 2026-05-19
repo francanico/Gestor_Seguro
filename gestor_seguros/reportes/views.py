@@ -47,8 +47,12 @@ def reportes_dashboard(request):
         # Pero como el input es 'date', no es necesario.
         polizas_query_periodo = polizas_query_periodo.filter(fecha_emision__lte=fecha_fin_str)
 
+    # Condición para pólizas activas (en vigencia actualmente)
+    condicion_activa = Q(fecha_inicio_vigencia__lte=hoy, fecha_fin_vigencia__gte=hoy)
+
     # 1. Producción por Mes (para gráfico de barras)
     produccion_por_mes = list(polizas_query_periodo.filter(
+        condicion_activa,
         prima_total_anual__gt=0
     ).annotate(
         mes=TruncMonth('fecha_emision')
@@ -63,13 +67,13 @@ def reportes_dashboard(request):
     )
     
     # 3. Cartera por Ramo (para gráfico de dona)
-    cartera_por_ramo = list(polizas_base.values('ramo_tipo_seguro').annotate(
+    cartera_por_ramo = list(polizas_base.filter(condicion_activa).values('ramo_tipo_seguro').annotate(
         cantidad=Count('id'),
         total_prima=Sum('prima_total_anual')
     ).order_by('-cantidad'))
     
     # 4. Cartera por Aseguradora (NUEVO GRÁFICO)
-    cartera_por_aseguradora = list(polizas_base.annotate(
+    cartera_por_aseguradora = list(polizas_base.filter(condicion_activa).annotate(
         nombre_aseguradora=models.F('aseguradora__nombre')
     ).values('nombre_aseguradora').annotate(
         cantidad=Count('id'),
@@ -78,7 +82,7 @@ def reportes_dashboard(request):
 
     # 5. KPIs
     agregados_kpi = polizas_query_periodo.aggregate(
-        total_primas=Sum('prima_total_anual', default=0),
+        total_primas=Sum('prima_total_anual', filter=condicion_activa, default=0),
         total_polizas=Count('id')
     )
 
