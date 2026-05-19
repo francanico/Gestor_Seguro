@@ -43,7 +43,7 @@
                 <div class="kpi-label">Vencen en 30 días</div>
                 <div class="kpi-value">{{ polizas_a_vencer_30.count }}</div>
             </div>
-            <a href="#vencimientos" class="stretched-link"></a>
+            <a href="{% url 'polizas:lista_polizas' %}?filtro_dashboard=vencer30" class="stretched-link"></a>
         </div>
     </div>
     <div class="col-xl-3 col-md-6">
@@ -55,7 +55,7 @@
                 <div class="kpi-label">Pólizas Vencidas</div>
                 <div class="kpi-value">{{ polizas_vencidas.count }}</div>
             </div>
-            <a href="#vencimientos" class="stretched-link"></a>
+            <a href="{% url 'polizas:lista_polizas' %}?filtro_dashboard=vencidas" class="stretched-link"></a>
         </div>
     </div>
 </div>
