@@ -30,6 +30,10 @@ class PolizaFilter(django_filters.FilterSet):
             # Filtrar las opciones del selector de aseguradoras para mostrar solo las del usuario
             if 'aseguradora' in self.filters:
                 self.filters['aseguradora'].queryset = Aseguradora.objects.filter(usuario=request.user).order_by('nombre')
+                self.filters['aseguradora'].extra.update({'empty_label': 'Todas las Aseguradoras'})
+                
+        if 'estado_poliza' in self.filters:
+            self.filters['estado_poliza'].extra.update({'empty_label': 'Todos los Estados'})
 
     def filtro_general(self, queryset, name, value):
         # Esta función define cómo funciona la búsqueda de texto libre 'q'

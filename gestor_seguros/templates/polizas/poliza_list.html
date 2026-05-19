@@ -26,20 +26,31 @@
     <div class="card-body p-3">
         <form method="get">
             <div class="row g-3">
-                <div class="col-lg-5">
+                <div class="col-lg-4">
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
                         {% render_field filterset.form.q class="form-control border-start-0 ps-0" placeholder="Número, Cliente, Placa..." %}
                     </div>
                 </div>
                 <div class="col-lg-3">
-                    {% render_field filterset.form.aseguradora class="form-select" %}
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-building"></i></span>
+                        {% render_field filterset.form.aseguradora class="form-select border-start-0" %}
+                    </div>
                 </div>
-                <div class="col-lg-2">
-                    {% render_field filterset.form.estado_poliza class="form-select" %}
+                <div class="col-lg-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-flag"></i></span>
+                        {% render_field filterset.form.estado_poliza class="form-select border-start-0" %}
+                    </div>
                 </div>
-                <div class="col-lg-2">
-                    <button type="submit" class="btn premium-btn w-100">Buscar</button>
+                <div class="col-lg-2 d-flex gap-2">
+                    <button type="submit" class="btn premium-btn flex-grow-1"><i class="fas fa-filter me-1"></i> Filtrar</button>
+                    {% if request.GET %}
+                        <a href="{% url 'polizas:lista_polizas' %}" class="btn btn-outline-secondary px-3" title="Limpiar Filtros">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </form>
