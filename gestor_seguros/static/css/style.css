@@ -202,10 +202,20 @@ main.main-content-area { padding-bottom: 4rem; padding-top: 2rem;}
 }
 
 /* Fix para tablas con acciones */
+.action-buttons {
+    display: inline-flex;
+    gap: 0.25rem;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+}
 .action-buttons .btn {
-    padding: 0.4rem 0.75rem;
+    padding: 0.4rem 0.6rem;
     font-size: 0.85rem;
     border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* --- Formularios --- */
