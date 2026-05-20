@@ -354,3 +354,15 @@ main.main-content-area { padding-bottom: 4rem; padding-top: 2rem;}
     color: white;
     content: "\f2ed";
 }
+
+/* --- Eliminación de Barras de Desplazamiento y Flechas en Tablas --- */
+.table-responsive {
+    -ms-overflow-style: none !important;  /* Ocultar barra en IE y Edge */
+    scrollbar-width: none !important;     /* Ocultar barra en Firefox */
+}
+.table-responsive::-webkit-scrollbar {
+    display: none !important;             /* Ocultar barra en Chrome, Safari y Opera */
+}
+.table-responsive::-webkit-scrollbar-button {
+    display: none !important;             /* Eliminar flechas en Chrome, Safari, Edge y Opera */
+}
