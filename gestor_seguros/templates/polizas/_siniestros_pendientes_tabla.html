@@ -1,0 +1,47 @@
+{% load humanize %}
+<div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th>Fecha Reporte</th>
+                <th>Póliza</th>
+                <th>Cliente</th>
+                <th>Estado</th>
+                <th>Monto Reclamo</th>
+                <th class="text-center">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for siniestro in siniestros_abiertos %}
+            <tr>
+                <td>{{ siniestro.fecha_reporte|date:"d/m/Y" }}</td>
+                <td>
+                    <a href="{{ siniestro.poliza.get_absolute_url }}" class="fw-bold text-decoration-none text-dark">
+                        {{ siniestro.poliza.numero_poliza }}
+                    </a>
+                </td>
+                <td>{{ siniestro.poliza.cliente.nombre_completo|truncatechars:20 }}</td>
+                <td>
+                    {% if siniestro.estado_siniestro == 'REPORTADO' %}
+                        <span class="badge badge-soft-warning">Reportado</span>
+                    {% elif siniestro.estado_siniestro == 'EN_ANALISIS' %}
+                        <span class="badge badge-soft-info">En Análisis</span>
+                    {% elif siniestro.estado_siniestro == 'PERDIDA_TOTAL' %}
+                        <span class="badge badge-soft-danger">Pérdida Total</span>
+                    {% else %}
+                        <span class="badge badge-soft-secondary">{{ siniestro.get_estado_siniestro_display }}</span>
+                    {% endif %}
+                </td>
+                <td class="fw-bold text-danger">
+                    ${{ siniestro.monto_reclamado|floatformat:2|intcomma }}
+                </td>
+                <td class="text-center">
+                    <a href="{{ siniestro.get_absolute_url }}" class="btn btn-sm btn-outline-danger" title="Ver Siniestro">
+                        <i class="fas fa-eye"></i> Ver
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

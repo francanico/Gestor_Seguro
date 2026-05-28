@@ -419,6 +419,11 @@ def dashboard_view(request):
     polizas_a_vencer_60 = polizas_activas_y_pendientes.filter(fecha_fin_vigencia__range=(hoy + timedelta(days=31), hoy + timedelta(days=60))).order_by('fecha_fin_vigencia')
     polizas_por_gestionar = polizas_activas_y_pendientes.filter(estado_poliza__in=['EN_TRAMITE', 'PENDIENTE_PAGO']).order_by('fecha_inicio_vigencia')
 
+    siniestros_abiertos = Siniestro.objects.filter(
+        usuario=request.user,
+        estado_siniestro__in=['REPORTADO', 'EN_ANALISIS', 'PERDIDA_TOTAL']
+    ).select_related('poliza', 'poliza__cliente').order_by('-fecha_reporte')
+
 
     cobros_pendientes_30_dias = []
     cobros_vencidos = []
@@ -498,6 +503,7 @@ def dashboard_view(request):
         'polizas_vencen_semana_json': polizas_vencen_semana_json,
         'chart_ramos_json': chart_ramos_json,
         'polizas_por_gestionar': polizas_por_gestionar,
+        'siniestros_abiertos': siniestros_abiertos,
         'titulo_pagina': "Dashboard de Pólizas",
     }
     
