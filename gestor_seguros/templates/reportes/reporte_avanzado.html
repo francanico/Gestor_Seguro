@@ -289,6 +289,8 @@
           <th>Fin Vigencia</th>
           <th>Días p/ Vencer</th>
           <th>Prima Anual</th>
+          <th>Frecuencia Pago</th>
+          <th>Próximo Pago</th>
           <th>Estado</th>
         </tr>
       </thead>
@@ -318,6 +320,16 @@
             {% endif %}
           </td>
           <td class="fw-bold">${{ p.prima_total_anual|floatformat:2|intcomma }}</td>
+          <td><span class="badge bg-light text-dark border">{{ p.get_frecuencia_pago_display }}</span></td>
+          <td>
+            {% with proxima_cuota=p.proxima_cuota_pendiente %}
+              {% if proxima_cuota %}
+                {{ proxima_cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            {% endwith %}
+          </td>
           <td>
             {% if p.estado_poliza == 'VIGENTE' %}
               <span class="estado-chip e-vigente">Vigente</span>

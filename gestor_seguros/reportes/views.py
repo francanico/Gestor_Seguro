@@ -272,12 +272,14 @@ def exportar_reporte_avanzado_csv(request):
         'Nro. Póliza', 'Cliente', 'Documento Cliente', 'Email Cliente', 'Teléfono Cliente',
         'Aseguradora', 'Ramo', 'Bien Asegurado',
         'Fecha Inicio Vigencia', 'Fecha Fin Vigencia', 'Días para Vencer',
-        'Prima Total Anual', 'Estado Póliza',
+        'Prima Total Anual', 'Frecuencia Pago', 'Próximo Pago', 'Estado Póliza',
     ])
 
     hoy = timezone.now().date()
     for p in polizas:
         dias = (p.fecha_fin_vigencia - hoy).days if p.fecha_fin_vigencia else ''
+        proxima_cuota = p.proxima_cuota_pendiente
+        proximo_pago = proxima_cuota.fecha_vencimiento_cuota.strftime('%d/%m/%Y') if proxima_cuota else ''
         writer.writerow([
             p.numero_poliza,
             p.cliente.nombre_completo,
@@ -291,6 +293,8 @@ def exportar_reporte_avanzado_csv(request):
             p.fecha_fin_vigencia.strftime('%d/%m/%Y'),
             dias,
             p.prima_total_anual,
+            p.get_frecuencia_pago_display(),
+            proximo_pago,
             p.get_estado_poliza_display(),
         ])
 
