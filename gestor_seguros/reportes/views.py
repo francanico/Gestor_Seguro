@@ -272,7 +272,7 @@ def exportar_reporte_avanzado_csv(request):
         'Nro. Póliza', 'Cliente', 'Documento Cliente', 'Email Cliente', 'Teléfono Cliente',
         'Aseguradora', 'Ramo', 'Bien Asegurado',
         'Fecha Inicio Vigencia', 'Fecha Fin Vigencia', 'Días para Vencer',
-        'Prima Total Anual', 'Frecuencia Pago', 'Próx. Cuota / Monto', 'Estado Póliza',
+        'Prima Total Anual', 'Frecuencia Pago', 'Próx. Cuota / Monto',
     ])
 
     hoy = timezone.now().date()
@@ -300,7 +300,6 @@ def exportar_reporte_avanzado_csv(request):
             p.prima_total_anual,
             p.get_frecuencia_pago_display(),
             proximo_pago,
-            p.get_estado_poliza_display(),
         ])
 
     return response

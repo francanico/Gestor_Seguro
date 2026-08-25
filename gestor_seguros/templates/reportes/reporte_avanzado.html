@@ -291,7 +291,6 @@
           <th>Prima Anual</th>
           <th>Frecuencia Pago</th>
           <th style="min-width: 110px;">Próx. Cuota / Monto</th>
-          <th>Estado</th>
         </tr>
       </thead>
       <tbody>
@@ -333,23 +332,6 @@
                 {% endif %}
               {% endif %}
             {% endwith %}
-          </td>
-          <td>
-            {% if p.estado_poliza == 'VIGENTE' %}
-              <span class="estado-chip e-vigente">Vigente</span>
-            {% elif p.estado_poliza == 'VENCIDA' %}
-              <span class="estado-chip e-vencida">Vencida</span>
-            {% elif p.estado_poliza == 'CANCELADA' %}
-              <span class="estado-chip e-cancelada">Cancelada</span>
-            {% elif p.estado_poliza == 'EN_TRAMITE' %}
-              <span class="estado-chip e-tramite">En Trámite</span>
-            {% elif p.estado_poliza == 'PENDIENTE_PAGO' %}
-              <span class="estado-chip e-pendiente">Pend. Pago</span>
-            {% elif p.estado_poliza == 'RENOVADA' %}
-              <span class="estado-chip e-renovada">Renovada</span>
-            {% else %}
-              <span class="estado-chip dias-venc">{{ p.get_estado_poliza_display }}</span>
-            {% endif %}
           </td>
         </tr>
         {% endwith %}

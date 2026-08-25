@@ -196,25 +196,8 @@ class Poliza(models.Model):
 
     @property
     def proxima_fecha_renovacion_calculada(self):
-        # Esta es una lógica simple, asume que se renueva al día siguiente del fin de vigencia
-        # y la nueva vigencia sería por el mismo periodo de la frecuencia
-        if not self.fecha_fin_vigencia or not self.frecuencia_pago:
-            return None
-
-        # La fecha base para la próxima renovación es el día después del fin de vigencia actual
-        base_renovacion = self.fecha_fin_vigencia + relativedelta(days=1)
-
-        if self.frecuencia_pago == 'MENSUAL':
-            return base_renovacion + relativedelta(months=1) - relativedelta(days=1)
-        elif self.frecuencia_pago == 'TRIMESTRAL':
-            return base_renovacion + relativedelta(months=3) - relativedelta(days=1)
-        elif self.frecuencia_pago == 'CUATRIMESTRAL':
-            return base_renovacion + relativedelta(months=4) - relativedelta(days=1)
-        elif self.frecuencia_pago == 'SEMESTRAL':
-            return base_renovacion + relativedelta(months=6) - relativedelta(days=1)
-        elif self.frecuencia_pago == 'ANUAL' or self.frecuencia_pago == 'UNICO': # 'UNICO' podría tratarse como anual para renovación
-            return base_renovacion + relativedelta(years=1) - relativedelta(days=1)
-        return None # Si la frecuencia no coincide
+        # La fecha de próxima renovación es exactamente la misma fecha de fin de vigencia actual
+        return self.fecha_fin_vigencia
 
     # --- PROPIEDAD PARA LA PRÓXIMA FECHA DE COBRO ---
 
