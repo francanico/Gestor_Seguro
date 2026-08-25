@@ -78,7 +78,7 @@
     text-transform: uppercase;
     color: #6c757d;
     border-bottom: 2px solid #dee2e6;
-    white-space: nowrap;
+    white-space: normal;
   }
   .table-results tbody td {
     padding: .65rem 1rem;
@@ -290,7 +290,7 @@
           <th>Días p/ Vencer</th>
           <th>Prima Anual</th>
           <th>Frecuencia Pago</th>
-          <th>Próximo Pago</th>
+          <th style="min-width: 110px;">Próx. Cuota / Monto</th>
           <th>Estado</th>
         </tr>
       </thead>
@@ -324,9 +324,13 @@
           <td>
             {% with proxima_cuota=p.proxima_cuota_pendiente %}
               {% if proxima_cuota %}
-                {{ proxima_cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}
+                <div class="fw-bold">{{ proxima_cuota.fecha_vencimiento_cuota|date:"d/m/Y" }}</div>
+                <div class="text-primary fw-bold" style="font-size: 0.85rem;">${{ proxima_cuota.monto_cuota|floatformat:2|intcomma }}</div>
               {% else %}
-                <span class="text-muted">—</span>
+                <div class="badge bg-success text-white mb-1"><i class="fas fa-check-circle"></i> Al día</div>
+                {% if p.proxima_fecha_renovacion_calculada %}
+                  <div class="text-muted" style="font-size: 0.75rem;">Renov: {{ p.proxima_fecha_renovacion_calculada|date:"d/m/Y" }}</div>
+                {% endif %}
               {% endif %}
             {% endwith %}
           </td>
