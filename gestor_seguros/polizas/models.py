@@ -94,6 +94,7 @@ class Poliza(models.Model):
     FRECUENCIA_PAGO_CHOICES = [
         ('UNICO', 'Pago Único'), # Volvemos a un nombre más claro
         ('MENSUAL', 'Mensual'),
+        ('BIMENSUAL', 'Bimensual'),
         ('TRIMESTRAL', 'Trimestral'),
         ('CUATRIMESTRAL', 'Cuatrimestral'),
         ('SEMESTRAL', 'Semestral'),
@@ -226,7 +227,9 @@ class Poliza(models.Model):
             return
 
         periodos = {
-            'MENSUAL': (relativedelta(months=1), 12), 'TRIMESTRAL': (relativedelta(months=3), 4),
+            'MENSUAL': (relativedelta(months=1), 12),
+            'BIMENSUAL': (relativedelta(months=2), 6),
+            'TRIMESTRAL': (relativedelta(months=3), 4),
             'CUATRIMESTRAL': (relativedelta(months=4), 3), 'SEMESTRAL': (relativedelta(months=6), 2),
             'ANUAL': (relativedelta(years=1), 1), 'UNICO': (relativedelta(years=1), 1),
         }
